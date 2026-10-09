@@ -1,0 +1,195 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "固件: 合并 BIN",
+            "type": "process",
+            "command": "py",
+            "args": [
+                "-u",
+                "${workspaceFolder}\\Tools\\merge_bin\\merge_bin.py",
+                "${workspaceFolder}\\Tools\\merge_bin\\merge_bin_config.json"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(tools) 合并固件",
+                    "detail": "生成 D940v2_firmware.bin 和升级包"
+                }
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "showReuseMessage": false
+            }
+        },
+        {
+            "label": "J-Link: 擦除 Flash",
+            "type": "process",
+            "command": "D:\\Keil_v5\\ARM\\Segger\\JLink.exe",
+            "args": [
+                "-NoGui",
+                "1",
+                "-Device",
+                "PY32F030x8",
+                "-If",
+                "SWD",
+                "-Speed",
+                "10000",
+                "-AutoConnect",
+                "1",
+                "-CommanderScript",
+                "${workspaceFolder}\\Tools\\jlink\\erase_flash.jlink"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(trash) 擦除 Flash",
+                    "detail": "通过 J-Link 擦除整片 Flash"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                //"close": true,
+                "showReuseMessage": false
+            }
+        },
+        {
+            "label": "J-Link: 复位并运行",
+            "type": "process",
+            "command": "D:\\Keil_v5\\ARM\\Segger\\JLink.exe",
+            "args": [
+                "-NoGui",
+                "1",
+                "-Device",
+                "PY32F030x8",
+                "-If",
+                "SWD",
+                "-Speed",
+                "10000",
+                "-AutoConnect",
+                "1",
+                "-CommanderScript",
+                "${workspaceFolder}\\Tools\\jlink\\reset_run.jlink"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(debug-restart) 复位并运行",
+                    "detail": "通过 J-Link 复位目标芯片并继续运行"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                //"close": true,
+                "showReuseMessage": false
+            }
+        },
+        {
+            "label": "J-Link: 烧录完整固件",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
+                "${workspaceFolder}\\Project\\Output\\D940v2_firmware.bin",
+                "-JLinkExe",
+                "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(cloud-upload) 烧录固件",
+                    "detail": "整片擦除并烧录 D940v2_firmware.bin"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "showReuseMessage": false
+            }
+        },
+        {
+            "label": "J-Link: 仅烧录 App",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
+                "${workspaceFolder}\\Project\\Output\\D940v2_app.bin",
+                "-Address",
+                "0x08004000",
+                "-SkipErase",
+                "-JLinkExe",
+                "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(chip) 烧录 App",
+                    "detail": "不整片擦除，仅烧录 D940v2_app.bin"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "showReuseMessage": false
+            }
+        },
+        {
+            "label": "J-Link: 仅烧录 Boot",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
+                "${workspaceFolder}\\Project\\Output\\D940v2_boot.bin",
+                "-Address",
+                "0x08000000",
+                "-EraseAll",
+                "-JLinkExe",
+                "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(chip) 烧录 App",
+                    "detail": "不整片擦除，仅烧录 D940v2_boot.bin"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "showReuseMessage": false
+            }
+        }
+    ]
+}

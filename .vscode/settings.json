@@ -1,0 +1,81 @@
+{
+    "runMyTasks.excludeTaskTypes": [
+        "cmake"
+    ],
+    "files.exclude": {
+        //"**Project/App-Project": true,
+        "**Project/Boot-Project": true,
+        "**Project/Test-Project": true,
+
+        "**Project/App-Project/MDK-ARM": true,
+        "**Project/Boot-Project/MDK-ARM": true,
+        "**Project/Test-Project/MDK-ARM": true,
+        
+
+        "**/Drivers/PY32F032_HAL_Driver/Inc/py32f032_hal*": true,
+        "**/Drivers/PY32F032_HAL_Driver/Inc/py32f0xx_hal*": true,
+        "**/Drivers/PY32F032_HAL_Driver/Src/py32f032_hal*": true,
+        
+        "**/Drivers/CMSIS/RTOS": true,
+
+        "**/Drivers/CMSIS/Device/PY32F032/Source": true,
+        
+        "**/Drivers/CMSIS/Include/m-profile": true,
+        "**/Drivers/CMSIS/Include/arm_common_tables.h": true,
+        "**/Drivers/CMSIS/Include/arm_const_structs.h": true,
+        "**/Drivers/CMSIS/Include/arm_math.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_armcc_V6.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_armclang.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_gcc.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_iccarm.h": true,
+        "**/Drivers/CMSIS/Include/core_cm0.h": true,
+        "**/Drivers/CMSIS/Include/core_cm3.h": true,
+        "**/Drivers/CMSIS/Include/core_cm4.h": true,
+        "**/Drivers/CMSIS/Include/core_cm7.h": true,
+        "**/Drivers/CMSIS/Include/core_cmFunc.h": true,
+        "**/Drivers/CMSIS/Include/core_cmInstr.h": true,
+        "**/Drivers/CMSIS/Include/core_cmSimd.h": true,
+        "**/Drivers/CMSIS/Include/core_sc000.h": true,
+        "**/Drivers/CMSIS/Include/core_sc300.h": true,
+
+        "**/Other": true,
+    },
+    "search.exclude": {
+        //"**Project/App-Project": true,
+        "**Project/Boot-Project": true,
+        "**Project/Test-Project": true,
+
+        "**Project/App-Project/MDK-ARM": true,
+        "**Project/Boot-Project/MDK-ARM": true,
+        "**Project/Test-Project/MDK-ARM": true,
+        
+
+        "**/Drivers/PY32F032_HAL_Driver/Inc/py32f032_hal*": true,
+        "**/Drivers/PY32F032_HAL_Driver/Inc/py32f0xx_hal*": true,
+        "**/Drivers/PY32F032_HAL_Driver/Src/py32f032_hal*": true,
+        
+        "**/Drivers/CMSIS/RTOS": true,
+
+        "**/Drivers/CMSIS/Device/PY32F032/Source": true,
+        
+        "**/Drivers/CMSIS/Include/m-profile": true,
+        "**/Drivers/CMSIS/Include/arm_common_tables.h": true,
+        "**/Drivers/CMSIS/Include/arm_const_structs.h": true,
+        "**/Drivers/CMSIS/Include/arm_math.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_armcc_V6.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_armclang.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_gcc.h": true,
+        "**/Drivers/CMSIS/Include/cmsis_iccarm.h": true,
+        "**/Drivers/CMSIS/Include/core_cm0.h": true,
+        "**/Drivers/CMSIS/Include/core_cm3.h": true,
+        "**/Drivers/CMSIS/Include/core_cm4.h": true,
+        "**/Drivers/CMSIS/Include/core_cm7.h": true,
+        "**/Drivers/CMSIS/Include/core_cmFunc.h": true,
+        "**/Drivers/CMSIS/Include/core_cmInstr.h": true,
+        "**/Drivers/CMSIS/Include/core_cmSimd.h": true,
+        "**/Drivers/CMSIS/Include/core_sc000.h": true,
+        "**/Drivers/CMSIS/Include/core_sc300.h": true,
+
+        "**/Other": true,
+    }
+}

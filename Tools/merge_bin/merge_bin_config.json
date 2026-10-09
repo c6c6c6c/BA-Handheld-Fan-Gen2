@@ -1,0 +1,75 @@
+{
+    "flash-addr": "0x08000000",
+    "flash-size": "0x10000",
+    "header":
+    {
+        "little-endian": true,
+        "size"         : "128",
+        "data"         : 
+        {
+            "type":
+            {
+                "size"      : 4,
+                "value"     : "0x55490000",
+                "source"    : "constant"
+            },
+            "crc32":
+            {
+                "size"      : 4,
+                "source"    : "function",
+                "function"  : "crc32",
+                "calculate" : "head_without_crc32"
+            }
+        }
+    },
+    "output-file": 
+    [
+        {
+            "name"              : "../../Project/Output/D940v2_firmware.bin",
+            "all-fill"          : true,
+            "fill-char"         : "0xFF",
+            "merge-file":
+            [
+                {
+                    "name"      : "boot",
+                    "file"      : "../../Project/Output/D940v2_boot.bin",
+                    "start-addr": "0x08000000",
+                    "size"      : "0x4000",
+                    "optional"  : false
+                },
+                {
+                    "name"      : "app",
+                    "file"      : "../../Project/Output/D940v2_app.bin",
+                    "start-addr": "last merge end",
+                    "size"      : "0xBA80",
+                    "optional"  : false
+                }
+            ],
+            "byte-writing":
+            [
+                {
+                    "name": "ota_state",
+                    "addr": "0x0800FF80",
+                    "size": "1",
+                    "data": "0x02"
+                }
+            ]
+        },
+        {
+            "name"      : "../../Project/Output/D940v2_upgrade.bin",
+            "handle"    : "header",
+            "merge-file":
+            [
+                {
+                    "name"      : "app",
+                    "file"      : "../../Project/Output/D940v2_app.bin",
+                    "start-addr": "0x08004000",
+                    "size"      : "0xBA80",
+                    "optional"  : false
+                }
+            ]
+        }
+    ]
+
+}
+
