@@ -1,66 +1,44 @@
 /**
  ***********************************************************************************************************************
- * @file    bsp_tim1.h
- * @brief   TIM1定时器底层驱动接口定义
+ * @file    bsp_pga2.h
+ * @brief   OPA2/PGA2 底层驱动接口定义
  * @author  Leo Chen
  * @version 1.0.0
- * @date    2026-08-18
+ * @date    2026-10-10
  ***********************************************************************************************************************
  * @copyright Copyright (c) 1999-2025 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
  ***********************************************************************************************************************
  */
 
-#ifndef __BSP_TIM1_H
-#define __BSP_TIM1_H
+#ifndef _BSP_PGA2_H_
+#define _BSP_PGA2_H_
 
 #include "main.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
-#define BSP_TIM1                             TIM1                                                 // TIM1定时器外设
-#define BSP_TIM1_CLOCK_EN()                  LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_TIM1)   // 使能TIM1时钟
-#define BSP_TIM1_CLOCK_DIS()                 LL_APB1_GRP2_DisableClock(LL_APB1_GRP2_PERIPH_TIM1)  // 关闭TIM1时钟
-#define BSP_TIM1_SAMPLE_FREQUENCY_HZ         1000U                                                // ADC触发采样频率，单位Hz
 
 /* Function ----------------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
-//  Function   : bsp_tim1_Init
-//  Description: 初始化TIM1定时器
-//  Param      : 无
-//  Return     : 无
-//  Others     : 配置TIM1按照设定采样频率产生TRGO事件，用于触发ADC转换
-//  Author     : Leo Chen 2026-08-18
+//  Function   : bsp_pga2_Init
+//  Description: 初始化 OPA2/PGA2
+//  Param      : None
+//  Return     : None
+//  Others     : OPA2 配置为 16 倍 PGA 增益和 VCC/2 偏置，输出通过内部通路
+//               映射至 ADC 的 LL_ADC_CHANNEL_OPA2
+//  Author     : Chen Liang 2026-10-10
 *******************************************************************************/
-void bsp_tim1_Init(void);
+void bsp_pga2_Init(void);
 
 /*******************************************************************************
-//  Function   : bsp_tim1_Deinit
-//  Description: 反初始化TIM1定时器
-//  Param      : 无
-//  Return     : 无
-//  Others     : 停止TIM1并关闭定时器外设时钟
-//  Author     : Leo Chen 2026-08-18
+//  Function   : bsp_pga2_Deinit
+//  Description: 反初始化 OPA2/PGA2
+//  Param      : None
+//  Return     : None
+//  Others     : 关闭并复位 OPA2，关闭外设时钟，同时将 PGA2 输入引脚配置为
+//               无上下拉模拟模式，以降低休眠状态下的引脚功耗
+//  Author     : Chen Liang 2026-10-10
 *******************************************************************************/
-void bsp_tim1_Deinit(void);
+void bsp_pga2_Deinit(void);
 
-/*******************************************************************************
-//  Function   : bsp_tim1_Start
-//  Description: 启动TIM1定时器
-//  Param      : 无
-//  Return     : 无
-//  Others     : 启动后按照设定频率周期产生TRGO事件触发ADC采样
-//  Author     : Leo Chen 2026-08-18
-*******************************************************************************/
-void bsp_tim1_Start(void);
-
-/*******************************************************************************
-//  Function   : bsp_tim1_Stop
-//  Description: 停止TIM1定时器
-//  Param      : 无
-//  Return     : 无
-//  Others     : 停止定时器计数，同时停止周期ADC触发
-//  Author     : Leo Chen 2026-08-18
-*******************************************************************************/
-void bsp_tim1_Stop(void);
-
-#endif /* __BSP_TIM1_H */
+#endif /* _BSP_PGA2_H_ */

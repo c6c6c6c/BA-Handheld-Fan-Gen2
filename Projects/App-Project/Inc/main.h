@@ -45,6 +45,8 @@ extern "C" {
 #include "py32f032_ll_utils.h"
 #include "py32f032_ll_pwr.h"
 #include "py32f032_ll_gpio.h"
+#include "py32f032_ll_exti.h"
+#include "py32f032_ll_uart.h"
 
 
 #if defined(USE_FULL_ASSERT)

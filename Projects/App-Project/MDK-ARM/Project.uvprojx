@@ -493,6 +493,26 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_gpio.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_uart1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_uart1.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_pga2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_pga2.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

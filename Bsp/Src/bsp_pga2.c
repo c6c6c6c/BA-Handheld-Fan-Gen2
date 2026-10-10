@@ -1,110 +1,99 @@
 /**
  ***********************************************************************************************************************
- * @file    bsp_tim1.c
- * @brief   TIM1 BSP.
+ * @file    bsp_pga2.c
+ * @brief   OPA2/PGA2 底层驱动实现
  * @author  Leo Chen
  * @version 1.0.0
- * @date    2026-08-18
+ * @date    2026-10-10
  ***********************************************************************************************************************
  * @copyright Copyright (c) 1999-2025 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
  ***********************************************************************************************************************
  */
-#include "bsp_tim1.h"
+
+/* Includes ----------------------------------------------------------------------------------------------------------*/
+#include "bsp_pga2.h"
+#include "py32f032_ll_opa.h"
+
+
+/* Private function --------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
-//  Function   : bsp_tim1_GetClockHz
-//  Description: Get TIM1 clock frequency
-//  Param      : None
-//  Return     : TIM1 clock frequency, unit: Hz
-//  Others     : None
-//  Author     : Chen Liang 2026-08-18
-*******************************************************************************/
-static uint32_t bsp_tim1_GetClockHz(void)
-{
-    SystemCoreClockUpdate();
-    return SystemCoreClock;
-}
-
-/*******************************************************************************
-//  Function   : bsp_tim1_Init
-//  Description: Initialize TIM1
+//  Function   : bsp_pga2_io_config
+//  Description: 初始化 PGA2 输入引脚
 //  Param      : None
 //  Return     : None
-//  Others     : TIM1 update event outputs TRGO at 2kHz for ADC trigger
-//  Author     : Chen Liang 2026-08-18
+//  Others     : PB3 配置为 PGA2_INP，PA15 配置为 PGA2_INN，均使用模拟模式
+//  Author     : Chen Liang 2026-10-10
 *******************************************************************************/
-void bsp_tim1_Init(void)
+static void bsp_pga2_io_config(void)
 {
-    LL_TIM_InitTypeDef TIM_InitStruct = {0};
-    uint32_t TimerClockHz;
-    uint32_t Prescaler;
-    uint32_t AutoReload;
+    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
+    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
 
-    BSP_TIM1_CLOCK_EN();
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_3, LL_GPIO_MODE_ANALOG);
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_15, LL_GPIO_MODE_ANALOG);
+}
 
-    TimerClockHz = bsp_tim1_GetClockHz();
-    Prescaler = (TimerClockHz / 1000000U);
-    if (Prescaler > 0U)
-    {
-        Prescaler--;
-    }
+/* Exported function -------------------------------------------------------------------------------------------------*/
 
-    AutoReload = (1000000U / BSP_TIM1_SAMPLE_FREQUENCY_HZ);
-    if (AutoReload > 0U)
-    {
-        AutoReload--;
-    }
+/*******************************************************************************
+//  Function   : bsp_pga2_Init
+//  Description: 初始化 OPA2/PGA2
+//  Param      : None
+//  Return     : None
+//  Others     : PB3、PA15 分别作为 PGA2 正、负输入；OPA2 配置为 PGA 模式，
+//               增益设置为 16 倍，偏置电压设置为 VCC/2；关闭外部输出后，
+//               OPA2 输出通过内部通路映射至 ADC 的 LL_ADC_CHANNEL_OPA2
+//  Author     : Chen Liang 2026-10-10
+*******************************************************************************/
+void bsp_pga2_Init(void)
+{
+    bsp_pga2_io_config();
 
-    TIM_InitStruct.Prescaler         = Prescaler;
-    TIM_InitStruct.CounterMode       = LL_TIM_COUNTERMODE_UP;
-    TIM_InitStruct.Autoreload        = AutoReload;
-    TIM_InitStruct.ClockDivision     = LL_TIM_CLOCKDIVISION_DIV1;
-    TIM_InitStruct.RepetitionCounter = 0U;
-    LL_TIM_Init(BSP_TIM1, &TIM_InitStruct);
+    /* 使能 OPA2 外设时钟，并在修改工作参数前保持 OPA2 关闭。 */
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_OPA2);
+    LL_OPA_Disable(OPA2);
 
-    LL_TIM_SetTriggerOutput(BSP_TIM1, LL_TIM_TRGO_UPDATE);
-    LL_TIM_ClearFlag_UPDATE(BSP_TIM1);
+    /* 配置 OPA2 为同相 PGA 模式，增益设置为 16 倍。 */
+    LL_OPA_SetFunctionalMode(OPA2, LL_OPA_MODE_PGA);
+    LL_OPA_SetPGAGain(OPA2, LL_OPA_PGA_GAIN_16);
+
+    /*
+     * 使能内部偏置并选择 VCC/2。
+     * 当前厂商 LL_OPA_SetBiasVoltage() 固定访问 OPA1，不能用于 OPA2，
+     * 因此在此直接配置 OPA2 的 OPA_VBIAS 位。
+     */
+    LL_OPA_EnableBiasSelection(OPA2);
+    LL_OPA_SetBiasVoltage(OPA2,LL_OPA_BIASVOLTAGE_VCC_2);
+
+    /*
+     * OPA2 输出由芯片内部硬连线映射至 ADC 的 LL_ADC_CHANNEL_OPA2。
+     * 关闭外部输出，避免占用 PB4/PGA2_OUT 引脚。
+     */
+    LL_OPA_DisableExternalOutput(OPA2);
+
+    /* 完成全部参数配置后使能 OPA2。 */
+    LL_OPA_Enable(OPA2);
 }
 
 /*******************************************************************************
-//  Function   : bsp_tim1_Deinit
-//  Description: Deinitialize TIM1
+//  Function   : bsp_pga2_Deinit
+//  Description: 反初始化 OPA2/PGA2
 //  Param      : None
 //  Return     : None
-//  Others     : None
-//  Author     : Chen Liang 2026-08-18
+//  Others     : 关闭 OPA2，复位 OPA2 外设寄存器并关闭外设时钟；PB3、PA15
+//               配置为无上下拉模拟模式，以降低休眠状态下的引脚功耗
+//  Author     : Chen Liang 2026-10-10
 *******************************************************************************/
-void bsp_tim1_Deinit(void)
+void bsp_pga2_Deinit(void)
 {
-    bsp_tim1_Stop();
-    BSP_TIM1_CLOCK_DIS();
+    LL_OPA_Disable(OPA2);
+
+    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_OPA2);
+    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_OPA2);
+    LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_OPA2);
 }
 
-/*******************************************************************************
-//  Function   : bsp_tim1_Start
-//  Description: Start TIM1 counter
-//  Param      : None
-//  Return     : None
-//  Others     : Start 2kHz TRGO output
-//  Author     : Chen Liang 2026-08-18
-*******************************************************************************/
-void bsp_tim1_Start(void)
-{
-    LL_TIM_SetCounter(BSP_TIM1, 0U);
-    LL_TIM_ClearFlag_UPDATE(BSP_TIM1);
-    LL_TIM_EnableCounter(BSP_TIM1);
-}
 
-/*******************************************************************************
-//  Function   : bsp_tim1_Stop
-//  Description: Stop TIM1 counter
-//  Param      : None
-//  Return     : None
-//  Others     : Stop TRGO output
-//  Author     : Chen Liang 2026-08-18
-*******************************************************************************/
-void bsp_tim1_Stop(void)
-{
-    LL_TIM_DisableCounter(BSP_TIM1);
-    LL_TIM_ClearFlag_UPDATE(BSP_TIM1);
-}
+PB6  TIM1_CH3
+PA3  TIM1_CH1

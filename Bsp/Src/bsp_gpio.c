@@ -130,6 +130,18 @@ void bsp_gpio_Init(void)
      */
     LL_GPIO_ResetOutputPin(STANDBY_PORT, STANDBY_PIN);
     SET_GPIO_OUTPUT_MODE(STANDBY_PORT, STANDBY_PIN, LL_GPIO_OUTPUT_PUSHPULL);
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+    /* 风机控制 GPIO                                                                                                  */
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    /*
+     * FAN CTRL：
+     * 用于控制风机GND连接。
+     * 正常工作状态下默认输出低电平。
+     */
+    LL_GPIO_ResetOutputPin(FAN_CTRL_PORT, FAN_CTRL_PIN);
+    SET_GPIO_OUTPUT_MODE(FAN_CTRL_PORT, FAN_CTRL_PIN, LL_GPIO_OUTPUT_PUSHPULL);
 }
 
 
@@ -203,6 +215,17 @@ void gpio_sleep_open(void)
      *
      * 根据实测，该状态可降低待机电流，
      * 待机电流约为 210 uA。
+     */
+    LL_GPIO_SetOutputPin(STANDBY_PORT, STANDBY_PIN);
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+    /* 风机控制                                                                                                    */
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    /*
+     * 休眠状态下将 FAN CTRL 设置为低电平。
+     *
+     * 风机GND连接将连接至弱地减小电流
      */
     LL_GPIO_SetOutputPin(STANDBY_PORT, STANDBY_PIN);
 }

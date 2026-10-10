@@ -1,7 +1,7 @@
 /**
  ***********************************************************************************************************************
  * @file    bsp_exti.h
- * @brief   TIM1定时器底层驱动接口定义
+ * @brief   EXTI 外部中断及低功耗唤醒接口定义
  * @author  Leo Chen
  * @version 1.0.0
  * @date    2026-08-18
@@ -17,18 +17,51 @@
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
-/* 睡眠唤醒 - Fan按键 -------------------------------------------------------------------------------------------------*/
-#define FAN_SW_EXTI_LINE               LL_EXTI_LINE_8   
+/**
+ * @brief 风扇按键睡眠唤醒 EXTI 配置
+ *
+ * FAN_SW 使用 PA8，对应 EXTI Line 8。
+ * 系统休眠期间检测按键有效边沿，用于唤醒 MCU。
+ */
+#define FAN_SW_EXTI_LINE               LL_EXTI_LINE_8
 #define FAN_SW_EXTI_TRIGGER            LL_EXTI_TRIGGER_RISING
 #define FAN_SW_EXTI_CONFIG_PORT        LL_EXTI_CONFIG_PORTA
 #define FAN_SW_EXTI_CONFIG_LINE        LL_EXTI_CONFIG_LINE8
 
-/* 睡眠唤醒 - MIST按键 -------------------------------------------------------------------------------------------------*/
-#define MIST_SW_EXTI_LINE              LL_EXTI_LINE_9   
+
+/**
+ * @brief 喷雾按键睡眠唤醒 EXTI 配置
+ *
+ * MIST_SW 使用 PA9，对应 EXTI Line 9。
+ * 系统休眠期间检测按键有效边沿，用于唤醒 MCU。
+ */
+#define MIST_SW_EXTI_LINE              LL_EXTI_LINE_9
 #define MIST_SW_EXTI_TRIGGER           LL_EXTI_TRIGGER_RISING
 #define MIST_SW_EXTI_CONFIG_PORT       LL_EXTI_CONFIG_PORTA
 #define MIST_SW_EXTI_CONFIG_LINE       LL_EXTI_CONFIG_LINE9
 
-/* Function ----------------------------------------------------------------------------------------------------------*/
 
-#endif /* __BSP_TIM1_H */
+/**
+ * @brief USB 插入唤醒 EXTI 配置
+ *
+ * USB_IN 用于检测 USB 输入状态。
+ * USB 插入后信号产生上升沿，通过 EXTI 唤醒 MCU。
+ */
+#define USB_IN_EXTI_LINE               LL_EXTI_LINE_10
+#define USB_IN_EXTI_TRIGGER            LL_EXTI_TRIGGER_RISING
+#define USB_IN_EXTI_CONFIG_PORT        LL_EXTI_CONFIG_PORTA
+#define USB_IN_EXTI_CONFIG_LINE        LL_EXTI_CONFIG_LINE10
+
+
+/* Function ----------------------------------------------------------------------------------------------------------*/
+/*******************************************************************************
+//  Function   : bsp_exti_Init
+//  Description: 初始化板级 EXTI
+//  Param      : None
+//  Return     : None
+//  Others     : 配置按键低功耗唤醒及 USB 插入中断/唤醒功能
+//  Author     : Chen Liang 2026-08-18
+*******************************************************************************/
+void bsp_exti_Init(void);
+
+#endif /* __BSP_EXTI_H */
