@@ -38,7 +38,7 @@
         "**/Drivers/CMSIS/Include/core_sc000.h": true,
         "**/Drivers/CMSIS/Include/core_sc300.h": true,
 
-        "**/Other": true,
+        //"**/Other": true,
     },
     "search.exclude": {
         //"**Project/App-Project": true,

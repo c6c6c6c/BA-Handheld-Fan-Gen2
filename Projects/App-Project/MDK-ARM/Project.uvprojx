@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>PY32F032x8,USE_FULL_LL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base</IncludePath>
+              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -487,6 +487,13 @@
         </Group>
         <Group>
           <GroupName>Bsp</GroupName>
+          <Files>
+            <File>
+              <FileName>bsp_gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_gpio.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>Middleware/Common</GroupName>
