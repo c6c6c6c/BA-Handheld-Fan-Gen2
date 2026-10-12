@@ -15,6 +15,16 @@
 
 
 /*******************************************************************************
+//  Function   : bsp_exti_usb_Callback
+//  Description: usb 唤醒中断处理
+//  Param      : None
+//  Return     : None
+//  Others     : 弱定义函数，可由应用层重写；回调中应及时读取捕获值
+//  Author     : Chen Liang 2026-08-18
+*******************************************************************************/
+__weak void bsp_exti_usb_Callback(void){}
+
+/*******************************************************************************
 //  Function   : bsp_exti_sleep_Init
 //  Description: 初始化低功耗睡眠唤醒 EXTI
 //  Param      : None
@@ -149,8 +159,8 @@ void EXTI4_15_IRQHandler(void)
          *
          * 如果不清除，退出中断后可能立即再次进入中断。
          */
+        bsp_exti_usb_Callback();
         LL_EXTI_ClearFlag(USB_IN_EXTI_LINE);
-
         /*
          * USB 插入事件处理。
          *

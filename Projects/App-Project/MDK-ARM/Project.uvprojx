@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>PY32F032x8,USE_FULL_LL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\fan</IncludePath>
+              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\fan;..\..\..\Middleware\bms_ctrl</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -546,8 +546,18 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Middleware/Common</GroupName>
+          <GroupName>Middleware/common</GroupName>
           <Files>
+            <File>
+              <FileName>fan.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\fan\fan.c</FilePath>
+            </File>
+            <File>
+              <FileName>button.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\button\button.c</FilePath>
+            </File>
             <File>
               <FileName>timer_base.c</FileName>
               <FileType>1</FileType>
@@ -558,15 +568,35 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
             </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middleware/bms_ctrl</GroupName>
+          <Files>
             <File>
-              <FileName>fan.c</FileName>
+              <FileName>bms_ctrl.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\common\fan\fan.c</FilePath>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_ctrl.c</FilePath>
             </File>
             <File>
-              <FileName>button.c</FileName>
+              <FileName>bms_protect.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\common\button\button.c</FilePath>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_protect.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middleware/spray_track</GroupName>
+          <Files>
+            <File>
+              <FileName>spray_track.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\spray_track\spray_track.c</FilePath>
+            </File>
+            <File>
+              <FileName>spray_track_private.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\spray_track\spray_track_private.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -587,6 +617,23 @@
         </Group>
         <Group>
           <GroupName>Doc</GroupName>
+          <Files>
+            <File>
+              <FileName>项目日志.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Doc\项目日志.md</FilePath>
+            </File>
+            <File>
+              <FileName>芯片资源说明.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Doc\芯片资源说明.md</FilePath>
+            </File>
+            <File>
+              <FileName>README.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\README.md</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>::CMSIS</GroupName>
