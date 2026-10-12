@@ -151,7 +151,7 @@ static void bsp_adc_rank_config(void)
      * Rank4 -> USB
      * Rank5 -> NTC
      * Rank6 -> PGA2
-     * Rank6 -> VREFINT
+     * Rank7 -> VREFINT
      *
      * 注意：
      * 此处 Rank 顺序必须与 adc_Channel_t 枚举顺序保持一致，
@@ -243,7 +243,7 @@ static void bsp_adc_dma_config(void)
 //  Description: 初始化 ADC 模块
 //  Param      : None
 //  Return     : None
-//  Others     : ADC 默认使用 12 bit、右对齐、TIM1 TRGO 外部触发、6 Rank 扫描模式
+//  Others     : ADC 默认使用 12 bit、右对齐、TIM3 TRGO 外部触发、7 Rank 扫描模式
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
 void bsp_adc_Init(void)
@@ -274,7 +274,7 @@ void bsp_adc_Init(void)
     /* -------------------------------------------------------------------------------------------------------------- */
 
     /*
-     * 使用 TIM1 TRGO 作为规则组外部触发源。
+     * 使用 TIM3 TRGO 作为规则组外部触发源。
      *
      * 每次 TIM1 产生 TRGO 后，
      * ADC 按 Rank1 -> Rank7 的顺序完成一次扫描。
@@ -392,7 +392,7 @@ void bsp_adc_Deinit(void)
 //  Description: 启动 ADC 采样
 //  Param      : None
 //  Return     : None
-//  Others     : 完成 ADC 校准、使能 ADC、中断/DMA配置，并等待 TIM1 TRGO 触发转换
+//  Others     : 完成 ADC 校准、使能 ADC、中断/DMA配置，并等待 TIM3 TRGO 触发转换
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
 void bsp_adc_Start(void)
@@ -544,8 +544,7 @@ void bsp_adc_Start(void)
     LL_DMA_ClearFlag_TE1(DMA1);
 
     /* 重新开启 DMA Channel。 */
-    LL_DMA_EnableChannel(DMA1,
-                         LL_DMA_CHANNEL_1);
+    LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_1);
 
 #else
 
@@ -568,7 +567,7 @@ void bsp_adc_Start(void)
     /*
      * 使 ADC 规则组进入等待外部触发状态。
      *
-     * 真正的转换由 TIM1 TRGO 启动。
+     * 真正的转换由 TIM3 TRGO 启动。
      */
     LL_ADC_REG_StartConversion(ADC1);
 }
@@ -612,9 +611,7 @@ void bsp_adc_Stop(void)
      * ADC 已使能且当前正在转换，同时尚未执行停止操作时，
      * 请求 ADC 停止规则组转换。
      */
-    if ((LL_ADC_IsEnabled(ADC1) != 0U) &&
-        (LL_ADC_REG_IsConversionOngoing(ADC1) != 0U) &&
-        (LL_ADC_REG_IsStopConversionOngoing(ADC1) == 0U))
+    if ((LL_ADC_IsEnabled(ADC1) != 0U) && (LL_ADC_REG_IsConversionOngoing(ADC1) != 0U) && (LL_ADC_REG_IsStopConversionOngoing(ADC1) == 0U))
     {
         LL_ADC_REG_StopConversion(ADC1);
     }
@@ -686,8 +683,7 @@ void ADC_IRQHandler(void)
     /* ADC Overrun 异常                                                                                               */
     /* -------------------------------------------------------------------------------------------------------------- */
 
-    if ((LL_ADC_IsActiveFlag_OVR(ADC1) != RESET) &&
-        (LL_ADC_IsEnabledIT_OVR(ADC1) != RESET))
+    if ((LL_ADC_IsActiveFlag_OVR(ADC1) != RESET) && (LL_ADC_IsEnabledIT_OVR(ADC1) != RESET))
     {
         /* 清除 Overrun 标志。 */
         LL_ADC_ClearFlag_OVR(ADC1);
@@ -718,7 +714,7 @@ void ADC_IRQHandler(void)
          *
          * Rank 顺序：
          *
-         * MOTOR -> WH -> SW -> USB -> NTC -> PGA2
+         * MOTOR -> WH -> SW -> USB -> NTC -> PGA2 -> VREFINT
          */
         value = LL_ADC_REG_ReadConversionData12(ADC1);
 
@@ -742,7 +738,7 @@ void ADC_IRQHandler(void)
          *
          * 当前即：
          *
-         * Rank1 -> Rank2 -> Rank3 -> Rank4 -> Rank5 -> Rank6
+         * Rank1 -> Rank2 -> Rank3 -> Rank4 -> Rank5 -> Rank6 -> Rank7
          *
          * 已全部转换完成。
          */
@@ -751,7 +747,7 @@ void ADC_IRQHandler(void)
             LL_ADC_ClearFlag_EOS(ADC1);
 
             /*
-             * 下一次 TIM1 TRGO 触发时，
+             * 下一次 TIM3 TRGO 触发时，
              * ADC 将重新从 Rank1 开始转换。
              */
             s_adcConvChannel = (adc_Channel_t)0U;

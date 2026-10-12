@@ -538,6 +538,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_rcc.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_tim3.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_tim3.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
