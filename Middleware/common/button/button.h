@@ -44,8 +44,8 @@ static button_state_t NAME##_getIO()    \
  *********************************************************/ 
 typedef enum 
 { 
-		BUTTON_RELEASE = 0, 
-		BUTTON_PRESS 
+	BUTTON_RELEASE = 0, 
+	BUTTON_PRESS 
 } button_state_t; 
  
  
@@ -54,11 +54,10 @@ typedef enum
  *********************************************************/ 
 typedef enum 
 { 
-		BUTTON_ITEM_SW1 = 0, 
-		BUTTON_ITEM_SW2, 
-		BUTTON_ITEM_SW3, 
-		BUTTON_ITEM_POWER, 
-		BUTTON_ITEM_NUM 
+	BUTTON_ITEM_SW1 = 0, 
+	BUTTON_ITEM_SW2, 
+	BUTTON_ITEM_ADC, 
+	BUTTON_ITEM_NUM 
 } button_item_t; 
  
 /********************************************************* 
@@ -66,11 +65,11 @@ typedef enum
  *********************************************************/ 
 typedef enum 
 { 
-		BUTTON_EVENT_EMPTY, 
-		BUTTON_EVENT_SHORT_PRESS, 
-		BUTTON_EVENT_SHORT_PRESS_RELEASE, 
-		BUTTON_EVENT_LONG_PRESS_HOLD, 
-		BUTTON_EVENT_LONG_PRESS_RELEASE, 
+	BUTTON_EVENT_EMPTY, 
+	BUTTON_EVENT_SHORT_PRESS, 
+	BUTTON_EVENT_SHORT_PRESS_RELEASE, 
+	BUTTON_EVENT_LONG_PRESS_HOLD, 
+	BUTTON_EVENT_LONG_PRESS_RELEASE, 
 } button_event_t; 
  
 /********************************************************* 

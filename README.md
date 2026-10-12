@@ -139,3 +139,7 @@ BA_handheld_Fan_Gen2/
 3. 在 SysTick 或其他 1 ms 定时中断中维护系统时基，并调度各模块的周期任务；
 4. 按依赖关系逐步加入风扇、按键、显示、BMS 和 Modbus 模块；
 5. 完成功能集成后，再统一修正 BIN 生成、固件合并、J-Link 脚本和 VS Code 任务。
+
+PA11 -> TIM1_CH4   -> FAN FG
+PA3  -> TIM1_CH1   -> FAN PWM
+PB6  -> TIM16_CH1N -> WH  PWM

@@ -2,7 +2,7 @@
  *********************************************************************************************************************** 
  * @file    button.c 
  * @brief   按键管理模块，实现按键扫描、消抖、短按/长按事件识别及状态查询
- * @author  Su Jiawei 
+ * @author  Leo Chen
  * @version 1.0.0 
  * @date    2025-09-03 
  *********************************************************************************************************************** 
@@ -13,20 +13,17 @@
 /* Includes ----------------------------------------------------------------------------------------------------------*/ 
  
 #include "bsp_gpio.h" 
-#include "bsp_flash.h" 
-#include "bsp_timer.h" 
 #include "button.h" 
-#include "param.h" 
+#include "bsp_adc.h"
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/ 
 button_t buttonList[BUTTON_ITEM_NUM] = {0}; 
  
 /* Macro -------------------------------------------------------------------------------------------------------------*/ 
-/* 按键GPIO电平读取函数定义 */ 
-DEF_BTN_CTRL_FUNC(SW1,(LL_GPIO_ReadInputPort(SW1_PORT) & SW1_PIN)) 
-DEF_BTN_CTRL_FUNC(SW2,(LL_GPIO_ReadInputPort(SW2_PORT) & SW2_PIN)) 
-DEF_BTN_CTRL_FUNC(SW3,(LL_GPIO_ReadInputPort(SW3_PORT) & SW3_PIN)) 
-DEF_BTN_CTRL_FUNC(SW4,(LL_GPIO_ReadInputPort(SW4_PORT) & SW4_PIN)) 
+/* 按键读取函数定义 */ 
+DEF_BTN_CTRL_FUNC(SW1,(LL_GPIO_ReadInputPort(FAN_SW_PORT) & FAN_SW_PIN)) 
+DEF_BTN_CTRL_FUNC(SW2,(LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
+DEF_BTN_CTRL_FUNC(SW3,(ADCxConvertedDatas[ADC_CH_SW] > 2048)) 
  
  /*******************************************************************************
 //  Function   : button_all_passCallback
@@ -163,9 +160,7 @@ void button_Init(void)
 { 
     button_register(BUTTON_ITEM_SW1,   GET_BTN_CTRL_FUNC(SW1)); 
     button_register(BUTTON_ITEM_SW2,   GET_BTN_CTRL_FUNC(SW2)); 
-    button_register(BUTTON_ITEM_SW3,   GET_BTN_CTRL_FUNC(SW3)); 
-    button_register(BUTTON_ITEM_POWER, GET_BTN_CTRL_FUNC(SW4)); 
- 
+    button_register(BUTTON_ITEM_ADC,   GET_BTN_CTRL_FUNC(SW3)); 
 } 
 
 /******************************************************************************* 
@@ -254,9 +249,11 @@ void botton_ClrEvent(button_item_t Item)
 *******************************************************************************/ 
 uint8_t botton_getValue(void)
 {
-    uint8_t Val = 0;
-    Val |= ((buttonList[BUTTON_ITEM_SW2].currState == BUTTON_PRESS) << 0);
-    Val |= ((buttonList[BUTTON_ITEM_SW3].currState == BUTTON_PRESS) << 1);
-    Val |= ((buttonList[BUTTON_ITEM_POWER].currState == BUTTON_PRESS) << 2);
-    return Val;
+    uint8_t i,Val = 0;
+	
+	for(i = 0 ; i < BUTTON_ITEM_NUM ; i++)
+	{
+		Val |= ((buttonList[i].currState == BUTTON_PRESS) << i);
+	}
+	return Val;
 }

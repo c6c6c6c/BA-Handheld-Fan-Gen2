@@ -2,7 +2,7 @@
  *********************************************************************************************************************** 
  * @file    fan.c 
  * @brief   风扇控制模块，实现风扇档位控制、PWM输出、转速反馈检测及低电量降功率控制
- * @author  Su Jiawei 
+ * @author  Leo Chen
  * @version 1.0.0 
  * @date    2025-09-03 
  *********************************************************************************************************************** 
@@ -12,8 +12,7 @@
  
 /* Includes ----------------------------------------------------------------------------------------------------------*/ 
 #include "fan.h" 
-#include "bms.h" 
-#include "bsp_timer.h" 
+#include "bsp_tim1.h" 
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/ 
 
@@ -24,7 +23,7 @@
 #define FAN_FEEDBACK_CAPTURE_VALUE_MIN  (200) 
 
 /* 将反馈脉冲周期计数转换为风扇转速 */ 
-#define COUNT_TO_SPEED(n)               ((SYS_TIMER_FRE * 60UL) / n) 
+#define COUNT_TO_SPEED(n)               ((TIM1_SYS_TIMER_FRE * 60UL) / n) 
  
 /* Variables ---------------------------------------------------------------------------------------------------------*/ 
  
@@ -42,13 +41,6 @@ const uint16_t TABLE_FAN_PWM_DUTY_NORMAL[FAN_MODE_TYPE_NUM] =
     0, 120, 220, 380, 460, 600, 850, 
 }; 
  
-/********************************************************* 
- * Description: 低电量模式下各风扇档位PWM占空比表
- *********************************************************/ 
-const uint16_t TABLE_FAN_PWM_DUTY_LOW_POWER[FAN_MODE_TYPE_NUM] = 
-{ 
-    0, 120, 220, 380, 460, 530, 850, 
-}; 
  
 /******************************************************************************* 
 //  Function   : fan_IRQCallback 
@@ -58,10 +50,10 @@ const uint16_t TABLE_FAN_PWM_DUTY_LOW_POWER[FAN_MODE_TYPE_NUM] =
 //  Others     : 根据定时器计数值及输入捕获值计算相邻反馈脉冲周期，并换算风扇转速
 //  Author     : 陈亮 2026-06-06 
 *******************************************************************************/ 
-void fan_IRQCallback(void) 
+void bsp_tim1_ch4_inputCapture_Callback(void) 
 { 
-    fan.pulseVal  = bsp_timer_Count(); 
-    fan.nowCapVal = bsp_inputCapture_Count(); 
+    fan.pulseVal  = bsp_tim1_Count(); 
+    fan.nowCapVal = bsp_tim1_ch4_inputCapture_Count(); 
 		
 	if(fan.pulseVal != 0)
 	{
@@ -76,7 +68,7 @@ void fan_IRQCallback(void)
 		}
 		else
 		{
-			fan.pulseVal = (fan.nowCapVal + (SYS_TIMER_AUTORELOAD - fan.lastCapVal));
+			fan.pulseVal = (fan.nowCapVal + (TIM1_SYS_TIMER_FRE - fan.lastCapVal));
 		}				
 	}
     fan.lastCapVal = fan.nowCapVal; 
@@ -115,7 +107,6 @@ void fan_Init(void)
 *******************************************************************************/ 
 void fan_1ms_task(void) 
 { 
-    static bool flag_low_power = false; 
  
     if (fan.timeout < FAN_FEEDBACK_DETECT_TIME) 
     { 
@@ -131,41 +122,8 @@ void fan_1ms_task(void)
         fan.mode = FAN_MODE_0; 
     } 
  
-    if (fan.mode == FAN_MODE_5) 
-    { 
-        if (GetBatteryVoltage() > 3550) 
-        { 
-            flag_low_power = false; 
-        } 
-        else if (GetBatteryVoltage() <= 3500) 
-        { 
-            flag_low_power = true; 
-        } 
-    } 
-    else 
-    { 
-        if (GetBatteryVoltage() > 3350) 
-        { 
-            flag_low_power = false; 
-        } 
-        else if (GetBatteryVoltage() <= 3300) 
-        { 
-            flag_low_power = true; 
-        } 
-    } 
- 
-    if (fan.timeoutFlg) 
-    { 
-        bsp_pwm_setduty(TABLE_FAN_PWM_DUTY_LOW_POWER[FAN_MODE_0]); 
-    } 
-    else if (flag_low_power) 
-    { 
-        bsp_pwm_setduty(TABLE_FAN_PWM_DUTY_LOW_POWER[fan.mode]); 
-    } 
-    else 
-    { 
-        bsp_pwm_setduty(TABLE_FAN_PWM_DUTY_NORMAL[fan.mode]); 
-    } 
+    bsp_tim1_ch1_pwm_setduty(TABLE_FAN_PWM_DUTY_NORMAL[fan.mode]); 
+
 } 
  
 /******************************************************************************* 

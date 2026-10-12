@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>PY32F032x8,USE_FULL_LL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base</IncludePath>
+              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\fan</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -513,6 +513,31 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_pga2.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_tim1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_tim1.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_tim16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_tim16.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_wdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_wdg.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_rcc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_rcc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -527,6 +552,16 @@
               <FileName>common_port.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
+            </File>
+            <File>
+              <FileName>fan.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\fan\fan.c</FilePath>
+            </File>
+            <File>
+              <FileName>button.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\button\button.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -57,10 +57,10 @@ typedef enum
 /**
  * @brief ADC 外部触发源
  *
- * 使用 TIM1 TRGO 触发 ADC 规则组转换，
+ * 使用 TIM3 TRGO 触发 ADC 规则组转换，
  * 可用于实现固定周期 ADC 采样。
  */
-#define BSP_ADC_TRIGGER_SOURCE                  LL_ADC_REG_TRIG_EXT_TIM1_TRGO
+#define BSP_ADC_TRIGGER_SOURCE                  LL_ADC_REG_TRIG_EXT_TIM3_TRGO
 
 
 /* MOTOR ADC ---------------------------------------------------------------------------------------------------------*/
@@ -203,5 +203,5 @@ void bsp_adc_Start(void);
 *******************************************************************************/
 void bsp_adc_Stop(void);
 
-
+extern __IO uint32_t ADCxConvertedDatas[ADC_CH_NUM];
 #endif /* __BSP_ADC_H */

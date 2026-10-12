@@ -30,6 +30,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "bsp_tim1.h"
 
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -51,6 +52,9 @@ int main(void)
   /* System clock configuration */
   APP_SystemClockConfig();
 
+  /* 初始 M_PWM 高电平占空比为 0%，后续通过 PWM API 调整。 */
+  bsp_tim1_Init();
+
   /* infinite loop */
   while (1)
   {
@@ -64,28 +68,37 @@ int main(void)
   */
 static void APP_SystemClockConfig(void)
 {
-  /* Enable HSI */
-  LL_RCC_HSI_Enable();
-  while(LL_RCC_HSI_IsReady() != 1)
-  {
-  }
+    /* 升频前配置 Flash 等待周期：72 MHz 对应 2 个等待周期。 */
+    if (LL_SetFlashLatency(72000000U) != SUCCESS)
+    {
+        APP_ErrorHandler();
+        return;
+    }
 
-  /* Set AHB prescaler: HCLK = SYSCLK */
-  LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+    /* 开启 HSI，等待振荡器就绪。 */
+    LL_RCC_HSI_Enable();
+    while (LL_RCC_HSI_IsReady() != 1U)
+    {
+    }
 
-  /* Select HSISYS as system clock source */
-  LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSISYS);
-  while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSISYS)
-  {
-  }
+    /* HSI、AHB、APB 均不分频。 */
+    LL_RCC_SetHSIDiv(LL_RCC_HSI_DIV_1);
+    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
 
-  /* Set APB prescaler: PCLK = HCLK */
-  LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
-  LL_Init1msTick(72000000);
+    /* 使用芯片出厂校准值，将 HSI 实际频率设置为 72 MHz。 */
+    LL_RCC_HSI_SetCalibFreq(LL_RCC_HSICALIBRATION_72MHz);
 
-  /* Update the SystemCoreClock global variable(which can be updated also through SystemCoreClockUpdate function) */
-  LL_SetSystemCoreClock(72000000);
-  LL_SYSTICK_EnableIT();
+    /* 选择 HSISYS 作为系统时钟源。 */
+    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSISYS);
+    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSISYS)
+    {
+    }
+
+    /* 根据硬件寄存器更新软件频率，再配置 1 ms 系统节拍。 */
+    SystemCoreClockUpdate();
+    LL_Init1msTick(SystemCoreClock);
+    LL_SYSTICK_EnableIT();
 }
 
 /**

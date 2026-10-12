@@ -93,7 +93,3 @@ void bsp_pga2_Deinit(void)
     LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_OPA2);
     LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_OPA2);
 }
-
-
-PB6  TIM1_CH3
-PA3  TIM1_CH1

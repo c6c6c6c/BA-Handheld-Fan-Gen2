@@ -24,9 +24,7 @@
 //  Others     : 弱定义函数，可由应用层重写；回调中应及时读取接收数据
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-__weak void bsp_uart1_RxEventCallback(void)
-{
-}
+__weak void bsp_uart1_RxEventCallback(void){}
 
 /*******************************************************************************
 //  Function   : bsp_usart1_TxEventCallback
@@ -36,9 +34,7 @@ __weak void bsp_uart1_RxEventCallback(void)
 //  Others     : 弱定义函数，可由应用层重写；用于装载下一个待发送字节
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-__weak void bsp_uart1_TxEventCallback(void)
-{
-}
+__weak void bsp_uart1_TxEventCallback(void){}
 
 /*******************************************************************************
 //  Function   : bsp_usart1_ErrorEventCallback
@@ -48,9 +44,7 @@ __weak void bsp_uart1_TxEventCallback(void)
 //  Others     : 弱定义函数，可由应用层重写；用于处理奇偶校验、帧、溢出及 Break 错误
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-__weak void bsp_uart1_ErrorEventCallback(void)
-{
-}
+__weak void bsp_uart1_ErrorEventCallback(void){}
 
 
 /* Private function --------------------------------------------------------------------------------------------------*/
