@@ -627,9 +627,8 @@ bool bms_ctrl_RequestKey(bms_key_command_t command)
      *
      * Standby 命令不受该条件限制。
      */
-    if ((command != BMS_KEY_STANDBY) &&
-        (s_status.standbyRequested ||
-         !bms_protect_GetStatus()->dischargeAllowed))
+    if ((command != BMS_KEY_STANDBY) 
+    &&  (s_status.standbyRequested || !bms_protect_GetStatus()->dischargeAllowed))
     {
         return false;
     }
@@ -648,10 +647,7 @@ bool bms_ctrl_RequestKey(bms_key_command_t command)
      * Standby 使用长按时间，
      * 其他命令第一次按键使用短按时间。
      */
-    s_keyRemainingMs = (command == BMS_KEY_STANDBY) ?
-                       BMS_CTRL_KEY_LONG_MS :
-                       BMS_CTRL_KEY_SHORT_MS;
-
+    s_keyRemainingMs = (command == BMS_KEY_STANDBY) ? BMS_CTRL_KEY_LONG_MS : BMS_CTRL_KEY_SHORT_MS;
     s_status.keyBusy = true;
 
     /*

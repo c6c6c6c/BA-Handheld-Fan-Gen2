@@ -583,6 +583,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_protect.c</FilePath>
             </File>
+            <File>
+              <FileName>bms_soc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -355,7 +355,7 @@
  *
  * 当 batteryMv 低于配置的欠压触发阈值并持续达到确认时间后置位。
  */
-#define BMS_PROTECT_BATTERY_LOW     (1UL << BMS_PROTECT_BATTERY_LOW_INDEX)
+#define BMS_PROTECT_BATTERY_LOW      (1UL << BMS_PROTECT_BATTERY_LOW_INDEX)
 
 
 /**

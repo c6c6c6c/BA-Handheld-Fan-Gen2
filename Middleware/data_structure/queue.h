@@ -1,12 +1,12 @@
 /**
  ***********************************************************************************************************************
  * @file    queue.h
- * @brief   
+ * @brief   循环队列接口定义，提供队列初始化、清空、状态查询及数据入队/出队操作
  * @author  Su Jiawei
  * @version 1.0.0
- * @date    2024-1-25
+ * @date    2024-01-25
  ***********************************************************************************************************************
- * @copyright Copyright © 1999-2024 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
+ * @copyright Copyright (c) 1999-2024 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
  ***********************************************************************************************************************
  */
 
@@ -16,24 +16,104 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Typedef ----------- -----------------------------------------------------------------------------------------------*/
 
+/* Typedef -----------------------------------------------------------------------------------------------------------*/
+
+/**
+ * @brief 循环队列结构体
+ */
 typedef struct _QUEUE_STRUCT_TYPE
 {
-    uint8_t *Buffer;
-    uint16_t BufferSize;
-    uint16_t Head;
-    uint16_t Tail;
+    uint8_t  *Buffer;      /**< 队列数据缓冲区 */
+    uint16_t BufferSize;   /**< 缓冲区总长度，实际最大可存储 BufferSize - 1 字节 */
+    uint16_t Head;         /**< 当前数据读取位置 */
+    uint16_t Tail;         /**< 当前数据写入位置 */
 } queue_t;
 
-/* Function declaration ----------------------------------------------------------------------------------------------*/
 
-void     QueueInit   (queue_t *queue, uint8_t *buf, uint16_t len);
-void     QueueClean  (queue_t *queue);
-uint16_t QueueLength (queue_t *queue);
-uint8_t  IsQueueEmpty(queue_t *queue);
-uint8_t  IsQueueFull (queue_t *queue);
-uint16_t QueueDataIn (queue_t *queue, uint8_t *buf, uint16_t len);
+/* Function declarations ---------------------------------------------------------------------------------------------*/
+
+/*******************************************************************************
+//  Function   : QueueInit
+//  Description: 初始化循环队列
+//  Param      : queue - 队列对象
+//               buf   - 队列数据缓冲区
+//               len   - 缓冲区长度
+//  Return     : None
+//  Others     : 初始化时清空缓冲区，并复位 Head/Tail
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
+void QueueInit(queue_t *queue, uint8_t *buf, uint16_t len);
+
+
+/*******************************************************************************
+//  Function   : QueueClean
+//  Description: 清空循环队列
+//  Param      : queue - 队列对象
+//  Return     : None
+//  Others     : 仅复位 Head/Tail，不清除缓冲区中的原始数据
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
+void QueueClean(queue_t *queue);
+
+
+/*******************************************************************************
+//  Function   : QueueLength
+//  Description: 获取循环队列当前有效数据长度
+//  Param      : queue - 队列对象
+//  Return     : 当前未处理的数据字节数
+//  Others     : None
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
+uint16_t QueueLength(queue_t *queue);
+
+
+/*******************************************************************************
+//  Function   : IsQueueEmpty
+//  Description: 检查循环队列是否为空
+//  Param      : queue - 队列对象
+//  Return     : 1：队列为空；0：队列非空
+//  Others     : Head == Tail 时队列为空
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
+uint8_t IsQueueEmpty(queue_t *queue);
+
+
+/*******************************************************************************
+//  Function   : IsQueueFull
+//  Description: 检查循环队列是否已满
+//  Param      : queue - 队列对象
+//  Return     : 1：队列已满；0：队列未满
+//  Others     : 采用预留一个存储单元的方式区分队列满和队列空
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
+uint8_t IsQueueFull(queue_t *queue);
+
+
+/*******************************************************************************
+//  Function   : QueueDataIn
+//  Description: 向循环队列写入数据
+//  Param      : queue - 队列对象
+//               buf   - 待写入数据缓冲区
+//               len   - 请求写入的数据长度
+//  Return     : 实际写入的数据长度
+//  Others     : 队列满时停止写入，不覆盖未读取数据
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
+uint16_t QueueDataIn(queue_t *queue, uint8_t *buf, uint16_t len);
+
+
+/*******************************************************************************
+//  Function   : QueueDataOut
+//  Description: 从循环队列读取数据
+//  Param      : queue - 队列对象
+//               buf   - 接收数据缓冲区
+//               len   - 请求读取的数据长度
+//  Return     : 实际读取的数据长度
+//  Others     : 队列为空时停止读取
+//  Author     : Su Jiawei 2024-01-25
+*******************************************************************************/
 uint16_t QueueDataOut(queue_t *queue, uint8_t *buf, uint16_t len);
 
-#endif
+
+#endif /* _RING_QUEUE_H_ */

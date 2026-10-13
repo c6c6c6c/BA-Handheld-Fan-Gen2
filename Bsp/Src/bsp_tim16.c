@@ -14,10 +14,10 @@
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 /* 保存运行状态和千分比占空比，改变频率后按新的周期计数值重新计算 CCR1。 */
-static uint8_t s_tim16_initialized = 0U;
-static uint8_t s_tim16_running     = 0U;
-static uint16_t s_tim16_duty       = 0U;
-static uint32_t s_tim16_period     = 0U;
+static uint8_t  s_tim16_initialized = 0U;
+static uint8_t  s_tim16_running     = 0U;
+static uint16_t s_tim16_duty        = 0U;
+static uint32_t s_tim16_period      = 0U;
 
 /*******************************************************************************
 //  Function   : bsp_tim16_GetClockHz
