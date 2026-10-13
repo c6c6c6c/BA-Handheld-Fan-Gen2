@@ -108,7 +108,7 @@ do                                                               \
  * 用于控制 VIN 输入路径的开启和关闭。
  */
 #define BMS_VIN_EN_PORT                    GPIOB
-#define BMS_VIN_EN_PIN                     LL_GPIO_PIN_6
+#define BMS_VIN_EN_PIN                     LL_GPIO_PIN_5
 
 /**
  * @brief BMS VBAT 电池通路使能引脚
@@ -116,7 +116,7 @@ do                                                               \
  * 用于控制电池供电路径的开启和关闭。
  */
 #define BMS_VBAT_EN_PORT                   GPIOB
-#define BMS_VBAT_EN_PIN                    LL_GPIO_PIN_5
+#define BMS_VBAT_EN_PIN                    LL_GPIO_PIN_4
 
 /**
  * @brief BMS LED1 状态信号输入引脚

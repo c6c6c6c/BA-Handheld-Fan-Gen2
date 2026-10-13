@@ -14,7 +14,7 @@
 const spray_track_param_t g_sprayTrackParam =        // 追频算法只读常量参数表
 {
    .centerFrequencyHz  = 108000UL,  // 雾化片标称中心频率，单位Hz
-   .minimumFrequencyHz = 101000UL,   // 最大扫频下限，单位Hz
+   .minimumFrequencyHz = 101000UL,  // 最大扫频下限，单位Hz
    .maximumFrequencyHz = 115000UL,  // 最大扫频上限，单位Hz
    .coarseStepHz       = 1000UL,    // 粗扫步进，单位Hz
    .fineStepHz         = 50UL,      // 精扫及漂移跟踪步进，单位Hz
