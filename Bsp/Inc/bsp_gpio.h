@@ -131,8 +131,8 @@ do                                                               \
  *
  * 用于读取 BMS LED3 状态。
  */
-#define BMS_LED3_PORT                      GPIOF
-#define BMS_LED3_PIN                       LL_GPIO_PIN_1
+#define BMS_LED2_PORT                      GPIOF
+#define BMS_LED2_PIN                       LL_GPIO_PIN_1
 
 /**
  * @brief BMS USB 插入 状态信号输入引脚

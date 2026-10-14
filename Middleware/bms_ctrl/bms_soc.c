@@ -15,6 +15,7 @@
  */
 
 #include "bms_soc.h"
+#if BMS_MODULE_SOC_ENABLE
 
 
 /* Constant ----------------------------------------------------------------------------------------------------------*/
@@ -131,17 +132,17 @@ void bms_soc_default_config(BmsSocConfig *cfg, float capacity_ah)
         return;
     }
 	
-    cfg->capacity_ah              = capacity_ah;     /* 电池额定容量。库仑计量会根据该值将积分得到的 Ah 换算为 SOC。*/
-    cfg->rest_current_a           = 0.05f;           /* 静置状态最大允许电流。 |I| <= 50mA 时才可能被认为处于静置状态。*/
-    cfg->rest_time_s              = 1800.0f;         /* 静置持续时间。单位：s 当前设置 1800s = 30min。*/
-    cfg->rest_dvdt_v_per_s        = 0.002f;          /* 静置时允许的最大电压变化速率。单位：V/s 当前约允许 1Hz 采样时存在 2mV 左右的电压噪声。*/
-    cfg->ocv_correction_tau_s     = 600.0f;          /* OCV 修正时间常数。 单位：s. 静置状态下不会直接跳变到 OCV SOC，而是通过一阶缓慢修正减小显示突变。*/
-    cfg->full_voltage_v           = 4.19f;           /* 满充端点电压阈值。*/
-    cfg->full_terminate_current_a = 0.10f;           /* 满充终止电流阈值。充电电流绝对值小于该值时，配合满充电压判断是否达到充满状态。 */
-    cfg->empty_voltage_v          = 3.20f;           /* 空电端点电压阈值。*/
-    cfg->empty_min_discharge_a    = 0.10f;           /* 空电判定最小放电电流。防止静置时由于瞬时低电压误判为空电。*/
-    cfg->endpoint_hold_s          = 10.0f;           /* 满充 / 空电端点条件持续确认时间。*/
-    cfg->ocv_table                = default_ocv_soc; /* 默认 OCV-SOC 标定表。*/
+    cfg->capacity_ah              = capacity_ah;                             /* 电池额定容量。库仑计量会根据该值将积分得到的 Ah 换算为 SOC。*/
+    cfg->rest_current_a           = BMS_SOC_DEFAULT_REST_CURRENT_A;          /* 静置状态最大允许电流。 |I| <= 50mA 时才可能被认为处于静置状态。*/
+    cfg->rest_time_s              = BMS_SOC_DEFAULT_REST_TIME_S;             /* 静置持续时间。单位：s 当前设置 1800s = 30min。*/
+    cfg->rest_dvdt_v_per_s        = BMS_SOC_DEFAULT_REST_DVDT_V_PER_S;       /* 静置时允许的最大电压变化速率。单位：V/s 当前约允许 1Hz 采样时存在 2mV 左右的电压噪声。*/
+    cfg->ocv_correction_tau_s     = BMS_SOC_DEFAULT_CORRECTION_TAU_S;        /* OCV 修正时间常数。 单位：s. 静置状态下不会直接跳变到 OCV SOC，而是通过一阶缓慢修正减小显示突变。*/
+    cfg->full_voltage_v           = BMS_SOC_DEFAULT_FULL_VOLTAGE_V;          /* 满充端点电压阈值。*/
+    cfg->full_terminate_current_a = BMS_SOC_DEFAULT_FULL_TERMINATE_CURRENT_A;/* 满充终止电流阈值。充电电流绝对值小于该值时，配合满充电压判断是否达到充满状态。 */
+    cfg->empty_voltage_v          = BMS_SOC_DEFAULT_EMPTY_VOLTAGE_V;         /* 空电端点电压阈值。*/
+    cfg->empty_min_discharge_a    = BMS_SOC_DEFAULT_EMPTY_MIN_DISCHARGE_A;   /* 空电判定最小放电电流。防止静置时由于瞬时低电压误判为空电。*/
+    cfg->endpoint_hold_s          = BMS_SOC_DEFAULT_ENDPOINT_HOLD_S;         /* 满充 / 空电端点条件持续确认时间。*/
+    cfg->ocv_table                = default_ocv_soc;                         /* 默认 OCV-SOC 标定表。*/
 
     cfg->ocv_count = sizeof(default_ocv_soc) / sizeof(default_ocv_soc[0]);
 }
@@ -532,3 +533,4 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est,
 
     return event;
 }
+#endif /* BMS_MODULE_SOC_ENABLE */

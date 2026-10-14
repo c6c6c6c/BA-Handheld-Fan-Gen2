@@ -19,9 +19,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "bms_config.h"
 
 /* 表内 SOC 使用整数千分比，1000 表示 100%；估算器仍使用 0.0~1.0 浮点值。 */
-#define BMS_SOC_PERMILLE_FULL    1000U
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
@@ -88,6 +88,8 @@ typedef struct
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
+#if BMS_MODULE_SOC_ENABLE
+
 /*******************************************************************************
 //  Function   : bms_soc_default_config
 //  Description: 初始化 SOC 默认配置
@@ -140,4 +142,5 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est, float cell_voltage_v,
 float bms_soc_from_ocv(const BmsSocConfig *cfg, float voltage_v);
 
 
+#endif /* BMS_MODULE_SOC_ENABLE */
 #endif /* BMS_SOC_H */

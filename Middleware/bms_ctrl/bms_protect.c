@@ -16,27 +16,18 @@
  */
 
 #include "bms_protect.h"
+#if BMS_MODULE_PROTECT_ENABLE
 #include <string.h>
 
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
-/**
- * @brief 当前软件保护配置
- *
- * 初始化时由调用方传入，
- * 如果 bms_protect_Init(NULL)，则使用 BMS_PROTECT_DEFAULT_CONFIG。
- */
-static bms_protect_config_t s_config;
 
-
-/**
- * @brief 当前最新一组 BMS 采样数据
- *
- * 由 bms_protect_UpdateSample() 更新。
- */
-static bms_protect_sample_t s_sample;
-
+static bms_protect_config_t s_config;                /* 当前软件保护配置 */
+static bms_protect_sample_t s_sample;                /* 当前最新一组 BMS 采样数据 */
+static bms_protect_status_t s_status;
+static uint16_t s_confirm[BMS_PROTECT_ANALOG_COUNT]; /* @brief 每种模拟量保护的连续触发计时 */
+static uint16_t s_recover[BMS_PROTECT_ANALOG_COUNT]; /* 每种模拟量保护的连续恢复计时 */
 
 /**
  * @brief 当前软件保护状态
@@ -49,29 +40,7 @@ static bms_protect_sample_t s_sample;
  * - chargeAllowed     当前是否允许充电
  * - dischargeAllowed  当前是否允许放电
  */
-static bms_protect_status_t s_status;
 
-
-/**
- * @brief 每种模拟量保护的连续触发计时
- *
- * 数组下标与 BMS_PROTECT_xxx_INDEX 对应。
- *
- * 当触发条件持续满足时每 1ms 累加，
- * 达到 confirmMs 后正式置位故障。
- */
-static uint16_t s_confirm[BMS_PROTECT_ANALOG_COUNT];
-
-
-/**
- * @brief 每种模拟量保护的连续恢复计时
- *
- * 数组下标与 BMS_PROTECT_xxx_INDEX 对应。
- *
- * 当恢复条件持续满足时每 1ms 累加，
- * 达到 recoverMs 后清除 activeFaults 中对应故障位。
- */
-static uint16_t s_recover[BMS_PROTECT_ANALOG_COUNT];
 
 
 /**
@@ -834,3 +803,4 @@ const bms_protect_status_t *bms_protect_GetStatus(void)
 {
     return &s_status;
 }
+#endif /* BMS_MODULE_PROTECT_ENABLE */

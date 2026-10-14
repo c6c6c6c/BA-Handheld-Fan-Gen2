@@ -588,6 +588,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_soc.c</FilePath>
             </File>
+            <File>
+              <FileName>bms_key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_key.c</FilePath>
+            </File>
+            <File>
+              <FileName>bms_status.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_status.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

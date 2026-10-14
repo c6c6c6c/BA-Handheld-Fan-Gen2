@@ -105,11 +105,11 @@ void bsp_gpio_Init(void)
     SET_GPIO_INPUT_MODE(BMS_LED1_PORT, BMS_LED1_PIN, LL_GPIO_PULL_NO);
 
     /*
-     * BMS_LED3：
-     * BMS LED3 状态信号输入。
+     * BMS_LED2：
+     * BMS LED2 状态信号输入。
      * 不启用 MCU 内部上下拉，由外部 BMS 电路决定实际电平。
      */
-    SET_GPIO_INPUT_MODE(BMS_LED3_PORT, BMS_LED3_PIN, LL_GPIO_PULL_NO);
+    SET_GPIO_INPUT_MODE(BMS_LED2_PORT, BMS_LED2_PIN, LL_GPIO_PULL_NO);
 
     /*
      * BMS_USB_IN：

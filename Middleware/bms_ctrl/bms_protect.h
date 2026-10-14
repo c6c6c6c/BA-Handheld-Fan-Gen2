@@ -88,6 +88,8 @@ typedef struct
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
+#if BMS_MODULE_PROTECT_ENABLE
+
 /*******************************************************************************
 //  Function   : bms_protect_Init
 //  Description: 初始化 BMS 软件保护模块
@@ -154,4 +156,5 @@ void bms_protect_ClearLatched(uint32_t mask);
 const bms_protect_status_t *bms_protect_GetStatus(void);
 
 
+#endif /* BMS_MODULE_PROTECT_ENABLE */
 #endif /* _BMS_PROTECT_H_ */

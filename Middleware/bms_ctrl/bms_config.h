@@ -7,7 +7,7 @@
  * @date    2026-10-13
  ***********************************************************************************************************************
  * @note
- *          1. 本文件只负责 BMS 控制模块的板级 IO 适配及默认参数定义。
+ *          1. 本文件统一配置 BMS 模块使能、板级 IO 适配及默认参数。
  *          2. 实际 GPIO 引脚映射统一复用 bsp_gpio.h，避免板级初始化与业务层操作使用不同引脚。
  *          3. VIN_EN / VBAT_EN / KEY 等控制均通过宏封装，业务层不直接操作 GPIO。
  *          4. 软件保护阈值默认未配置，启用前必须根据产品实际参数填写。
@@ -19,35 +19,37 @@
 #ifndef _BMS_CONFIG_H_
 #define _BMS_CONFIG_H_
 
-#include "bsp_gpio.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+/* Module Enable -----------------------------------------------------------------------------------------------------*/
+/* 0：不编译模块实现；1：编译模块。允许工程 -D 覆盖，模块关闭后无隐藏链接依赖。 */
+#ifndef BMS_MODULE_CTRL_ENABLE
+#define BMS_MODULE_CTRL_ENABLE       1 /**< 通路控制与可选 KEY/STATUS/PROTECT 调度 */
+#endif
+#ifndef BMS_MODULE_KEY_ENABLE
+#define BMS_MODULE_KEY_ENABLE        1 /**< IP5326 KEY 短按、长按、双击状态机 */
+#endif
+#ifndef BMS_MODULE_STATUS_ENABLE
+#define BMS_MODULE_STATUS_ENABLE     1 /**< USB 插拔去抖与 IP5326 LED 模式识别 */
+#endif
+#ifndef BMS_MODULE_PROTECT_ENABLE
+#define BMS_MODULE_PROTECT_ENABLE    1 /**< 软件保护；关闭后通路不受软件保护联锁 */
+#endif
+#ifndef BMS_MODULE_SOC_ENABLE
+#define BMS_MODULE_SOC_ENABLE        1 /**< SOC 估算；由上层提交带实际 dt 的电压/电流样本 */
+#endif
+
+
+typedef enum
+{
+    BMS_POWER_IDLE = 0,
+    BMS_POWER_CHARGING,
+    BMS_POWER_DISCHARGING
+} bms_power_state_t;
 
 
 /* IO Adapt ----------------------------------------------------------------------------------------------------------*/
-
-/**
- * @brief IP5326 KEY 控制接口
- *
- * 硬件连接：
- *
- * MCU PF3
- *   ↓
- * Q4 NPN
- *   ↓
- * IP5326 KEY
- *
- * MCU 输出高电平时 Q4 导通，将 IP5326 KEY 拉低，
- * 相当于模拟一次实体按键“按下”。
- *
- * MCU 输出低电平时 Q4 截止，释放 IP5326 KEY，
- * 相当于模拟实体按键“释放”。
- *
- * 因此这里的业务逻辑为：
- *
- * BMS_IO_KEY_PRESS()   -> MCU KEY 输出高
- * BMS_IO_KEY_RELEASE() -> MCU KEY 输出低
- */
-#define BMS_IO_KEY_PRESS()          LL_GPIO_SetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
-#define BMS_IO_KEY_RELEASE()        LL_GPIO_ResetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
 
 
 /**
@@ -138,28 +140,12 @@
 #define BMS_IO_USB_IS_PRESENT()     (LL_GPIO_IsInputPinSet(BMS_USB_IN_PORT, BMS_USB_IN_PIN) != 0U)
 
 
-/**
- * @brief IP5326 LED1 原始电平读取
- *
- * 返回 MCU 采集到的 LED1 引脚当前逻辑电平。
- *
- * @note
- * 返回值只代表 GPIO 高低状态，
- * 不直接等价于电池剩余百分比。
- */
-#define BMS_IO_LED1_IS_HIGH()       (LL_GPIO_IsInputPinSet(BMS_LED1_PORT, BMS_LED1_PIN) != 0U)
 
 
-/**
- * @brief IP5326 LED3 原始电平读取
- *
- * 返回 MCU 采集到的 LED3 引脚当前逻辑电平。
- *
- * @note
- * 当前硬件仅采集 LED1 / LED3，
- * 不应直接套用 IP5326 完整四灯电量显示表。
- */
-#define BMS_IO_LED3_IS_HIGH()       (LL_GPIO_IsInputPinSet(BMS_LED3_PORT, BMS_LED3_PIN) != 0U)
+/* LED 点亮时 GPIO 的有效电平；各 LED 读取接口在本文件集中定义。 */
+#define BMS_STATUS_LED_ON_IS_HIGH   1U
+
+
 
 
 /**
@@ -182,13 +168,49 @@
  * @note
  * CTL 当前不参与 bms_ctrl 自动业务控制，因此不纳入检查。
  */
+#define BMS_IO_KEY_IS_READY() \
+    (LL_GPIO_GetPinMode(BMS_KEY_PORT, BMS_KEY_PIN) == LL_GPIO_MODE_OUTPUT)
+#define BMS_IO_CTRL_IS_READY() \
+    ((LL_GPIO_GetPinMode(BMS_VIN_EN_PORT,  BMS_VIN_EN_PIN)  == LL_GPIO_MODE_OUTPUT) && \
+     (LL_GPIO_GetPinMode(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN) == LL_GPIO_MODE_OUTPUT))
+#if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_1_LED
+#define BMS_IO_STATUS_IS_READY() \
+    ((LL_GPIO_GetPinMode(BMS_USB_IN_PORT, BMS_USB_IN_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED1_PORT, BMS_LED1_PIN) == LL_GPIO_MODE_INPUT))
+#elif BMS_STATUS_LED_MODE == BMS_STATUS_MODE_2_LED
+#define BMS_IO_STATUS_IS_READY() \
+    ((LL_GPIO_GetPinMode(BMS_USB_IN_PORT, BMS_USB_IN_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED1_PORT, BMS_LED1_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED3_PORT, BMS_LED3_PIN) == LL_GPIO_MODE_INPUT))
+#elif BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED
+#define BMS_IO_STATUS_IS_READY() \
+    ((LL_GPIO_GetPinMode(BMS_USB_IN_PORT, BMS_USB_IN_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED1_PORT, BMS_LED1_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED2_PORT, BMS_LED2_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED3_PORT, BMS_LED3_PIN) == LL_GPIO_MODE_INPUT) && \
+     (LL_GPIO_GetPinMode(BMS_LED4_PORT, BMS_LED4_PIN) == LL_GPIO_MODE_INPUT))
+#endif
+
+/* 禁用模块的检查在预处理阶段移除，不要求其引脚定义参与控制模块编译。 */
+#if BMS_MODULE_CTRL_ENABLE
+#define BMS_IO_ENABLED_CTRL_READY()   BMS_IO_CTRL_IS_READY()
+#else
+#define BMS_IO_ENABLED_CTRL_READY()   true
+#endif
+#if BMS_MODULE_KEY_ENABLE
+#define BMS_IO_ENABLED_KEY_READY()    BMS_IO_KEY_IS_READY()
+#else
+#define BMS_IO_ENABLED_KEY_READY()    true
+#endif
+#if BMS_MODULE_STATUS_ENABLE
+#define BMS_IO_ENABLED_STATUS_READY() BMS_IO_STATUS_IS_READY()
+#else
+#define BMS_IO_ENABLED_STATUS_READY() true
+#endif
+
+/* 只检查被启用的 IO 模块；单独使用某个模块时使用其专属 IS_READY 宏。 */
 #define BMS_IO_IS_READY() \
-    ((LL_GPIO_GetPinMode(BMS_KEY_PORT,     BMS_KEY_PIN)     == LL_GPIO_MODE_OUTPUT) && \
-     (LL_GPIO_GetPinMode(BMS_VIN_EN_PORT,  BMS_VIN_EN_PIN)  == LL_GPIO_MODE_OUTPUT) && \
-     (LL_GPIO_GetPinMode(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN) == LL_GPIO_MODE_OUTPUT) && \
-     (LL_GPIO_GetPinMode(BMS_USB_IN_PORT,  BMS_USB_IN_PIN)  == LL_GPIO_MODE_INPUT)  && \
-     (LL_GPIO_GetPinMode(BMS_LED1_PORT,    BMS_LED1_PIN)    == LL_GPIO_MODE_INPUT)  && \
-     (LL_GPIO_GetPinMode(BMS_LED3_PORT,    BMS_LED3_PIN)    == LL_GPIO_MODE_INPUT))
+    (BMS_IO_ENABLED_CTRL_READY() && BMS_IO_ENABLED_KEY_READY() && BMS_IO_ENABLED_STATUS_READY())
 
 
 /* Control Parameters ------------------------------------------------------------------------------------------------*/
@@ -261,6 +283,15 @@
  */
 #define BMS_CTRL_USB_DEBOUNCE_MS     20U
 
+/* IP5326 LED 模式识别；两灯模式中 D1=LED1、D2=LED3。单位均为 ms。 */
+#define BMS_STATUS_LED_DEBOUNCE_MS   10U   /**< LED 输入抗毛刺时间 */
+#define BMS_STATUS_SLOW_HALF_MIN_MS  750U  /**< 0.5Hz 闪烁半周期下限 */
+#define BMS_STATUS_SLOW_HALF_MAX_MS  1250U /**< 0.5Hz 闪烁半周期上限 */
+#define BMS_STATUS_FAST_HALF_MIN_MS  350U  /**< 1Hz 闪烁半周期下限 */
+#define BMS_STATUS_FAST_HALF_MAX_MS  650U  /**< 1Hz 闪烁半周期上限 */
+#define BMS_STATUS_OTHER_OFF_MS      1400U /**< 另一盏灯持续熄灭后才确认闪烁模式 */
+#define BMS_STATUS_LED_STEADY_MS     2300U /**< 大于 D1 完整周期，才认定常亮 */
+
 
 /**
  * @brief BMS 初始化后默认 VIN 输入请求状态
@@ -309,6 +340,7 @@
  *
  * 如果任一参数不符合要求，直接在编译阶段报错。
  */
+#if BMS_MODULE_KEY_ENABLE
 #if (BMS_CTRL_KEY_SHORT_MS <= 100U)                                      || \
     (BMS_CTRL_KEY_SHORT_MS >= 2000U)                                     || \
     (BMS_CTRL_KEY_LONG_MS  <= 2000U)                                     || \
@@ -316,13 +348,54 @@
     (BMS_CTRL_KEY_DOUBLE_GAP_MS == 0U)                                   || \
     ((2U * BMS_CTRL_KEY_SHORT_MS + BMS_CTRL_KEY_DOUBLE_GAP_MS) >= 1000U) || \
     (BMS_CTRL_KEY_GUARD_MS <= 1000U)                                     || \
-    (BMS_CTRL_KEY_GUARD_MS > 65535U)                                     || \
-    (BMS_CTRL_USB_DEBOUNCE_MS == 0U)                                     || \
-    (BMS_CTRL_USB_DEBOUNCE_MS > 65535U)
+    (BMS_CTRL_KEY_GUARD_MS > 65535U)
 
 #error "Invalid BMS KEY timing or USB debounce configuration"
 
 #endif
+#endif /* BMS_MODULE_KEY_ENABLE */
+
+#if BMS_MODULE_STATUS_ENABLE && \
+    ((BMS_STATUS_LED_MODE != BMS_STATUS_MODE_1_LED) && \
+     (BMS_STATUS_LED_MODE != BMS_STATUS_MODE_2_LED) && \
+     (BMS_STATUS_LED_MODE != BMS_STATUS_MODE_4_LED))
+#error "BMS_STATUS_LED_MODE must be 1, 2 or 4"
+#endif
+
+#if BMS_MODULE_STATUS_ENABLE && \
+    ((BMS_CTRL_USB_DEBOUNCE_MS == 0U) || (BMS_CTRL_USB_DEBOUNCE_MS > 65535U))
+#error "Invalid BMS USB debounce configuration"
+#endif
+
+#if BMS_MODULE_STATUS_ENABLE && \
+    ((BMS_STATUS_LED_DEBOUNCE_MS == 0U) || \
+     (BMS_STATUS_LED_DEBOUNCE_MS > 65535U) || \
+     (BMS_STATUS_SLOW_HALF_MIN_MS == 0U) || \
+     (BMS_STATUS_SLOW_HALF_MIN_MS >= BMS_STATUS_SLOW_HALF_MAX_MS) || \
+     (BMS_STATUS_FAST_HALF_MIN_MS == 0U) || \
+     (BMS_STATUS_FAST_HALF_MIN_MS >= BMS_STATUS_FAST_HALF_MAX_MS) || \
+     (BMS_STATUS_LED_DEBOUNCE_MS >= BMS_STATUS_FAST_HALF_MIN_MS) || \
+     (BMS_STATUS_FAST_HALF_MAX_MS >= BMS_STATUS_SLOW_HALF_MIN_MS) || \
+     (BMS_STATUS_SLOW_HALF_MAX_MS >= BMS_STATUS_OTHER_OFF_MS) || \
+     (BMS_STATUS_FAST_HALF_MAX_MS >= BMS_STATUS_OTHER_OFF_MS) || \
+     (BMS_STATUS_OTHER_OFF_MS >= BMS_STATUS_LED_STEADY_MS) || \
+     (BMS_STATUS_LED_STEADY_MS > 65535U) || \
+     ((BMS_STATUS_LED_ON_IS_HIGH != 0U) && (BMS_STATUS_LED_ON_IS_HIGH != 1U)))
+#error "Invalid BMS two-LED status configuration"
+#endif
+
+/* SOC 参数 ----------------------------------------------------------------------------------------------------------*/
+/* 仅用于 SOC 估算，不作为软件保护阈值；保留原算法默认值，需按电芯重新标定。 */
+#define BMS_SOC_PERMILLE_FULL                     1000U   /**< 表内整数 SOC 的满量程，1000=100% */
+#define BMS_SOC_DEFAULT_REST_CURRENT_A            0.05f   /**< 静置允许最大电流绝对值，单位 A */
+#define BMS_SOC_DEFAULT_REST_TIME_S               1800.0f /**< 静置确认时间，单位 s */
+#define BMS_SOC_DEFAULT_REST_DVDT_V_PER_S         0.002f  /**< 静置电压变化率上限，单位 V/s */
+#define BMS_SOC_DEFAULT_CORRECTION_TAU_S          600.0f  /**< OCV 校正时间常数，单位 s */
+#define BMS_SOC_DEFAULT_FULL_VOLTAGE_V            4.19f   /**< 满充端点电压，单位 V */
+#define BMS_SOC_DEFAULT_FULL_TERMINATE_CURRENT_A  0.10f   /**< 满充终止电流，单位 A */
+#define BMS_SOC_DEFAULT_EMPTY_VOLTAGE_V           3.20f   /**< 空电端点电压，单位 V */
+#define BMS_SOC_DEFAULT_EMPTY_MIN_DISCHARGE_A     0.10f   /**< 空电判定最小放电电流，单位 A */
+#define BMS_SOC_DEFAULT_ENDPOINT_HOLD_S           10.0f   /**< 满充/空电条件确认时间，单位 s */
 
 
 /* Protection Type ---------------------------------------------------------------------------------------------------*/
