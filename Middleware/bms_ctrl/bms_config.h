@@ -83,6 +83,7 @@ typedef union
         uint16_t batteryLow   : 1;     /**< 电池欠压 */
         uint16_t batteryHigh  : 1;     /**< 电池过压 */
         uint16_t usbHigh      : 1;     /**< USB 输入过压 */
+        uint16_t usbLow       : 1;     /**< USB 输入欠压 */
         uint16_t tempHigh     : 1;     /**< 温度过高 */
         uint16_t currentHigh  : 1;     /**< 电流过大 */
     }bit;

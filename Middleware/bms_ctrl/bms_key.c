@@ -1,26 +1,39 @@
 /**
  ***********************************************************************************************************************
  * @file    bms_key.c
- * @brief   IP5326 KEY 独立非阻塞状态机，支持短按、长按、双击及 Guard
+ * @brief   IP5326 KEY 非阻塞控制，实现短按、长按、双击及保护间隔
  * @author  Leo Chen
  * @date    2026-10-14
  ***********************************************************************************************************************
  */
+
 #include "bms_key.h"
+#include "timer_base.h"
 #include <string.h>
 
-static bms_key_status_t s_status;
-static bool             s_initialized;
-static uint16_t         s_remainingMs;
-static bms_key_phase_t  s_phase;
 
+/* Variables ---------------------------------------------------------------------------------------------------------*/
+
+/** 各 KEY 命令对应的阶段时间配置 */
+const bms_key_process_t s_process[BMS_KEY_NUM] =
+{
+    [BMS_KEY_WAKEUP]       = { 1U, (const uint16_t[]){150U}},
+    [BMS_KEY_STANDBY]      = { 1U, (const uint16_t[]){2100U}},
+    [BMS_KEY_LIGHT_TOGGLE] = { 3U, (const uint16_t[]){150U, 200U, 150U}}
+};
+
+/** KEY 状态机运行状态 */
+bms_key_status_t s_status = {0};
+
+
+/* Private functions -------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
 //  Function   : bms_key_SetPressed
-//  Description: 按配置宏驱动 IP5326 KEY，并记录模拟按下状态
-//  Param      : pressed - true：按下；false：释放
+//  Description: 设置 IP5326 KEY 引脚状态
+//  Param      : pressed - true：模拟按下；false：模拟释放
 //  Return     : None
-//  Others     : 实际极性由 bms_config.h 适配
+//  Others     : 实际 GPIO 有效电平由 bms_config.h 中的 KEY 控制宏决定
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 static void bms_key_SetPressed(bool pressed)
@@ -38,317 +51,152 @@ static void bms_key_SetPressed(bool pressed)
 }
 
 
-/*******************************************************************************
-//  Function   : bms_key_Init
-//  Description: 初始化 IP5326 KEY 状态机
-//  Param      : None
-//  Return     : true：成功；false：KEY GPIO 未正确配置
-//  Others     : KEY 默认处于释放状态
-//  Author     : Chen Liang 2026-10-14
-*******************************************************************************/
-bool bms_key_Init(void)
-{
-    s_initialized = false;
-
-    memset(&s_status, 0, sizeof(s_status));
-
-    s_phase       = BMS_KEY_IDLE;
-    s_remainingMs = 0U;
-
-	
-    /* KEY 必须默认释放 */
-    bms_key_SetPressed(false);
-
-    /*
-     * 默认允许控制。
-     * 业务层可通过 bms_key_SetAllowed() 动态禁止非待机命令。
-     */
-    s_status.allowed = true;
-
-    /*
-     * command 这里只设置一个合法初值。
-     */
-    s_status.command = BMS_KEY_WAKEUP;
-
-    s_status.busy = false;
-
-    s_initialized = true;
-
-    return true;
-}
-
-
-/*******************************************************************************
-//  Function   : bms_key_Cancel
-//  Description: 取消当前 KEY 动作并进入 Guard
-//  Param      : None
-//  Return     : None
-//  Others     : 中途释放 KEY 后，IP5326 可能将已经达到有效时间的脉冲解释为短按
-//  Author     : Chen Liang 2026-10-14
-*******************************************************************************/
-void bms_key_Cancel(void)
-{
-    if (!s_initialized)
-    {
-        return;
-    }
-
-    bms_key_SetPressed(false);
-
-    s_phase       = BMS_KEY_GUARD;
-    s_remainingMs = BMS_CTRL_KEY_GUARD_MS;
-    s_status.busy = true;
-}
-
-
-/*******************************************************************************
-//  Function   : bms_key_SetAllowed
-//  Description: 更新非待机命令权限
-//  Param      : allowed - true：允许；false：禁止
-//  Return     : None
-//  Others     : STANDBY 始终允许，便于系统紧急进入待机
-//  Author     : Chen Liang 2026-10-14
-*******************************************************************************/
-void bms_key_SetAllowed(bool allowed)
-{
-    s_status.allowed = allowed;
-
-    /*
-     * 如果当前正在执行非 STANDBY 命令，并且上层撤销权限，
-     * 则立即释放 KEY。
-     *
-     * STANDBY 不受 allowed 限制。
-     */
-    if (!allowed &&
-        (s_status.command != BMS_KEY_STANDBY) &&
-        ((s_phase == BMS_KEY_FIRST_PRESS) ||
-         (s_phase == BMS_KEY_DOUBLE_GAP)  ||
-         (s_phase == BMS_KEY_SECOND_PRESS)))
-    {
-        bms_key_Cancel();
-    }
-}
-
+/* Exported functions ------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
 //  Function   : bms_key_Request
-//  Description: 请求一次 IP5326 KEY 动作
+//  Description: 请求执行一次 IP5326 KEY 控制命令
 //  Param      : command - KEY 控制命令
-//  Return     : true：接受；false：状态机忙或当前状态不允许
+//  Return     : None
+//  Others     : 仅更新目标命令，状态机在空闲状态下开始执行
 //
-//  Command:
-//      BMS_KEY_WAKEUP
-//          一次有效短按 (>100 ms, <2 s)
-//          用于开启电量显示和升压输出
+//               BMS_KEY_WAKEUP
+//                   模拟一次短按，用于唤醒电量显示及升压输出
 //
-//      BMS_KEY_STANDBY
-//          一次有效长按 (>2 s)
-//          用于进入待机
+//               BMS_KEY_STANDBY
+//                   模拟一次长按，用于进入待机状态
 //
-//      BMS_KEY_LIGHT_TOGGLE
-//          1 s 内连续两次有效短按
-//          用于打开/关闭照明灯
+//               BMS_KEY_LIGHT_TOGGLE
+//                   模拟连续两次短按，用于切换照明灯状态
 //
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
-bool bms_key_Request(bms_key_command_t command)
+void bms_key_Request(bms_key_command_t command)
 {
-    /* 状态机未初始化 */
-    if (!s_initialized)
+    s_status.target = command;
+}
+
+
+/*******************************************************************************
+//  Function   : bms_key_RequestForce
+//  Description: 强制请求执行一次 IP5326 KEY 控制命令
+//  Param      : command - KEY 控制命令
+//  Return     : None
+//  Others     : 先进入 Guard 状态，等待保护时间结束后再执行新的目标命令
+//  Author     : Chen Liang 2026-10-14
+*******************************************************************************/
+void bms_key_RequestForce(bms_key_command_t command)
+{
+    if (s_status.execute != BMS_KEY_GUARD)
     {
-        return false;
+        s_status.execute    = BMS_KEY_GUARD;
+        s_status.step_times = 0U;
     }
 
-    /* 上一个 KEY 动作尚未结束 */
-    if (s_phase != BMS_KEY_IDLE)
-    {
-        return false;
-    }
+    s_status.target     = command;
+}
 
-    /* 参数合法性检查 */
-    if ((unsigned int)command > (unsigned int)BMS_KEY_LIGHT_TOGGLE)
-    {
-        return false;
-    }
 
-    /* 除 STANDBY 外，其余动作需要业务层允许 */
-    if ((command != BMS_KEY_STANDBY) && !s_status.allowed)
-    {
-        return false;
-    }
-
-    s_status.command = command;
-    s_status.busy    = true;
-
-    /* 三种命令均从第一次 KEY 按下开始 */
-    s_phase = BMS_KEY_FIRST_PRESS;
-
-    switch (command)
-    {
-        case BMS_KEY_STANDBY:
-            /*
-             * IP5326:
-             * 按键时间 > 2 s 为长按。
-             *
-             * 推荐 2100 ms，避免刚好卡在 2000 ms 临界点。
-             */
-            s_remainingMs = BMS_CTRL_KEY_LONG_MS;
-            break;
-
-        case BMS_KEY_WAKEUP:
-        case BMS_KEY_LIGHT_TOGGLE:
-        default:
-            /*
-             * IP5326:
-             * >100 ms 且 <2 s 为有效短按。
-             *
-             * LIGHT_TOGGLE 第一次点击同样是短按。
-             */
-            s_remainingMs = BMS_CTRL_KEY_SHORT_MS;
-            break;
-    }
-
-    bms_key_SetPressed(true);
-
-    return true;
+/*******************************************************************************
+//  Function   : bms_key_Init
+//  Description: 初始化 IP5326 KEY 非阻塞状态机
+//  Param      : None
+//  Return     : None
+//  Others     : 状态机初始化为空闲状态，并清零阶段索引及阶段计时
+//  Author     : Chen Liang 2026-10-14
+*******************************************************************************/
+void bms_key_Init(void)
+{
+    s_status.target     = BMS_KEY_LIGHT_IDEL;
+    s_status.execute    = BMS_KEY_LIGHT_IDEL;
+    s_status.step       = 0U;
+    s_status.step_times = 0U;
 }
 
 
 /*******************************************************************************
 //  Function   : bms_key_1ms_task
-//  Description: 推进 IP5326 KEY 非阻塞状态机
+//  Description: 周期推进 IP5326 KEY 非阻塞状态机
 //  Param      : None
 //  Return     : None
-//  Others     : 必须保持约 1 ms 调度，KEY 动作结束前不可停止调用
-//
-//  Timing:
-//
-//  WAKEUP:
-//      KEY ______|----------|________________
-//                  SHORT
-//
-//  STANDBY:
-//      KEY ______|--------------------------|_
-//                    > 2000 ms
-//
-//  LIGHT_TOGGLE:
-//      KEY ______|----|____|----|____________
-//                  S    GAP  S
-//
-//                <--------->
-//                  < 1 s
-//
+//  Others     : 建议每 1 ms 调用一次；每个命令按照 s_process[] 中配置的 times[]
+//               顺序执行，各阶段到时后翻转 KEY 电平，全部阶段完成后进入 Guard
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 void bms_key_1ms_task(void)
 {
-    if (!s_initialized)
+    static bool io_pressed = BMS_KEY_IDLE_IO;
+
+    /* 当前阶段运行时间累计。 */
+    s_status.step_times++;
+
+    switch (s_status.execute)
     {
-        return;
-    }
+        case BMS_KEY_LIGHT_IDEL:
+            io_pressed = BMS_KEY_IDLE_IO;
 
-    if (s_phase == BMS_KEY_IDLE)
-    {
-        return;
-    }
-
-    /*
-     * 当前阶段计时。
-     */
-    if (s_remainingMs > 0U)
-    {
-        s_remainingMs--;
-    }
-
-    /*
-     * 当前阶段尚未结束。
-     */
-    if (s_remainingMs > 0U)
-    {
-        return;
-    }
-
-    switch (s_phase)
-    {
-        /*
-         * 第一次按键结束。
-         *
-         * WAKEUP:
-         *      一次短按结束，进入 Guard。
-         *
-         * STANDBY:
-         *      一次长按结束，进入 Guard。
-         *
-         * LIGHT_TOGGLE:
-         *      第一次短按结束，释放 KEY，
-         *      等待一小段间隔后进行第二次短按。
-         */
-        case BMS_KEY_FIRST_PRESS:
-
-            bms_key_SetPressed(false);
-
-            if (s_status.command == BMS_KEY_LIGHT_TOGGLE)
+            /* 存在有效目标命令时开始执行。 */
+            if (s_status.target < BMS_KEY_NUM)
             {
-                s_phase = BMS_KEY_DOUBLE_GAP;
-                s_remainingMs = BMS_CTRL_KEY_DOUBLE_GAP_MS;
+                s_status.execute    = s_status.target;
+                s_status.target     = BMS_KEY_LIGHT_IDEL;
+                s_status.step       = 0U;
+                s_status.step_times = 0U;
+                io_pressed          = !BMS_KEY_IDLE_IO;
+            }
+            break;
+
+        case BMS_KEY_GUARD:
+            /* Guard 阶段保持 KEY 释放状态。 */
+            io_pressed = BMS_KEY_IDLE_IO;
+
+            if (s_status.step_times >= BMS_KEY_GUARD_TIME_MS)
+            {
+                s_status.execute = BMS_KEY_LIGHT_IDEL;
+            }
+            break;
+
+        case BMS_KEY_NUM:
+            /* 非法执行状态，恢复为空闲状态。 */
+            io_pressed       = BMS_KEY_IDLE_IO;
+            s_status.execute = BMS_KEY_LIGHT_IDEL;
+            break;
+
+        default:
+            /*
+             * 按 times[] 顺序执行各阶段。
+             * 每达到当前阶段配置时间后，进入下一阶段并翻转 KEY 电平。
+             */
+            if (s_status.step < s_process[s_status.execute].count)
+            {
+                if (s_status.step_times >= s_process[s_status.execute].times[s_status.step])
+                {
+                    s_status.step++;
+                    s_status.step_times = 0U;
+                    io_pressed          = !io_pressed;
+                }
             }
             else
             {
-                s_phase = BMS_KEY_GUARD;
-                s_remainingMs = BMS_CTRL_KEY_GUARD_MS;
+                /* 所有阶段执行完成，进入 Guard 状态。 */
+                s_status.execute    = BMS_KEY_GUARD;
+                s_status.step_times = 0U;
+                io_pressed          = BMS_KEY_IDLE_IO;
             }
-
-            break;
-
-
-        /* 双击两次短按之间的释放阶段结束。 开始第二次短按。 */
-        case BMS_KEY_DOUBLE_GAP:
-
-            bms_key_SetPressed(true);
-
-            s_phase       = BMS_KEY_SECOND_PRESS;
-            s_remainingMs = BMS_CTRL_KEY_SHORT_MS;
-
-            break;
-        /* 双击第二次短按完成。 */
-        case BMS_KEY_SECOND_PRESS:
-
-            bms_key_SetPressed(false);
-
-            s_phase       = BMS_KEY_GUARD;
-            s_remainingMs = BMS_CTRL_KEY_GUARD_MS;
-
-            break;
-        /* Guard 完成: KEY 保证释放，并返回 IDLE */
-        case BMS_KEY_GUARD:
-
-            bms_key_SetPressed(false);
-
-            s_phase       = BMS_KEY_IDLE;
-            s_remainingMs = 0U;
-
-            break;
-        /* 状态异常时强制释放 KEY。 */
-        default:
-
-            bms_key_SetPressed(false);
-
-            s_phase       = BMS_KEY_IDLE;
-            s_remainingMs = 0U;
-
             break;
     }
 
-    s_status.busy = (s_phase != BMS_KEY_IDLE);
+    /* 根据状态机计算结果更新实际 KEY IO。 */
+    bms_key_SetPressed(io_pressed);
 }
 
 
 /*******************************************************************************
 //  Function   : bms_key_GetStatus
-//  Description: 获取 KEY 状态机运行状态
+//  Description: 获取 KEY 状态机当前运行状态
 //  Param      : None
-//  Return     : 状态只读指针
-//  Others     : 此状态仅表示 MCU 模拟 KEY 的状态，不代表 IP5326 实际工作状态
+//  Return     : KEY 状态只读指针
+//  Others     : 仅表示 MCU 模拟 KEY 的执行状态，不代表 IP5326 实际内部工作状态
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 const bms_key_status_t *bms_key_GetStatus(void)

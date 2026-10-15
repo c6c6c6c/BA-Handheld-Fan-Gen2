@@ -1,10 +1,10 @@
 /**
  ***********************************************************************************************************************
  * @file    bms_key.h
- * @brief   IP5326 KEY 非阻塞状态机接口定义
+ * @brief   IP5326 KEY 非阻塞控制接口定义
  * @author  Leo Chen
  * @version 1.0.0
- * @date    2026-10-14
+ * @date    2026-10-15
  ***********************************************************************************************************************
  * @copyright Copyright (c) 1999-2025 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
  ***********************************************************************************************************************
@@ -27,34 +27,38 @@
 #define BMS_IO_KEY_PRESS()          LL_GPIO_SetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
 #define BMS_IO_KEY_RELEASE()        LL_GPIO_ResetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
 
+/** KEY 命令执行完成后的保护间隔，单位 ms */
+#define BMS_KEY_GUARD_TIME_MS       1000U
+
+/** KEY 空闲状态对应的软件按下状态 */
+#define BMS_KEY_IDLE_IO             false
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
 
 /**
- * @brief KEY 状态机阶段
+ * @brief KEY 状态机命令及内部状态
  */
 typedef enum
 {
-    BMS_KEY_IDLE = 0,          /**< 空闲状态 */
-    BMS_KEY_FIRST_PRESS,       /**< 第一次短按或长按阶段 */
-    BMS_KEY_DOUBLE_GAP,        /**< 双击两次按键之间的释放间隔 */
-    BMS_KEY_SECOND_PRESS,      /**< 双击第二次短按阶段 */
-    BMS_KEY_GUARD              /**< KEY 动作结束后的释放保护阶段 */
-} bms_key_phase_t;
+    BMS_KEY_WAKEUP = 0,            /**< 短按，唤醒电量显示并请求开启升压输出 */
+    BMS_KEY_STANDBY,               /**< 长按，请求进入待机状态 */
+    BMS_KEY_LIGHT_TOGGLE,          /**< 双击，切换照明灯状态 */
+
+    BMS_KEY_NUM,                   /**< KEY 有效控制命令数量 */
+    BMS_KEY_GUARD,                 /**< Guard 保护阶段 */
+    BMS_KEY_LIGHT_IDEL             /**< KEY 状态机空闲状态 */
+} bms_key_command_t;
 
 
 /**
- * @brief KEY 控制命令
- *
- * 类型始终可见，KEY 模块关闭后其它模块仍可保持接口兼容。
+ * @brief 单个 KEY 命令的时序配置
  */
-typedef enum
+typedef struct
 {
-    BMS_KEY_WAKEUP = 0,        /**< 短按，唤醒并请求开启升压 */
-    BMS_KEY_STANDBY,           /**< 长按，请求进入待机 */
-    BMS_KEY_LIGHT_TOGGLE       /**< 双击，切换照明状态 */
-} bms_key_command_t;
+    uint16_t count;                /**< times 数组有效元素数量 */
+    const uint16_t *times;         /**< 各阶段持续时间数组，单位 ms */
+} bms_key_process_t;
 
 
 /**
@@ -62,10 +66,11 @@ typedef enum
  */
 typedef struct
 {
-    bool busy;                 /**< KEY 状态机忙标志，包括按键、双击间隔及 Guard 阶段 */
-    bool pressed;              /**< 当前软件模拟 KEY 按下状态 */
-    bool allowed;              /**< 非待机命令执行权限 */
-    bms_key_command_t command; /**< 最近一次接受的命令，不代表芯片实际执行结果 */
+    bool pressed;                  /**< 当前 MCU 模拟 KEY 按下状态 */
+    uint32_t step_times;           /**< 当前阶段已经运行时间，单位 ms */
+    uint16_t step;                 /**< 当前执行阶段索引 */
+    bms_key_command_t target;      /**< 当前待执行目标命令 */
+    bms_key_command_t execute;     /**< 当前正在执行的命令或状态 */
 } bms_key_status_t;
 
 
@@ -73,67 +78,57 @@ typedef struct
 
 /*******************************************************************************
 //  Function   : bms_key_Init
-//  Description: 初始化 KEY 状态机
+//  Description: 初始化 IP5326 KEY 非阻塞状态机
 //  Param      : None
-//  Return     : true：初始化成功；false：KEY GPIO 配置错误
-//  Others     : 初始化后释放 KEY，仅检查 KEY 引脚，不依赖其他 BMS 模块
-//  Author     : Chen Liang 2026-10-14
+//  Return     : None
+//  Others     : 将状态机恢复为空闲状态，并清零阶段索引和阶段计时
+//  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
-bool bms_key_Init(void);
+void bms_key_Init(void);
 
 
 /*******************************************************************************
 //  Function   : bms_key_1ms_task
-//  Description: KEY 状态机 1ms 周期任务
+//  Description: 周期推进 IP5326 KEY 非阻塞状态机
 //  Param      : None
 //  Return     : None
-//  Others     : 完成短按、长按、双击及 Guard 阶段时序推进，不可重复调度
-//  Author     : Chen Liang 2026-10-14
+//  Others     : 建议每 1 ms 调用一次，根据命令对应的 times[] 完成 KEY 电平翻转及 Guard 时序
+//  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
 void bms_key_1ms_task(void);
 
 
 /*******************************************************************************
 //  Function   : bms_key_Request
-//  Description: 请求执行一次 KEY 操作
+//  Description: 请求执行一次 IP5326 KEY 控制命令
 //  Param      : command - KEY 控制命令
-//  Return     : true：命令已接受；false：未初始化、忙、命令非法或权限不足
-//  Others     : Standby 命令不受非待机命令权限限制
-//  Author     : Chen Liang 2026-10-14
+//  Return     : None
+//  Others     : 仅更新目标命令，状态机进入空闲状态后开始执行
+//  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
-bool bms_key_Request(bms_key_command_t command);
+void bms_key_Request(bms_key_command_t command);
 
 
 /*******************************************************************************
-//  Function   : bms_key_SetAllowed
-//  Description: 设置非待机 KEY 命令执行权限
-//  Param      : allowed - true：允许；false：禁止
+//  Function   : bms_key_RequestForce
+//  Description: 强制请求执行一次 IP5326 KEY 控制命令
+//  Param      : command - KEY 控制命令
 //  Return     : None
-//  Others     : 禁止时取消正在执行的非待机命令并进入 Guard，Standby 命令可继续执行
-//  Author     : Chen Liang 2026-10-14
+//  Others     : 当前动作先进入 Guard，Guard 结束后再执行新的目标命令
+//  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
-void bms_key_SetAllowed(bool allowed);
-
-
-/*******************************************************************************
-//  Function   : bms_key_Cancel
-//  Description: 取消当前 KEY 操作
-//  Param      : None
-//  Return     : None
-//  Others     : 立即释放 KEY 并进入 Guard，不改变芯片电源通路状态
-//  Author     : Chen Liang 2026-10-14
-*******************************************************************************/
-void bms_key_Cancel(void);
+void bms_key_RequestForce(bms_key_command_t command);
 
 
 /*******************************************************************************
 //  Function   : bms_key_GetStatus
-//  Description: 获取当前 KEY 状态机状态
+//  Description: 获取 KEY 状态机当前运行状态
 //  Param      : None
 //  Return     : 指向内部 bms_key_status_t 状态结构体的只读指针
-//  Others     : 返回状态仅表示软件 KEY 命令，不代表芯片实际功能状态
-//  Author     : Chen Liang 2026-10-14
+//  Others     : 仅表示 MCU 模拟 KEY 的执行状态，不代表 IP5326 实际内部工作状态
+//  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
 const bms_key_status_t *bms_key_GetStatus(void);
+
 
 #endif /* _BMS_KEY_H_ */

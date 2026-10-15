@@ -7,19 +7,10 @@
 #ifndef _BMS_H_
 #define _BMS_H_
 #include "bms_config.h"
-#if BMS_MODULE_KEY_ENABLE
 #include "bms_key.h"
-#endif
-#if BMS_MODULE_STATUS_ENABLE
 #include "bms_status.h"
-#endif
-#if BMS_MODULE_PROTECT_ENABLE
 #include "bms_protect.h"
-#endif
-#if BMS_MODULE_SOC_ENABLE
 #include "bms_soc.h"
-#endif
-#if BMS_MODULE_CTRL_ENABLE
-#include "bms_ctrl.h"
-#endif
+#include "bms_convert.h"
+
 #endif /* _BMS_H_ */
