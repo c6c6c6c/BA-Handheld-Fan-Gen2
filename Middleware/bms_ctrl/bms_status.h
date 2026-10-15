@@ -17,20 +17,30 @@
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
-/** IP5326 单灯模式 */
+/* IP5326 单灯模式 */
 #define BMS_STATUS_MODE_1_LED       1U
 
-/** IP5326 双灯模式 */
+/* IP5326 双灯模式 */
 #define BMS_STATUS_MODE_2_LED       2U
 
-/** IP5326 四灯模式 */
+/* IP5326 四灯模式 */
 #define BMS_STATUS_MODE_4_LED       4U
 
 
-/** 默认使用双灯状态识别模式 */
+/* 默认使用双灯状态识别模式 */
 #ifndef BMS_STATUS_LED_MODE
 #define BMS_STATUS_LED_MODE         BMS_STATUS_MODE_2_LED
 #endif
+
+
+/* IP5326 LED 模式识别；两灯模式中 D1=LED1、D2=LED3。单位均为 ms。 */
+#define BMS_STATUS_LED_DEBOUNCE_MS               0U   /* LED 输入抗毛刺时间 */
+#define BMS_STATUS_SLOW_HALF_MIN_MS              50U  /* 0.5Hz 闪烁半周期下限 */
+#define BMS_STATUS_SLOW_HALF_MAX_MS              250U /* 0.5Hz 闪烁半周期上限 */
+#define BMS_STATUS_FAST_HALF_MIN_MS              50U  /* 1Hz 闪烁半周期下限 */
+#define BMS_STATUS_FAST_HALF_MAX_MS              50U  /* 1Hz 闪烁半周期上限 */
+#define BMS_STATUS_OTHER_OFF_MS                  400U /* 另一盏灯持续熄灭后才确认闪烁模式 */
+#define BMS_STATUS_LED_STEADY_MS                 300U /* 大于 D1 完整周期，才认定常亮 */
 
 
 /* LED GPIO 状态读取 -------------------------------------------------------------------------------------------------*/
@@ -49,41 +59,6 @@
 
 #endif
 
-
-/* LED pin check ------------------------------------------------------------------------------------------------------*/
-
-/** 单灯模式必须配置 LED1 GPIO */
-#if BMS_MODULE_STATUS_ENABLE && (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_1_LED)
-
-    #if !defined(BMS_LED1_PORT) || !defined(BMS_LED1_PIN)
-        #error "1-LED mode requires BMS_LED1 pin mappings in bsp_gpio.h"
-    #endif
-
-#endif
-
-
-/** 双灯模式必须配置对应的两路 LED GPIO */
-#if BMS_MODULE_STATUS_ENABLE && (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_2_LED)
-
-    #if !defined(BMS_LED1_PORT) || !defined(BMS_LED1_PIN) || \
-        !defined(BMS_LED2_PORT) || !defined(BMS_LED2_PIN)
-        #error "2-LED mode requires BMS_LED1/LED2 pin mappings in bsp_gpio.h"
-    #endif
-
-#endif
-
-
-/** 四灯模式必须完整配置 LED1~LED4 GPIO */
-#if BMS_MODULE_STATUS_ENABLE && (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED)
-
-    #if !defined(BMS_LED1_PORT) || !defined(BMS_LED1_PIN) || \
-        !defined(BMS_LED2_PORT) || !defined(BMS_LED2_PIN) || \
-        !defined(BMS_LED3_PORT) || !defined(BMS_LED3_PIN) || \
-        !defined(BMS_LED4_PORT) || !defined(BMS_LED4_PIN)
-        #error "4-LED mode requires BMS_LED1/LED2/BMS_LED3/LED4 pin mappings in bsp_gpio.h"
-    #endif
-
-#endif
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
@@ -159,8 +134,6 @@ typedef struct
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
-#if BMS_MODULE_STATUS_ENABLE
-
 /*******************************************************************************
 //  Function   : bms_status_Init
 //  Description: 初始化 BMS LED 状态识别模块
@@ -180,7 +153,7 @@ bool bms_status_Init(void);
 //  Others     : 根据 BMS_STATUS_LED_MODE 选择 1 灯、2 灯或 4 灯识别逻辑
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
-void bms_status_check(uint8_t IsCharge);
+void bms_status_check(bms_power_state_t state);
 
 
 /*******************************************************************************
@@ -192,8 +165,6 @@ void bms_status_check(uint8_t IsCharge);
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 const bms_status_t *bms_status_GetStatus(void);
-
-#endif /* BMS_MODULE_STATUS_ENABLE */
 
 
 #endif /* _BMS_STATUS_H_ */

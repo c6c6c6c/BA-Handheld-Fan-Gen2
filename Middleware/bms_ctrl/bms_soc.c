@@ -15,7 +15,6 @@
  */
 
 #include "bms_soc.h"
-#if BMS_MODULE_SOC_ENABLE
 
 
 /* Constant ----------------------------------------------------------------------------------------------------------*/
@@ -360,8 +359,7 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est,
      * current_a > 0 ：放电
      * current_a < 0 ：充电
      *
-     * ΔSOC =
-     * I × dt / (3600 × Capacity)
+     * ΔSOC = I × dt / (3600 × Capacity)
      *
      * 因为正电流表示放电，
      * 所以这里从当前 SOC 中减去积分结果。
@@ -413,9 +411,7 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est,
      *
      * current_a <= 0 是因为负电流定义为充电。
      */
-    if ((voltage_v >= est->cfg.full_voltage_v) 
-	&&  (current_a <= 0.0f) 
-	&&  (absf_local(current_a) <= est->cfg.full_terminate_current_a))
+    if ((voltage_v >= est->cfg.full_voltage_v) &&  (current_a <= 0.0f) &&  (absf_local(current_a) <= est->cfg.full_terminate_current_a))
     {
         est->full_timer_s += dt_s;
     }
@@ -456,11 +452,7 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est,
     /*
      * 修正优先级：
      *
-     * FULL
-     *   >
-     * EMPTY
-     *   >
-     * OCV
+     * FULL > EMPTY > OCV
      *
      * 满充/空电属于硬端点，
      * 优先级高于静置 OCV 的柔性校正。
@@ -533,4 +525,3 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est,
 
     return event;
 }
-#endif /* BMS_MODULE_SOC_ENABLE */

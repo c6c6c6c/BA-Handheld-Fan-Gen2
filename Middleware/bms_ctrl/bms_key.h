@@ -18,21 +18,6 @@
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
-/** IP5326 KEY 小于该时间通常不响应，单位 ms */
-#define BMS_KEY_IGNORE_MAX_MS           70U
-
-/** IP5326 KEY 短按最小有效时间，单位 ms */
-#define BMS_KEY_SHORT_MIN_MS           100U
-
-/** IP5326 KEY 长按判定阈值，单位 ms */
-#define BMS_KEY_LONG_THRESHOLD_MS     2000U
-
-/** IP5326 KEY 双击允许的最大时间窗口，单位 ms */
-#define BMS_KEY_DOUBLE_WINDOW_MS      1000U
-
-
-#if BMS_MODULE_KEY_ENABLE
-
 /**
  * @brief IP5326 KEY GPIO 控制
  *
@@ -42,38 +27,6 @@
 #define BMS_IO_KEY_PRESS()          LL_GPIO_SetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
 #define BMS_IO_KEY_RELEASE()        LL_GPIO_ResetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
 
-
-/* GPIO configuration check ------------------------------------------------------------------------------------------*/
-
-/** KEY 模块启用时必须配置 KEY GPIO。 */
-#if !defined(BMS_KEY_PORT) || !defined(BMS_KEY_PIN)
-#error "BMS KEY module requires BMS_KEY_PORT and BMS_KEY_PIN mappings in bsp_gpio.h"
-#endif
-
-
-/* KEY timing check --------------------------------------------------------------------------------------------------*/
-
-/** 短按必须大于 100ms。 */
-#if (BMS_CTRL_KEY_SHORT_MS <= BMS_KEY_SHORT_MIN_MS)
-#error "BMS_CTRL_KEY_SHORT_MS must be greater than 100 ms"
-#endif
-
-/** 短按必须小于 2000ms。 */
-#if (BMS_CTRL_KEY_SHORT_MS >= BMS_KEY_LONG_THRESHOLD_MS)
-#error "BMS_CTRL_KEY_SHORT_MS must be less than 2000 ms"
-#endif
-
-/** 长按必须大于 2000ms。 */
-#if (BMS_CTRL_KEY_LONG_MS <= BMS_KEY_LONG_THRESHOLD_MS)
-#error "BMS_CTRL_KEY_LONG_MS must be greater than 2000 ms"
-#endif
-
-/** 双击动作必须在 1s 内完成。 */
-#if ((BMS_CTRL_KEY_SHORT_MS * 2U + BMS_CTRL_KEY_DOUBLE_GAP_MS) >= BMS_KEY_DOUBLE_WINDOW_MS)
-#error "IP5326 double click sequence must finish within 1000 ms"
-#endif
-
-#endif /* BMS_MODULE_KEY_ENABLE */
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
@@ -117,8 +70,6 @@ typedef struct
 
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
-
-#if BMS_MODULE_KEY_ENABLE
 
 /*******************************************************************************
 //  Function   : bms_key_Init
@@ -184,8 +135,5 @@ void bms_key_Cancel(void);
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 const bms_key_status_t *bms_key_GetStatus(void);
-
-#endif /* BMS_MODULE_KEY_ENABLE */
-
 
 #endif /* _BMS_KEY_H_ */

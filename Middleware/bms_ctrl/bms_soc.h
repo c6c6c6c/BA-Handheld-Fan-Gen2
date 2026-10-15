@@ -27,24 +27,12 @@
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
 
 /**
- * @brief SOC 更新事件
- */
-typedef enum
-{
-    BMS_SOC_EVENT_NONE  = 0,       /**< 本周期无额外 SOC 校正 */
-    BMS_SOC_EVENT_OCV   = 1 << 0,  /**< 静置条件满足，执行 OCV 修正 */
-    BMS_SOC_EVENT_FULL  = 1 << 1,  /**< 满充端点成立，SOC 校准为 100% */
-    BMS_SOC_EVENT_EMPTY = 1 << 2   /**< 空电端点成立，SOC 校准为 0% */
-} BmsSocEvent;
-
-
-/**
  * @brief 单个 OCV-SOC 标定点，将同一测量点的电压与电量配对保存
  */
 typedef struct
 {
-    float voltage_v;          /**< 单节电芯开路电压，单位 V */
-    uint16_t soc_permille;    /**< SOC 千分比，范围 0~1000，例如 44 表示 4.4% */
+    float    voltage_v;          /**< 单节电芯开路电压，单位 V */
+    uint16_t soc_permille;       /**< SOC 千分比，范围 0~1000，例如 44 表示 4.4% */
 } BmsSocOcvPoint;
 
 
@@ -77,7 +65,9 @@ typedef struct
 typedef struct
 {
     BmsSocConfig cfg;            /**< SOC 配置参数副本 */
+
     float soc;                   /**< 当前 SOC，范围 0.0~1.0 */
+    
     float rest_timer_s;          /**< 当前连续静置时间，单位 s */
     float full_timer_s;          /**< 满充条件连续成立时间，单位 s */
     float empty_timer_s;         /**< 空电条件连续成立时间，单位 s */
@@ -86,9 +76,19 @@ typedef struct
 } BmsSocEstimator;
 
 
+
+/** ADCxConvertedDatas[] 使用逻辑通道索引，不可使用 LL_ADC_CHANNEL_xxx 作为数组下标 */
+#define BMS_BATTERY_ADC_FULL_SCALE              4095U          /* 12 位右对齐 ADC 满量程码值 */
+#define BMS_BATTERY_VREFINT_V                   1.2            /* VREFINT 典型电压，单位 V */
+#define BMS_BATTERY_PGA_GAIN                    16.0           /* OPA2 PGA 增益，与 bsp_pga2_Init() 保持一致 */
+#define BMS_BATTERY_PGA_ZERO_RATIO              0.5            /* 零电流时 PGA 输出相对 VCCA 的比例 */
+#define BMS_BATTERY_SHUNT_OHM                   0.01           /* 电流采样电阻 R18，单位 Ω */
+#define BMS_BATTERY_CURRENT_SIGN                1.0            /* 电流方向修正系数，正值表示放电 */
+
+
+
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
-#if BMS_MODULE_SOC_ENABLE
 
 /*******************************************************************************
 //  Function   : bms_soc_default_config
@@ -142,5 +142,4 @@ BmsSocEvent bms_soc_update(BmsSocEstimator *est, float cell_voltage_v,
 float bms_soc_from_ocv(const BmsSocConfig *cfg, float voltage_v);
 
 
-#endif /* BMS_MODULE_SOC_ENABLE */
 #endif /* BMS_SOC_H */

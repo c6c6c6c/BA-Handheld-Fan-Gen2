@@ -7,18 +7,12 @@
  ***********************************************************************************************************************
  */
 #include "bms_key.h"
-
-#if BMS_MODULE_KEY_ENABLE
-
 #include <string.h>
 
-
-
-
 static bms_key_status_t s_status;
-static bool s_initialized;
-static uint16_t s_remainingMs;
-static bms_key_phase_t s_phase;
+static bool             s_initialized;
+static uint16_t         s_remainingMs;
+static bms_key_phase_t  s_phase;
 
 
 /*******************************************************************************
@@ -61,11 +55,7 @@ bool bms_key_Init(void)
     s_phase       = BMS_KEY_IDLE;
     s_remainingMs = 0U;
 
-    if (!BMS_IO_KEY_IS_READY())
-    {
-        return false;
-    }
-
+	
     /* KEY 必须默认释放 */
     bms_key_SetPressed(false);
 
@@ -365,5 +355,3 @@ const bms_key_status_t *bms_key_GetStatus(void)
 {
     return &s_status;
 }
-
-#endif /* BMS_MODULE_KEY_ENABLE */
