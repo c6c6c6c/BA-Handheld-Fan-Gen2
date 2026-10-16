@@ -45,7 +45,7 @@ typedef enum
  */
 typedef struct
 {
-    uint32_t cycle_count;             /**< 电池循环次数 */
+    uint32_t cycle_count;             /**< 等效完整放电循环数，整数部分 */
     float soc;                        /**< SOC，范围 0.0~100.0% */
     float soh;                        /**< SOH，范围 0.0~100.0% */
     float remaining_capacity_mah;     /**< 当前剩余容量，单位 mAh */
@@ -94,12 +94,13 @@ typedef union
  */
 typedef struct
 {
-    battery_config_t     *configInfo;                 /**< 电池配置参数 */
+    const battery_config_t *configInfo;               /**< 电池配置参数，运行期间只读 */
     float                 usb_in_v;                   /**< usb输入电压，单位 V */
     float                 voltage_v;                  /**< 电池电压，单位 V */
     float                 current_ma;                 /**< 电池电流，单位 mA */
     float                 soc;                        /**< 当前 SOC，范围 0.0~100.0% */
     float                 soh;                        /**< 当前 SOH，范围 0.0~100.0% */
+    uint32_t              cycle_count;                /**< 累计等效完整放电循环数，整数部分 */
     float                 remaining_capacity_mah;     /**< 当前剩余容量，单位 mAh */
     uint32_t              charge_mah_total;           /**< 累计充入电量，单位 mAh */
     uint32_t              discharge_mah_total;        /**< 累计放出电量，单位 mAh */
@@ -131,7 +132,24 @@ typedef struct
 
 
 /* Control Parameters ------------------------------------------------------------------------------------------------*/
+#define SETBIT(x,bit)               ((x) |= (1U << (bit)))
+#define GETBIT(x, bit)              (((x) >> (bit)) & 0x01U)
+#define CLRBIT(x, bit)              ((x) &= ~(1U << (bit)))
 
+/* SOC 估算参数：默认 OCV 曲线需要按所选电芯实测标定。 */
+#define BMS_SOC_PERCENT_FULL               100.0f     /* SOC 百分比满量程 */
+#define BMS_SOC_PERMILLE_PER_PERCENT       10.0f      /* 千分比换算成百分比的系数 */
+#define BMS_SOC_MS_PER_SECOND              1000.0f    /* 秒到毫秒换算 */
+#define BMS_SOC_MS_PER_HOUR                3600000.0f /* 小时到毫秒换算 */
+#define BMS_SOC_OCV_CORRECTION_TAU_MS      600000.0f  /* 静置 OCV 柔性修正时间常数 */
+#define BMS_SOC_ENDPOINT_HOLD_MS           10000U     /* 放空端点连续确认时间 */
+#define BMS_SOC_MAX_UPDATE_MS              1000U      /* 超过此采样间隔不外推库仑电量 */
+
+/* SOH 经验模型示例：累计放出一次设计容量记作一个等效完整循环。 */
+#define BMS_SOH_REFERENCE_CYCLES           500U       /* 参考循环次数，需按实际电芯寿命数据标定 */
+#define BMS_SOH_AT_REFERENCE_PERCENT       80.0f      /* 达到参考循环次数时的假定 SOH，单位 % */
+#define BMS_SOH_INITIAL_PERCENT            100.0f     /* 零循环时的估算 SOH，单位 % */
+#define BMS_SOH_MIN_PERCENT                0.0f       /* SOH 显示下限 */
 
 /* Software Protection ------------------------------------------------------------------------------------------------*/
 

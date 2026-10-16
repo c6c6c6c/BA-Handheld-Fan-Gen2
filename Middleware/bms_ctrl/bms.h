@@ -11,6 +11,7 @@
 #include "bms_status.h"
 #include "bms_protect.h"
 #include "bms_soc.h"
+#include "bms_soh.h"
 #include "bms_convert.h"
 
 #endif /* _BMS_H_ */

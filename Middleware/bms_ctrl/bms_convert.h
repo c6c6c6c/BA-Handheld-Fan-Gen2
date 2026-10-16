@@ -27,11 +27,19 @@
 /** ADC 累计采样缓冲区数量 */
 #define SAMPLE_SUM_COUNT                         2U
 
+
+
 /** 12 位 ADC 量化级数 */
-#define BMS_BATTERY_ADC_FULL_SCALE               4096U
+#define BMS_BATTERY_ADC_FULL_SCALE               4095U
+
+
+/* battery voltage conversion --------------------------------------------------------------------------------------------*/
 
 /** MCU 内部参考电压 VREFINT，单位 V */
 #define BMS_BATTERY_VREFINT_V                    1.2f
+
+
+/* battery current conversion --------------------------------------------------------------------------------------------*/
 
 /** PGA2 零电流输出占 VCCA 的比例 */
 #define BMS_BATTERY_PGA_ZERO_RATIO               0.5f
@@ -40,7 +48,7 @@
 #define BMS_BATTERY_PGA_GAIN                     16.0f
 
 /** 电流采样分流电阻，单位 Ω */
-#define BMS_BATTERY_SHUNT_OHM                    0.1f
+#define BMS_BATTERY_SHUNT_OHM                    0.01f
 
 /** 电流方向修正系数，正值定义为放电 */
 #define BMS_BATTERY_CURRENT_SIGN                 1.0f

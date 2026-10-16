@@ -66,11 +66,12 @@ typedef struct
  */
 typedef struct
 {
-    bool pressed;                  /**< 当前 MCU 模拟 KEY 按下状态 */
-    uint32_t step_times;           /**< 当前阶段已经运行时间，单位 ms */
-    uint16_t step;                 /**< 当前执行阶段索引 */
-    bms_key_command_t target;      /**< 当前待执行目标命令 */
-    bms_key_command_t execute;     /**< 当前正在执行的命令或状态 */
+    bool pressed;                       /**< 当前 MCU 模拟 KEY 按下状态 */
+    uint32_t step_times;                /**< 当前阶段已经运行时间，单位 ms */
+    uint16_t step;                      /**< 当前执行阶段索引 */
+    bms_key_command_t target;           /**< 当前待执行目标命令 */
+    bms_key_command_t execute;          /**< 当前正在执行的命令或状态 */
+    bms_key_command_t lastComplete;     /**< 当前正在执行的命令或状态 */
 } bms_key_status_t;
 
 

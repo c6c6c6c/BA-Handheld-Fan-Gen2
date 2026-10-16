@@ -94,9 +94,9 @@ static led_state_t bms_status_detect(led_detect_t *det, uint8_t level, uint32_t 
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 #if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_1_LED
-static bms_status_mode_t bms_status_mode1_check(bms_power_state_t state)
+static bms_status_mode_t bms_status_mode1_check(battery_state_t state)
 {
-    if (state == BMS_POWER_CHARGING)
+    if (state == BAT_STATE_CHARGING)
     {
         if (s_status.led1.state == LED_STATE_BLINK_0_5HZ)
         {
@@ -134,9 +134,9 @@ static bms_status_mode_t bms_status_mode1_check(bms_power_state_t state)
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 #if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_2_LED
-static bms_status_mode_t bms_status_mode2_check(bms_power_state_t state)
+static bms_status_mode_t bms_status_mode2_check(battery_state_t state)
 {
-    if (state == BMS_POWER_CHARGING)
+    if (state == BAT_STATE_CHARGING)
     {
         if (s_status.led2.state == LED_STATE_OFF)
         {
@@ -177,7 +177,7 @@ static bms_status_mode_t bms_status_mode2_check(bms_power_state_t state)
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 #if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED
-static bms_status_mode_t bms_status_mode4_check(bms_power_state_t state)
+static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
 {
     led_state_t led[4];
     uint8_t i;
@@ -189,7 +189,7 @@ static bms_status_mode_t bms_status_mode4_check(bms_power_state_t state)
     led[2] = s_status.led3.state;
     led[3] = s_status.led4.state;
 
-    if (state == BMS_POWER_CHARGING)
+    if (state == BAT_STATE_CHARGING)
     {
         /* 四灯全亮表示充满。 */
         matched = true;
@@ -269,7 +269,7 @@ static bms_status_mode_t bms_status_mode4_check(bms_power_state_t state)
 //  Others     : 根据 BMS_STATUS_LED_MODE 选择 1 灯、2 灯或 4 灯识别逻辑
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
-void bms_status_check(bms_power_state_t state)
+void bms_status_check(battery_state_t state)
 {
 #if (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_1_LED)
 

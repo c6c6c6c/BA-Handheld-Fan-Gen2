@@ -87,7 +87,7 @@ void bms_key_Request(bms_key_command_t command)
 *******************************************************************************/
 void bms_key_RequestForce(bms_key_command_t command)
 {
-    if (s_status.execute != BMS_KEY_GUARD)
+    if (s_status.execute < BMS_KEY_NUM)
     {
         s_status.execute    = BMS_KEY_GUARD;
         s_status.step_times = 0U;
@@ -107,10 +107,11 @@ void bms_key_RequestForce(bms_key_command_t command)
 *******************************************************************************/
 void bms_key_Init(void)
 {
-    s_status.target     = BMS_KEY_LIGHT_IDEL;
-    s_status.execute    = BMS_KEY_LIGHT_IDEL;
-    s_status.step       = 0U;
-    s_status.step_times = 0U;
+    s_status.target       = BMS_KEY_LIGHT_IDEL;
+    s_status.execute      = BMS_KEY_LIGHT_IDEL;
+    s_status.lastComplete = BMS_KEY_LIGHT_IDEL;
+    s_status.step         = 0U;
+    s_status.step_times   = 0U;
 }
 
 
@@ -179,9 +180,10 @@ void bms_key_1ms_task(void)
             else
             {
                 /* 所有阶段执行完成，进入 Guard 状态。 */
-                s_status.execute    = BMS_KEY_GUARD;
-                s_status.step_times = 0U;
-                io_pressed          = BMS_KEY_IDLE_IO;
+                s_status.lastComplete = s_status.execute;
+                s_status.execute      = BMS_KEY_GUARD;
+                s_status.step_times   = 0U;
+                io_pressed            = BMS_KEY_IDLE_IO;
             }
             break;
     }

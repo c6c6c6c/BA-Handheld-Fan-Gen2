@@ -574,19 +574,9 @@
           <GroupName>Middleware/bms_ctrl</GroupName>
           <Files>
             <File>
-              <FileName>bms_ctrl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\bms_ctrl\bms_ctrl.c</FilePath>
-            </File>
-            <File>
               <FileName>bms_protect.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_protect.c</FilePath>
-            </File>
-            <File>
-              <FileName>bms_soc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soc.c</FilePath>
             </File>
             <File>
               <FileName>bms_key.c</FileName>
@@ -597,6 +587,26 @@
               <FileName>bms_status.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_status.c</FilePath>
+            </File>
+            <File>
+              <FileName>bms_convert.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_convert.c</FilePath>
+            </File>
+            <File>
+              <FileName>bms_soc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soc.c</FilePath>
+            </File>
+            <File>
+              <FileName>bms_soh.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soh.c</FilePath>
+            </File>
+            <File>
+              <FileName>bms_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_app.c</FilePath>
             </File>
           </Files>
         </Group>

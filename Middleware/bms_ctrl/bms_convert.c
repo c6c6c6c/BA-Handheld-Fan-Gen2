@@ -65,7 +65,7 @@ void sample_accum_push(uint32_t *adcValue)
     uint8_t i;
 
     /* 输入参数无效时不进行累计。 */
-    if (adcValue == NULL)
+    if (adcValue == 0)
     {
         return;
     }
@@ -116,7 +116,7 @@ bool sample_accum_get(double *adcValue)
     uint8_t i;
 
     /* 输出参数无效时不读取数据。 */
-    if (adcValue == NULL)
+    if (adcValue == 0)
     {
         return false;
     }

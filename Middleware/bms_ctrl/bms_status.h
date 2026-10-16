@@ -153,7 +153,7 @@ bool bms_status_Init(void);
 //  Others     : 根据 BMS_STATUS_LED_MODE 选择 1 灯、2 灯或 4 灯识别逻辑
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
-void bms_status_check(bms_power_state_t state);
+void bms_status_check(battery_state_t state);
 
 
 /*******************************************************************************
