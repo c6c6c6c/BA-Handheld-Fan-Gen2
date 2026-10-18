@@ -172,14 +172,14 @@ void bsp_uart1_HalfDuplexTx(void)
 }
 
 /*******************************************************************************
-//  Function   : bsp_usart1_HalfDuplexRx
+//  Function   : bsp_uart1_HalfDuplexRx
 //  Description: 切换 UART1 至半双工接收模式
 //  Param      : None
 //  Return     : None
 //  Others     : 将 TX 引脚切换为输入高阻，释放半双工通信总线
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-void bsp_usart1_HalfDuplexRx(void)
+void bsp_uart1_HalfDuplexRx(void)
 {
     LL_GPIO_SetPinMode(UART1_TX_PORT, UART1_TX_PIN, LL_GPIO_MODE_INPUT);
 }
@@ -194,7 +194,7 @@ void bsp_usart1_HalfDuplexRx(void)
 *******************************************************************************/
 void bsp_uart1_ReceiveStart(void)
 {
-    bsp_usart1_HalfDuplexRx();
+    bsp_uart1_HalfDuplexRx();
     LL_UART_EnableIT_LS(UART1);
     LL_UART_EnableIT_RXNE(UART1);
 }
@@ -240,14 +240,14 @@ void bsp_uart1_TransmitStop(void)
 }
 
 /*******************************************************************************
-//  Function   : bsp_usart1_TransmitByte
+//  Function   : bsp_uart1_TransmitByte
 //  Description: 发送一个 UART1 数据字节
 //  Param      : Val - 待发送的数据
 //  Return     : None
 //  Others     : 将指定数据写入 UART1 发送数据寄存器
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-void bsp_usart1_TransmitByte(uint8_t Val)
+void bsp_uart1_TransmitByte(uint8_t Val)
 {
     LL_UART_TransmitData(UART1, Val);
 }

@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>PY32F032x8,USE_FULL_LL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\filter;..\..\..\Middleware\common\port;..\..\..\Middleware\common\fan;..\..\..\Middleware\bms_ctrl;..\..\..\Application;..\..\..\Middleware\common\button</IncludePath>
+              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\button;..\..\..\Middleware\common\filter;..\..\..\Middleware\common\port;..\..\..\Middleware\common\fan;..\..\..\Middleware\common\ntc;..\..\..\Middleware\bms_ctrl;..\..\..\Application;..\..\..\Middleware\common\search;..\..\..\Middleware\protocol</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -573,6 +573,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
             </File>
+            <File>
+              <FileName>ntc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\ntc\ntc.c</FilePath>
+            </File>
+            <File>
+              <FileName>binary_search.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\search\binary_search.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -627,6 +637,16 @@
               <FileName>spray_track_private.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\spray_track\spray_track_private.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middleware/protocol</GroupName>
+          <Files>
+            <File>
+              <FileName>uart1_port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\protocol\uart1_port.c</FilePath>
             </File>
           </Files>
         </Group>

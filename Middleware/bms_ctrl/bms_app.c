@@ -249,6 +249,8 @@ void bms_app_1ms_task(void)
          */
         bms_battery.state = bms_battery_state(bms_battery.current_ma / BMS_BATTERY_CURRENT_MA_PER_A);
 
+				bms_status_check(bms_battery.state);
+
         /* 根据当前电压、电流等运行数据执行 BMS 软件保护检查。 */
         bms_protect_check(&bms_battery);
 

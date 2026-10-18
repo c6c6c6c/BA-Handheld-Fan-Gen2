@@ -317,7 +317,7 @@ void common_port_1msTask(common_port_t *port)
     if ((port->rx.Receiving != 0U) 
 	&&  (port->rx.State == COMMON_PORT_RX_IDLE))
     {
-        if (port->rx.TimerMs < 10)
+        if (port->rx.TimerMs < 100)
         {
             port->rx.TimerMs++;
         }

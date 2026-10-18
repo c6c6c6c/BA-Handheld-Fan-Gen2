@@ -18,7 +18,7 @@
 #include "bsp_adc.h"
 
 #include "filter.h"
-
+#include "ntc.h"
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
@@ -93,9 +93,19 @@ void app_sampling_Init(void)
 //  Others     : 在主循环或周期任务中调用，处理各通道累计采样数据并更新滤波结果
 //  Author     : Chen Liang 2026-10-18
 *******************************************************************************/
+ntc_table_status_t status;
+float ntc_temp; //NTC 2 温度
 void app_sampling_task(void)
 {
-    AvgFilter_Process(&avgFilterList[FILTER_LIST_NTC]);
-    AvgFilter_Process(&avgFilterList[FILTER_LIST_MOTOR]);
-    AvgFilter_Process(&avgFilterList[FILTER_LIST_SW]);
+		static uint32_t ntc_sequence = 0;
+
+		AvgFilter_Process(&avgFilterList[FILTER_LIST_NTC]);
+		AvgFilter_Process(&avgFilterList[FILTER_LIST_MOTOR]);
+		AvgFilter_Process(&avgFilterList[FILTER_LIST_SW]);
+
+		if( AvgFilter_GetSequence(&avgFilterList[FILTER_LIST_NTC]) != ntc_sequence)
+		{
+			ntc_sequence = AvgFilter_GetSequence(&avgFilterList[FILTER_LIST_NTC]);
+			status = NtcTable_ConvertAdc(&g_ntc_TSM,AvgFilter_GetFilteredValue(&avgFilterList[FILTER_LIST_NTC]),&ntc_temp);
+		}
 }
