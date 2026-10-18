@@ -8,7 +8,6 @@
 #include "bms_soh.h"
 
 #include <float.h>
-#include <stddef.h>
 
 #if BMS_SOH_REFERENCE_CYCLES == 0U
 #error "BMS_SOH_REFERENCE_CYCLES must be greater than zero"
@@ -30,7 +29,7 @@ static uint32_t s_last_discharge_mah_total;
 ***********************************************************************************************************************/
 static bool bms_soh_config_valid(const battery_config_t *config)
 {
-    return (config != NULL)
+    return (config != 0)
         && (config->design_capacity_mah > 0.0f)
         && (config->design_capacity_mah < FLT_MAX)
         && (BMS_SOH_INITIAL_PERCENT > 0.0f)
@@ -47,7 +46,7 @@ static bool bms_soh_config_valid(const battery_config_t *config)
 //  Description: 将累计放电量换算为等效完整循环数，再用经验衰减曲线计算 SOH
 //  Param      : battery - 电池运行数据
 //  Return     : true：更新成功；false：尚未初始化或配置无效
-//  Others     : 仅更新运行数据，不改写 persist 或其校验值
+//  Others     : 仅更新运行数据，不改写 soc_persist
 //  Author     : Chen Liang 2026-10-16
 ***********************************************************************************************************************/
 bool bms_soh_update(bms_battery_t *battery)
@@ -55,27 +54,27 @@ bool bms_soh_update(bms_battery_t *battery)
     double equivalent_cycles;
     double soh_percent;
 
-    if ((battery == NULL)
+    if ((battery == 0)
     ||  (battery != s_soh_owner)
     ||  (battery->configInfo != s_soh_config)
-    ||  (battery->discharge_mah_total < s_last_discharge_mah_total)
+    ||  (battery->soc_info.discharge_mah_total < s_last_discharge_mah_total)
     ||  !bms_soh_config_valid(battery->configInfo))
     {
         return false;
     }
 
     /* 累计放出设计容量对应 1 个等效完整循环，允许由多个浅放电组成。 */
-    equivalent_cycles = (double)battery->discharge_mah_total /
+    equivalent_cycles = (double)battery->soc_info.discharge_mah_total /
                         (double)battery->configInfo->design_capacity_mah;
 
     /* 对外显示整数循环数；完整精度只用于下面的 SOH 计算。 */
     if (equivalent_cycles >= (double)UINT32_MAX)
     {
-        battery->cycle_count = UINT32_MAX;
+        battery->soc_info.cycle_count = UINT32_MAX;
     }
     else
     {
-        battery->cycle_count = (uint32_t)equivalent_cycles;
+        battery->soc_info.cycle_count = (uint32_t)equivalent_cycles;
     }
 
     /* 从 0 循环时的初始值线性衰减至参考循环处的设定值。 */
@@ -93,8 +92,8 @@ bool bms_soh_update(bms_battery_t *battery)
         soh_percent = (double)BMS_SOH_INITIAL_PERCENT;
     }
 
-    battery->soh = (float)soh_percent;
-    s_last_discharge_mah_total = battery->discharge_mah_total;
+    battery->soc_info.soh      = (float)soh_percent;
+    s_last_discharge_mah_total = battery->soc_info.discharge_mah_total;
     return true;
 }
 
@@ -109,13 +108,13 @@ bool bms_soh_update(bms_battery_t *battery)
 ***********************************************************************************************************************/
 bool bms_soh_init(bms_battery_t *battery)
 {
-    if ((battery == NULL) || !bms_soh_config_valid(battery->configInfo))
+    if ((battery == 0) || !bms_soh_config_valid(battery->configInfo))
     {
         return false;
     }
 
     s_soh_owner  = battery;
     s_soh_config = battery->configInfo;
-    s_last_discharge_mah_total = battery->discharge_mah_total;
+    s_last_discharge_mah_total = battery->soc_info.discharge_mah_total;
     return bms_soh_update(battery);
 }

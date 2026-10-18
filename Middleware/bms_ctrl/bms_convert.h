@@ -38,6 +38,11 @@
 /** MCU 内部参考电压 VREFINT，单位 V */
 #define BMS_BATTERY_VREFINT_V                    1.2f
 
+/** 电池电压换算分子，单位 V·ADC码值；固定参数由编译器提前计算 */
+#define BMS_BATTERY_VOLTAGE_NUMERATOR            \
+                                                ((double)BMS_BATTERY_VREFINT_V * \
+                                                 (double)BMS_BATTERY_ADC_FULL_SCALE)
+
 
 /* battery current conversion --------------------------------------------------------------------------------------------*/
 
@@ -53,6 +58,17 @@
 /** 电流方向修正系数，正值定义为放电 */
 #define BMS_BATTERY_CURRENT_SIGN                 1.0f
 
+/** 电流单位换算：1 A = 1000 mA */
+#define BMS_BATTERY_CURRENT_MA_PER_A             1000.0
+
+/** 零电流对应的 ADC 码值，保留半码精度。 */
+#define BMS_BATTERY_CURRENT_ZERO_ADC             ((double)BMS_BATTERY_ADC_FULL_SCALE * BMS_BATTERY_PGA_ZERO_RATIO)
+
+/** 电流换算系数，单位 mA/(ADC码值·V)；固定参数可由编译器提前计算。 */
+#define BMS_BATTERY_CURRENT_MA_PER_CODE_V                                                                     \
+                                                ((BMS_BATTERY_CURRENT_MA_PER_A * BMS_BATTERY_CURRENT_SIGN) /  \
+                                                ((double)BMS_BATTERY_ADC_FULL_SCALE *  (BMS_BATTERY_PGA_GAIN * BMS_BATTERY_SHUNT_OHM)))
+
 
 /* USB voltage conversion --------------------------------------------------------------------------------------------*/
 
@@ -67,6 +83,11 @@
 
 /** USB 输入电压恢复倍率 */
 #define BMS_USB_ADC_DIV_RATIO                    ((BMS_USB_R_UP + BMS_USB_R_DOWN) / BMS_USB_R_DOWN)
+
+/** USB ADC 码值到 VBUS 电压的换算系数，单位 V/ADC码值 */
+#define BMS_USB_ADC_TO_VBUS_V                    \
+                                                 ((BMS_USB_ADC_REF_VOLTAGE * BMS_USB_ADC_DIV_RATIO) / \
+                                                 (double)BMS_BATTERY_ADC_FULL_SCALE)
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
@@ -128,7 +149,7 @@ void bms_convert_Init(void);
 //               适合在 ADC/DMA 采样完成中断中调用
 //  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
-void sample_accum_push(uint32_t *adcValue);
+void sample_accum_push(uint16_t *adcValue);
 
 
 /*******************************************************************************
@@ -157,7 +178,7 @@ double bms_battery_voltage(uint32_t vrefAdc);
 //  Description: 根据 PGA2 ADC 采样值计算电池充放电电流
 //  Param      : pgaAdc - PGA2 输出 ADC 采样值
 //               vbat   - 当前电池电压，单位 V
-//  Return     : 电池电流，单位 A；正值表示放电，负值表示充电；采样无效时返回 0
+//  Return     : 电池电流，单位 mA；正值表示放电，负值表示充电；采样无效时返回 0
 //  Others     : PGA2 放大分流电阻 R18 两端压差，零电流输出为 VCCA 的固定比例
 //  Author     : Chen Liang 2026-10-15
 *******************************************************************************/

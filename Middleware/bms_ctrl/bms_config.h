@@ -46,13 +46,12 @@ typedef enum
 typedef struct
 {
     uint32_t cycle_count;             /**< 等效完整放电循环数，整数部分 */
-    float soc;                        /**< SOC，范围 0.0~100.0% */
-    float soh;                        /**< SOH，范围 0.0~100.0% */
-    float remaining_capacity_mah;     /**< 当前剩余容量，单位 mAh */
+    float    soc;                     /**< SOC，范围 0.0~100.0% */
+    float    soh;                     /**< SOH，范围 0.0~100.0% */
+    float    remaining_capacity_mah;  /**< 当前剩余容量，单位 mAh */
     uint32_t charge_mah_total;        /**< 累计充入电量，单位 mAh */
     uint32_t discharge_mah_total;     /**< 累计放出电量，单位 mAh */
-    uint32_t checksum;                /**< 掉电保存数据校验值 */
-} battery_persist_t;
+} battery_soc_t;
 
 
 /**
@@ -95,19 +94,18 @@ typedef union
 typedef struct
 {
     const battery_config_t *configInfo;               /**< 电池配置参数，运行期间只读 */
-    float                 usb_in_v;                   /**< usb输入电压，单位 V */
-    float                 voltage_v;                  /**< 电池电压，单位 V */
-    float                 current_ma;                 /**< 电池电流，单位 mA */
-    float                 soc;                        /**< 当前 SOC，范围 0.0~100.0% */
-    float                 soh;                        /**< 当前 SOH，范围 0.0~100.0% */
-    uint32_t              cycle_count;                /**< 累计等效完整放电循环数，整数部分 */
-    float                 remaining_capacity_mah;     /**< 当前剩余容量，单位 mAh */
-    uint32_t              charge_mah_total;           /**< 累计充入电量，单位 mAh */
-    uint32_t              discharge_mah_total;        /**< 累计放出电量，单位 mAh */
-    battery_state_t       state;                      /**< 当前电池工作状态 */
-    battery_persist_t     persist;                    /**< 掉电保存数据 */
-    bms_protect_fault_t   fault_real;                 /**< 实时故障 */
-    bms_protect_fault_t   fault_hold;                 /**< 保持故障 */
+
+    battery_state_t         state;                      /**< 当前电池工作状态 */
+  
+    double                  usb_in_v;                   /**< usb输入电压，单位 V */
+    double                  voltage_v;                  /**< 电池电压，单位 V */
+    double                  current_ma;                 /**< 电池电流，单位 mA */
+
+    battery_soc_t           soc_info;                    /**< soc 参数 */
+    battery_soc_t           soc_persist;                /**< 掉电保存数据 */
+
+    bms_protect_fault_t     fault_real;                 /**< 实时故障 */
+    bms_protect_fault_t     fault_hold;                 /**< 保持故障 */
 
 } bms_battery_t;
 
@@ -132,7 +130,7 @@ typedef struct
 
 
 /* Control Parameters ------------------------------------------------------------------------------------------------*/
-#define SETBIT(x,bit)               ((x) |= (1U << (bit)))
+#define SETBIT(x, bit)              ((x) |= (1U << (bit)))
 #define GETBIT(x, bit)              (((x) >> (bit)) & 0x01U)
 #define CLRBIT(x, bit)              ((x) &= ~(1U << (bit)))
 
@@ -150,6 +148,9 @@ typedef struct
 #define BMS_SOH_AT_REFERENCE_PERCENT       80.0f      /* 达到参考循环次数时的假定 SOH，单位 % */
 #define BMS_SOH_INITIAL_PERCENT            100.0f     /* 零循环时的估算 SOH，单位 % */
 #define BMS_SOH_MIN_PERCENT                0.0f       /* SOH 显示下限 */
+
+/* 掉电恢复时的 SOC/剩余容量一致性容差。 */
+#define BMS_PERSIST_SOC_TOLERANCE_PERCENT  0.1f
 
 /* Software Protection ------------------------------------------------------------------------------------------------*/
 

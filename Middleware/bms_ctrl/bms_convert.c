@@ -34,9 +34,9 @@ static void sample_accum_init(void)
 {
     uint8_t i, j;
 
-    for (i = 0U; i < BMS_ADC_NUM; i++)
+    for (i = 0U; i < SAMPLE_SUM_COUNT; i++)
     {
-        for (j = 0U; j < SAMPLE_SUM_COUNT; j++)
+        for (j = 0U; j < BMS_ADC_NUM; j++)
         {
             adc_accum.buf[i].sum[j] = 0U;
         }
@@ -59,7 +59,7 @@ static void sample_accum_init(void)
 //               适合在 ADC/DMA 采样完成中断中调用
 //  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
-void sample_accum_push(uint32_t *adcValue)
+void sample_accum_push(uint16_t *adcValue)
 {
     sample_accum_buf_t *buf;
     uint8_t i;
@@ -81,7 +81,7 @@ void sample_accum_push(uint32_t *adcValue)
     /* 累计各 ADC 通道采样值。 */
     for (i = 0U; i < BMS_ADC_NUM; i++)
     {
-        buf->sum[i] += adcValue[i];
+        buf->sum[i] += (uint32_t)adcValue[i];
     }
 
     buf->count++;
@@ -184,9 +184,8 @@ double bms_battery_voltage(uint32_t vrefAdc)
         return 0.0;
     }
 
-    return BMS_BATTERY_VREFINT_V *
-           (double)BMS_BATTERY_ADC_FULL_SCALE /
-           (double)vrefAdc;
+    /* 固定参数已合并到换算分子中，运行时仅需一次除法。 */
+    return BMS_BATTERY_VOLTAGE_NUMERATOR / (double)vrefAdc;
 }
 
 
@@ -195,7 +194,7 @@ double bms_battery_voltage(uint32_t vrefAdc)
 //  Description: 根据 PGA2 ADC 采样值计算电池充放电电流
 //  Param      : pgaAdc - PGA2 输出 ADC 采样值
 //               vbat   - 当前电池电压，单位 V
-//  Return     : 电池电流，单位 A；正值表示放电，负值表示充电；采样无效时返回 0
+//  Return     : 电池电流，单位 mA；正值表示放电，负值表示充电；采样无效时返回 0
 //  Others     : PGA2 放大分流电阻 R18 两端压差，零电流输出为 VCCA 的固定比例
 //  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
@@ -213,13 +212,11 @@ double bms_battery_current(uint32_t pgaAdc, double vbat)
      * V_PGA   = ADC_PGA / ADC_FULL_SCALE × VCCA
      * V_ZERO  = ZERO_RATIO × VCCA
      * V_SHUNT = (V_PGA - V_ZERO) / PGA_GAIN
-     * I       = V_SHUNT / R_SHUNT
+     * I_mA    = V_SHUNT / R_SHUNT × 1000
+     * 合并固定系数后：I_mA = (ADC_PGA - ZERO_ADC) × VCCA × MA_PER_CODE_V
      */
-    return (((double)pgaAdc / (double)BMS_BATTERY_ADC_FULL_SCALE) -
-            BMS_BATTERY_PGA_ZERO_RATIO) *
-           vbat /
-           (BMS_BATTERY_PGA_GAIN * BMS_BATTERY_SHUNT_OHM) *
-           BMS_BATTERY_CURRENT_SIGN;
+    return ((double)pgaAdc - BMS_BATTERY_CURRENT_ZERO_ADC) *
+           vbat * BMS_BATTERY_CURRENT_MA_PER_CODE_V;
 }
 
 
@@ -233,21 +230,14 @@ double bms_battery_current(uint32_t pgaAdc, double vbat)
 *******************************************************************************/
 double bms_usb_in_voltage(uint32_t usbAdc)
 {
-    double adcVoltage;
-
     /* ADC 尚未有效或输出达到满量程时不进行换算。 */
     if ((usbAdc == 0U) || (usbAdc >= BMS_BATTERY_ADC_FULL_SCALE))
     {
         return 0.0;
     }
 
-    /* 将 ADC 码值换算为 ADC 输入端实际电压。 */
-    adcVoltage =
-        ((double)usbAdc * BMS_USB_ADC_REF_VOLTAGE) /
-        (double)BMS_BATTERY_ADC_FULL_SCALE;
-
-    /* 根据硬件分压比例恢复实际 VBUS 电压。 */
-    return adcVoltage * BMS_USB_ADC_DIV_RATIO;
+    /* 固定参数已合并到换算系数中，运行时仅需一次乘法。 */
+    return (double)usbAdc * BMS_USB_ADC_TO_VBUS_V;
 }
 
 

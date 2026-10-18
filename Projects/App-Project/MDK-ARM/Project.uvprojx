@@ -16,7 +16,7 @@
         <TargetCommonOption>
           <Device>PY32F032x8</Device>
           <Vendor>Puya</Vendor>
-          <PackID>Puya.PY32F0xx_DFP.1.2.20</PackID>
+          <PackID>Puya.PY32F0xx_DFP.1.2.21</PackID>
           <PackURL>https://www.puyasemi.com/uploadfiles/</PackURL>
           <Cpu>IRAM(0x20000000,0x00002000) IROM(0x08000000,0x00010000) CPUTYPE("Cortex-M0+") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>PY32F032x8,USE_FULL_LL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\port;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\fan;..\..\..\Middleware\bms_ctrl</IncludePath>
+              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\filter;..\..\..\Middleware\common\port;..\..\..\Middleware\common\fan;..\..\..\Middleware\bms_ctrl;..\..\..\Application;..\..\..\Middleware\common\button</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -554,6 +554,11 @@
               <FilePath>..\..\..\Middleware\common\fan\fan.c</FilePath>
             </File>
             <File>
+              <FileName>filter.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\filter\filter.c</FilePath>
+            </File>
+            <File>
               <FileName>button.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\button\button.c</FilePath>
@@ -571,7 +576,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Middleware/bms_ctrl</GroupName>
+          <GroupName>Middleware/bms</GroupName>
           <Files>
             <File>
               <FileName>bms_protect.c</FileName>
@@ -622,6 +627,21 @@
               <FileName>spray_track_private.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\spray_track\spray_track_private.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Application</GroupName>
+          <Files>
+            <File>
+              <FileName>app_sampling.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Application\app_sampling.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_system.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Application\app_system.c</FilePath>
             </File>
           </Files>
         </Group>

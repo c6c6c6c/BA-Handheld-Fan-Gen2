@@ -61,8 +61,8 @@ do                                                               \
 #define FAN_SW_PIN                         LL_GPIO_PIN_8
 
 /** @brief 喷雾按键 GPIO */
-#define MIST_SW_PORT                       GPIOA
-#define MIST_SW_PIN                        LL_GPIO_PIN_9
+#define MIST_SW_PORT                       GPIOB
+#define MIST_SW_PIN                        LL_GPIO_PIN_2
 
 
 /* Display -----------------------------------------------------------------------------------------------------------*/
@@ -81,7 +81,7 @@ do                                                               \
  * 用于显示芯片双向/单向数据通信。
  */
 #define DISPLAY_DIO_PORT                   GPIOA
-#define DISPLAY_DIO_PIN                    LL_GPIO_PIN_10
+#define DISPLAY_DIO_PIN                    LL_GPIO_PIN_9
 
 
 /* BMS Control -------------------------------------------------------------------------------------------------------*/

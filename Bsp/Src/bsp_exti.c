@@ -59,6 +59,15 @@ static void bsp_exti_sleep_Init(void)
     LL_EXTI_Init(&EXTI_InitStruct);
 
     /*
+     * MIST_SW：
+     * 配置为 EXTI Event 模式。
+     * 当检测到指定边沿时产生 EXTI Event，用于睡眠状态唤醒 MCU。
+     */
+    EXTI_InitStruct.Line        = USB_IN_EXTI_LINE;
+    EXTI_InitStruct.Trigger     = USB_IN_EXTI_TRIGGER;
+    LL_EXTI_Init(&EXTI_InitStruct);
+
+    /*
      * 配置 EXTI Line 与实际 GPIO 端口映射关系。
      *
      * FAN_SW  -> 对应 FAN_SW_EXTI_CONFIG_PORT
@@ -66,6 +75,7 @@ static void bsp_exti_sleep_Init(void)
      */
     LL_EXTI_SetEXTISource(FAN_SW_EXTI_CONFIG_PORT, FAN_SW_EXTI_CONFIG_LINE);
     LL_EXTI_SetEXTISource(MIST_SW_EXTI_CONFIG_PORT, MIST_SW_EXTI_CONFIG_LINE);
+    LL_EXTI_SetEXTISource(USB_IN_EXTI_CONFIG_PORT, USB_IN_EXTI_CONFIG_LINE);
 }
 
 
@@ -132,7 +142,7 @@ void bsp_exti_Init(void)
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
 
     bsp_exti_sleep_Init();
-    bsp_exti_usb_Init();
+    //bsp_exti_usb_Init();
 }
 
 

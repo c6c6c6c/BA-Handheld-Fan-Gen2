@@ -30,7 +30,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "bsp_tim1.h"
+#include "app_system.h"
 
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -52,12 +52,12 @@ int main(void)
   /* System clock configuration */
   APP_SystemClockConfig();
 
-  /* 初始 M_PWM 高电平占空比为 0%，后续通过 PWM API 调整。 */
-  bsp_tim1_Init();
+  system_init();
 
   /* infinite loop */
   while (1)
   {
+	system_run();
   }
 }
 

@@ -294,8 +294,8 @@ bool bms_soc_init(bms_battery_t *battery, float initial_soc_percent)
     s_soc.has_last_voltage       = false;
 
     /* 同步更新对外可见的电池运行数据。 */
-    battery->soc                    = initial_soc_percent;
-    battery->remaining_capacity_mah = (float)s_soc.remaining_capacity_mah;
+    battery->soc_info.soc                    = initial_soc_percent;
+    battery->soc_info.remaining_capacity_mah = (float)s_soc.remaining_capacity_mah;
 
     return true;
 }
@@ -313,6 +313,7 @@ bool bms_soc_init(bms_battery_t *battery, float initial_soc_percent)
 bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
 {
     const  battery_config_t *config;
+    battery_soc_t           *soc_info;
     double capacity_mah;
     double delta_mah;
     float  alpha;
@@ -349,6 +350,7 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
     }
 
     config       = battery->configInfo;
+    soc_info     = &battery->soc_info;
     capacity_mah = config->design_capacity_mah;
 
     /*
@@ -356,7 +358,8 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
      *
      * delta_mAh = |I(mA)| * dt(ms) / 3600000
      */
-    delta_mah = (double)bms_soc_abs(battery->current_ma) * ((double)elapsed_ms / (double)BMS_SOC_MS_PER_HOUR);
+    delta_mah = (double)bms_soc_abs(battery->current_ma) *
+                ((double)elapsed_ms / (double)BMS_SOC_MS_PER_HOUR);
 
     /*
      * current_ma < 0：充电
@@ -365,7 +368,7 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
     if (battery->current_ma < 0.0f)
     {
         /* 累计历史充电量。 */
-        bms_soc_add_total(&battery->charge_mah_total, &s_soc.charge_fraction_mah, delta_mah);
+        bms_soc_add_total(&soc_info->charge_mah_total, &s_soc.charge_fraction_mah, delta_mah);
 
         /*
          * 充入电池的有效容量需要乘以充电效率。
@@ -377,7 +380,7 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
     else if (battery->current_ma > 0.0f)
     {
         /* 累计历史放电量。 */
-        bms_soc_add_total(&battery->discharge_mah_total, &s_soc.discharge_fraction_mah, delta_mah);
+        bms_soc_add_total(&soc_info->discharge_mah_total, &s_soc.discharge_fraction_mah, delta_mah);
 
         /*
          * 放电时按照放电效率折算剩余容量消耗。
@@ -402,7 +405,8 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
      *
      * SOC = remaining_capacity / design_capacity * 100%
      */
-    battery->soc = (float)(s_soc.remaining_capacity_mah * (double)BMS_SOC_PERCENT_FULL / capacity_mah);
+    soc_info->soc = (float)(s_soc.remaining_capacity_mah *
+                            (double)BMS_SOC_PERCENT_FULL / capacity_mah);
 
     /*
      * 判断电池端电压是否稳定。
@@ -412,8 +416,8 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
      * 只有电压变化速度足够小，才认为满足静置电压稳定条件。
      */
     voltage_stable = s_soc.has_last_voltage
-        && (bms_soc_abs(battery->voltage_v - s_soc.last_voltage_v) 
-        <= config->rest_dvdt_v_per_s * (float)elapsed_ms /BMS_SOC_MS_PER_SECOND);
+        && (bms_soc_abs(battery->voltage_v - s_soc.last_voltage_v)
+        <= config->rest_dvdt_v_per_s * (float)elapsed_ms / BMS_SOC_MS_PER_SECOND);
 
     /*
      * 静置判定条件：
@@ -458,7 +462,7 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
      */
     if ((battery->state == BAT_STATE_FULL) && (battery->voltage_v >= config->full_voltage_v))
     {
-        battery->soc = BMS_SOC_PERCENT_FULL;
+        soc_info->soc = BMS_SOC_PERCENT_FULL;
         s_soc.remaining_capacity_mah = capacity_mah;
     }
     /*
@@ -469,7 +473,7 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
      */
     else if (s_soc.empty_ms >= BMS_SOC_ENDPOINT_HOLD_MS)
     {
-        battery->soc = 0.0f;
+        soc_info->soc = 0.0f;
         s_soc.remaining_capacity_mah = 0.0;
     }
     /*
@@ -490,18 +494,19 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
         /*
          * SOCnew = SOCold + alpha * (SOCocv - SOCold)
          */
-        battery->soc += alpha * (bms_soc_from_ocv(battery->voltage_v) - battery->soc);
-        battery->soc  = bms_soc_clamp(battery->soc, BMS_SOC_PERCENT_FULL);
+        soc_info->soc += alpha * (bms_soc_from_ocv(battery->voltage_v) - soc_info->soc);
+        soc_info->soc  = bms_soc_clamp(soc_info->soc, BMS_SOC_PERCENT_FULL);
 
         /*
          * OCV 修正 SOC 后，同步反算剩余容量，
          * 保证 SOC 和 remaining_capacity_mah 始终一致。
          */
-        s_soc.remaining_capacity_mah = capacity_mah * ((double)battery->soc / (double)BMS_SOC_PERCENT_FULL);
+        s_soc.remaining_capacity_mah = capacity_mah *
+                                       ((double)soc_info->soc / (double)BMS_SOC_PERCENT_FULL);
     }
 
     /* 将内部高精度剩余容量同步到电池运行数据。 */
-    battery->remaining_capacity_mah = (float)s_soc.remaining_capacity_mah;
+    soc_info->remaining_capacity_mah = (float)s_soc.remaining_capacity_mah;
 
     /* 保存本次电压，供下一周期计算电压变化速率。 */
     s_soc.last_voltage_v   = battery->voltage_v;

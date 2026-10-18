@@ -32,13 +32,13 @@
 /**
  * @brief 喷雾按键睡眠唤醒 EXTI 配置
  *
- * MIST_SW 使用 PA9，对应 EXTI Line 9。
+ * MIST_SW 使用 PB2，对应 EXTI Line 2。
  * 系统休眠期间检测按键有效边沿，用于唤醒 MCU。
  */
-#define MIST_SW_EXTI_LINE              LL_EXTI_LINE_9
+#define MIST_SW_EXTI_LINE              LL_EXTI_LINE_2
 #define MIST_SW_EXTI_TRIGGER           LL_EXTI_TRIGGER_RISING
-#define MIST_SW_EXTI_CONFIG_PORT       LL_EXTI_CONFIG_PORTA
-#define MIST_SW_EXTI_CONFIG_LINE       LL_EXTI_CONFIG_LINE9
+#define MIST_SW_EXTI_CONFIG_PORT       LL_EXTI_CONFIG_PORTB
+#define MIST_SW_EXTI_CONFIG_LINE       LL_EXTI_CONFIG_LINE2
 
 
 /**

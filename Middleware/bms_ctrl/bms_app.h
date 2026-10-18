@@ -29,10 +29,32 @@ extern bms_battery_t bms_battery;
 //  Param      : config              - 电池配置参数
 //               initial_soc_percent - 初始 SOC，单位 %
 //  Return     : true：配置成功；false：配置或初始 SOC 无效
-//  Others     : 调用前应从有效掉电数据恢复累计放电量；失败时恢复原 configInfo
+//  Others     : 上电时先用默认 SOC 初始化，再调用 bms_app_Restore() 恢复有效数据；
+//               配置失败时恢复原 configInfo
 //  Author     : Chen Liang 2026-10-16
 ***********************************************************************************************************************/
 bool bms_app_ConfigureBattery(const battery_config_t *config, float initial_soc_percent);
+
+/***********************************************************************************************************************
+//  Function   : bms_app_Restore
+//  Description: 上电时检查掉电数据，并恢复 SOC、累计电量及 SOH 运行状态
+//  Param      : saved - 用户从 Flash 读取的完整掉电数据
+//  Return     : true：数据有效且恢复成功；false：无效，原运行数据不变
+//  Others     : 先调用 bms_app_ConfigureBattery()，再于周期任务启动前调用本函数；
+//               Flash 读取由调用方实现，数据格式与电池设计容量必须匹配
+//  Author     : Chen Liang 2026-10-16
+***********************************************************************************************************************/
+bool bms_app_Restore(const battery_soc_t *saved);
+
+/***********************************************************************************************************************
+//  Function   : bms_app_Save
+//  Description: 生成电池 SOC 掉电数据快照
+//  Param      : output - 接收快照的缓冲区，供调用方写入 Flash
+//  Return     : true：快照有效；false：未初始化或运行数据无效
+//  Others     : 与 BMS 周期任务串行调用；Flash 写入、双备份及写后校验由调用方实现
+//  Author     : Chen Liang 2026-10-16
+***********************************************************************************************************************/
+bool bms_app_Save(battery_soc_t *output);
 
 /***********************************************************************************************************************
 //  Function   : bms_app_Init

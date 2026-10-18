@@ -49,6 +49,7 @@ extern "C" {
 #include "py32f032_ll_uart.h"
 #include "py32f032_ll_flash.h"
 #include "py32f032_ll_iwdg.h"
+#include "py32f032_ll_opa.h"
 
 #include <stdbool.h>
 #include <stdint.h>
