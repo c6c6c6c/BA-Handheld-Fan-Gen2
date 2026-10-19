@@ -14,7 +14,6 @@
 #define NTC_H
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
-
 #include <stdint.h>
 
 /* Defines -----------------------------------------------------------------------------------------------------------*/
@@ -58,13 +57,13 @@ typedef struct
  */
 typedef enum
 {
-    NTC_TABLE_STATUS_OK = 0,                  /* 温度转换成功 */
-    NTC_TABLE_STATUS_PARAM_ERROR,             /* 输入参数无效 */
-    NTC_TABLE_STATUS_OPEN_CIRCUIT,            /* NTC 开路 */
-    NTC_TABLE_STATUS_SHORT_CIRCUIT,           /* NTC 短路 */
-    NTC_TABLE_STATUS_BELOW_RANGE,             /* 温度低于查表范围 */
-    NTC_TABLE_STATUS_ABOVE_RANGE              /* 温度高于查表范围 */
-} ntc_table_status_t;
+    NTC_STATUS_OK = 0,                  /* 温度转换成功 */
+    NTC_STATUS_PARAM_ERROR,             /* 输入参数无效 */
+    NTC_STATUS_OPEN_CIRCUIT,            /* NTC 开路 */
+    NTC_STATUS_SHORT_CIRCUIT,           /* NTC 短路 */
+    NTC_STATUS_BELOW_RANGE,             /* 温度低于查表范围 */
+    NTC_STATUS_ABOVE_RANGE              /* 温度高于查表范围 */
+} ntc_status_t;
 
 /* Exported Variables ------------------------------------------------------------------------------------------------*/
 
@@ -85,7 +84,7 @@ extern const ntc_table_t g_ntc_WMF52D;
 //  Others     : 温度越界时输出对应的端点温度；NTC 开路或短路时返回相应的故障状态
 //  Author     : Leo Chen 2026-08-29
 *******************************************************************************/
-ntc_table_status_t NtcTable_ConvertAdc(const ntc_table_t *pNtcTable,
+ntc_status_t NtcTable_ConvertAdc(const ntc_table_t *pNtcTable,
                                        uint16_t           adcValue,
                                        float             *pTemperatureC);
 

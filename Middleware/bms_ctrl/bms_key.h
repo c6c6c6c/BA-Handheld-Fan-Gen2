@@ -28,10 +28,10 @@
 #define BMS_IO_KEY_RELEASE()        LL_GPIO_ResetOutputPin(BMS_KEY_PORT, BMS_KEY_PIN)
 
 /** KEY 命令执行完成后的保护间隔，单位 ms */
-#define BMS_KEY_GUARD_TIME_MS       1000U
+#define BMS_KEY_GUARD_TIME_MS       2000U
 
 /** KEY 空闲状态对应的软件按下状态 */
-#define BMS_KEY_IDLE_IO             false
+#define BMS_KEY_IDLE_IO             true
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/

@@ -11,7 +11,6 @@
  */
 #include "binary_search.h"
 
-#include <stddef.h>
 
 /*******************************************************************************
 //  Function   : BinarySearch_U16Descending

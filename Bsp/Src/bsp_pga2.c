@@ -52,6 +52,7 @@ void bsp_pga2_Init(void)
 
     /* 使能 OPA2 外设时钟，并在修改工作参数前保持 OPA2 关闭。 */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_OPA2);
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_OPA1);
     LL_OPA_Disable(OPA2);
 
     /* 配置 OPA2 为同相 PGA 模式，增益设置为 16 倍。 */

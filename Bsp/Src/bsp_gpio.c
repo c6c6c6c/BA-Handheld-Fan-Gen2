@@ -94,7 +94,7 @@ void bsp_gpio_Init(void)
      * 电池供电/负载通路使能信号。
      * 初始化默认输出低电平。
      */
-    LL_GPIO_ResetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN);
+    LL_GPIO_SetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN);
     SET_GPIO_OUTPUT_MODE(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
 
     /*

@@ -17,7 +17,7 @@
 /** 各 KEY 命令对应的阶段时间配置 */
 const bms_key_process_t s_process[BMS_KEY_NUM] =
 {
-    [BMS_KEY_WAKEUP]       = { 1U, (const uint16_t[]){150U}},
+    [BMS_KEY_WAKEUP]       = { 1U, (const uint16_t[]){1000U}},
     [BMS_KEY_STANDBY]      = { 1U, (const uint16_t[]){2100U}},
     [BMS_KEY_LIGHT_TOGGLE] = { 3U, (const uint16_t[]){150U, 200U, 150U}}
 };

@@ -11,8 +11,9 @@
  */
 #include "app_system.h"
 #include "app_spray_track.h"
+#include "../Middleware/mist_ctrl/mist_ctrl.h"
 
-spray_track_runtime_t spray_track;
+mist_ctrl_t spray_track;
 extern modbus_rtu_t modbus;
 /*******************************************************************************
 //  Function   : mobdus_ctrl_func
@@ -24,15 +25,15 @@ extern modbus_rtu_t modbus;
 *******************************************************************************/
 void app_spray_track_Init(void)
 {
-  	static const spray_track_config_t spray_api = 
+    static const mist_api_t spray_api =
 	{
-		.setFrequency = bsp_pwm_SetFrequency,
-		.setDuty      = bsp_pwm_SetDuty
+		.setFreq = bsp_pwm_SetFrequency,
+		.setDuty = bsp_pwm_SetDuty
 	};
 
-    if(SprayTrack_Init(&spray_track,&g_sprayTrackParam,&spray_api))
+    if(mist_ctrl_init(&spray_track,&g_mistCfg,&spray_api))
 	{
-        SprayTrack_Stop(&spray_track);
+        mist_ctrl_stop(&spray_track);
 	}
     bsp_pwm_SetDuty(0);
 
@@ -48,9 +49,9 @@ void app_spray_track_Init(void)
 *******************************************************************************/
 void app_spray_track_stop(void)
 {
-    if(SprayTrack_GetStatus(&spray_track)->state != SPRAY_TRACK_STATE_IDLE)
+    if(mist_ctrl_status(&spray_track)->state != MIST_STATE_IDLE)
     {
-        SprayTrack_Stop(&spray_track);
+        mist_ctrl_stop(&spray_track);
     }
 }
 
@@ -64,9 +65,9 @@ void app_spray_track_stop(void)
 *******************************************************************************/
 void app_spray_track_start(void)
 {
-    if(SprayTrack_GetStatus(&spray_track)->state == SPRAY_TRACK_STATE_IDLE)
+    if(mist_ctrl_status(&spray_track)->state == MIST_STATE_IDLE)
     {
-        SprayTrack_Start(&spray_track, 0);
+        mist_ctrl_start(&spray_track, 0);
     }
 }
 
@@ -88,7 +89,7 @@ void app_spray_track_task(void)
     else if(System.Istrak)
     {
         app_spray_track_start();
-        SprayTrack_Task(&spray_track,
+        mist_ctrl_task(&spray_track,
 						SprayAd_GetFilteredValue(),
 						SprayAd_GetSequence());
         bsp_pwm_SetDuty(System.trak_duty);

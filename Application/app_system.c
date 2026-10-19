@@ -39,8 +39,11 @@
 system_t     System;              /* 系统运行状态、工作模式、计时及动画状态 */
 /* External variables ------------------------------------------------------------------------------------------------*/
 
-     uint8_t rx_buffer[200];
-     uint8_t tx_buffer[200];
+uint8_t rx_buffer[200];
+uint8_t tx_buffer[200];
+
+uint32_t fre_hz = 1000;
+uint16_t duty   = 200;
 
 /* Function implementations ------------------------------------------------------------------------------------------*/
 /*******************************************************************************
@@ -105,6 +108,8 @@ void system_init(void)
 {    
     system_bsp_init();  
     system_data_init();
+	
+	
 }
 /*******************************************************************************
 //  Function   : system_run
@@ -114,7 +119,7 @@ void system_init(void)
 //  Others     : 每次调用处理通信和 Modbus；按 1ms、10ms 周期调度业务任务
 //  Author     : 陈亮 2026-06-06
 *******************************************************************************/
-uint16_t duty = 200;
+
 void system_run(void)
 {
     static timer_base_t _timer_logic;
@@ -149,6 +154,7 @@ void system_run(void)
     {
         s_uart1PortApi.receive_rst();
     }
+    (void)bsp_tim16_ch1_pwm_set(fre_hz, duty);
 }
 
 

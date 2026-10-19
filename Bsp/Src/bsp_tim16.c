@@ -80,7 +80,7 @@ static void TIM16_PWMChannel_Configuration(void)
      *
      * PB6 高电平占空比 = CCR1 / (ARR + 1)。
      */
-    TIM_OC_Initstruct.OCMode       = LL_TIM_OCMODE_PWM1;
+    TIM_OC_Initstruct.OCMode       = LL_TIM_OCMODE_PWM2;
     TIM_OC_Initstruct.OCState      = LL_TIM_OCSTATE_DISABLE;
     TIM_OC_Initstruct.OCNState     = LL_TIM_OCSTATE_ENABLE;
     TIM_OC_Initstruct.OCPolarity   = LL_TIM_OCPOLARITY_HIGH;
@@ -145,43 +145,47 @@ void bsp_tim16_Init(void)
 }
 
 /*******************************************************************************
-//  Function   : bsp_tim16_ch1_pwm_setfrequency
-//  Description: 设置 TIM16 PWM 频率
-//  Param      : frequency_hz - 目标频率，单位 Hz
+//  Function   : bsp_tim16_ch1_pwm_set
+//  Description: 同时设置 TIM16 PWM 频率和占空比
+//  Param      : freq - 目标频率，单位 Hz
+//               duty - 千分比，0~1000 对应 0%~100%
 //  Return     : SUCCESS - 成功；ERROR - 未初始化或频率超范围
-//  Others     : 范围 1 Hz 至 TIM16 时钟的一半；保留占空比，改变频率时重启计数周期
-//  Author     : Chen Liang 2026-10-12
+//  Others     : 运行期间不关闭计数器和输出，PSC、ARR、CCR1 在下一个更新事件同步生效
+//  Author     : Chen Liang 2026-10-19
 *******************************************************************************/
-ErrorStatus bsp_tim16_ch1_pwm_setfrequency(uint32_t frequency_hz)
+ErrorStatus bsp_tim16_ch1_pwm_set(uint32_t freq, uint16_t duty)
 {
     uint32_t clock_hz;
     uint32_t divider;
     uint32_t period;
-    uint8_t was_running;
     uint64_t divisor;
 
     /* 在修改寄存器前校验参数，错误参数不改变原来的 PWM 设置。 */
-    if ((s_tim16_initialized == 0U) || (frequency_hz == 0U))
+    if ((s_tim16_initialized == 0U) || (freq == 0U))
     {
         return ERROR;
     }
     clock_hz = bsp_tim16_GetClockHz();
-    if ((clock_hz == 0U) || (frequency_hz > clock_hz / 2U))
+    if ((clock_hz == 0U) || (freq > clock_hz / 2U))
     {
         return ERROR;
+    }
+    if (duty > 1000U)
+    {
+        duty = 1000U;
     }
     /*
      * divider = PSC + 1，period = ARR + 1。
      * 周期最多 65535 个计数，使 100% 对应的 CCR1 也能放入 16 位寄存器。
      * 向上取整选择预分频因子，使用 64 位中间值避免高频参数乘法溢出。
      */
-    divisor = (uint64_t)frequency_hz * 65535U;
+    divisor = (uint64_t)freq * 65535U;
     divider = (uint32_t)(((uint64_t)clock_hz + divisor - 1U) / divisor);
     if ((divider == 0U) || (divider > 65536U))
     {
         return ERROR;
     }
-    divisor = (uint64_t)divider * frequency_hz;
+    divisor = (uint64_t)divider * freq;
     /* 将周期计数值四舍五入；实际频率可能与目标频率存在整数分频误差。 */
     period = (uint32_t)(((uint64_t)clock_hz + divisor / 2U) / divisor);
     if (period > 65535U)
@@ -193,21 +197,34 @@ ErrorStatus bsp_tim16_ch1_pwm_setfrequency(uint32_t frequency_hz)
         return ERROR;
     }
 
-    /* 保存运行状态，暂停输出并更新 PSC、ARR，按原占空比重新计算 CCR1。 */
-    was_running = s_tim16_running;
-    bsp_tim16_Stop();
-    s_tim16_period = period;
+    /* 暂时禁止更新事件，避免写入过程中恰逢周期结束而混用新旧参数；PWM 保持输出。 */
+    LL_TIM_DisableUpdateEvent(TIM16);
     LL_TIM_SetPrescaler(TIM16, divider - 1U);
     LL_TIM_SetAutoReload(TIM16, period - 1U);
-    LL_TIM_OC_SetCompareCH1(TIM16, (period * s_tim16_duty) / 1000U);
-    /* 软件更新立即装载新参数并重新初始化计数器，再清除本次更新标志。 */
-    LL_TIM_GenerateEvent_UPDATE(TIM16);
-    LL_TIM_ClearFlag_UPDATE(TIM16);
-    if (was_running != 0U)
+    LL_TIM_OC_SetCompareCH1(TIM16, (period * duty) / 1000U);
+    s_tim16_period = period;
+    s_tim16_duty   = duty;
+    LL_TIM_EnableUpdateEvent(TIM16);
+
+    if (s_tim16_running == 0U)
     {
-        bsp_tim16_Start();
+        LL_TIM_GenerateEvent_UPDATE(TIM16);
+        LL_TIM_ClearFlag_UPDATE(TIM16);
     }
     return SUCCESS;
+}
+
+/*******************************************************************************
+//  Function   : bsp_tim16_ch1_pwm_setfrequency
+//  Description: 设置 TIM16 PWM 频率
+//  Param      : frequency_hz - 目标频率，单位 Hz
+//  Return     : SUCCESS - 成功；ERROR - 未初始化或频率超范围
+//  Others     : 保留当前占空比，运行期间不关闭 PWM
+//  Author     : Chen Liang 2026-10-12
+*******************************************************************************/
+ErrorStatus bsp_tim16_ch1_pwm_setfrequency(uint32_t frequency_hz)
+{
+    return bsp_tim16_ch1_pwm_set(frequency_hz, s_tim16_duty);
 }
 
 /*******************************************************************************

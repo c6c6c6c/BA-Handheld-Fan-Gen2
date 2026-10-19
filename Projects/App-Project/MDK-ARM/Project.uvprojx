@@ -549,6 +549,11 @@
           <GroupName>Middleware/common</GroupName>
           <Files>
             <File>
+              <FileName>ntc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\ntc\ntc.c</FilePath>
+            </File>
+            <File>
               <FileName>fan.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\fan\fan.c</FilePath>
@@ -569,19 +574,14 @@
               <FilePath>..\..\..\Middleware\common\timer_base\timer_base.c</FilePath>
             </File>
             <File>
-              <FileName>common_port.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
-            </File>
-            <File>
-              <FileName>ntc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\common\ntc\ntc.c</FilePath>
-            </File>
-            <File>
               <FileName>binary_search.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\search\binary_search.c</FilePath>
+            </File>
+            <File>
+              <FileName>common_port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -626,17 +626,17 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Middleware/spray_track</GroupName>
+          <GroupName>Middleware/mist</GroupName>
           <Files>
             <File>
-              <FileName>spray_track.c</FileName>
+              <FileName>mist_ctrl.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\spray_track\spray_track.c</FilePath>
+              <FilePath>..\..\..\Middleware\mist_ctrl\mist_ctrl.c</FilePath>
             </File>
             <File>
-              <FileName>spray_track_private.c</FileName>
+              <FileName>mist_process.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\spray_track\spray_track_private.c</FilePath>
+              <FilePath>..\..\..\Middleware\mist_ctrl\mist_process.c</FilePath>
             </File>
           </Files>
         </Group>

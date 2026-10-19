@@ -109,9 +109,9 @@ static uint32_t NtcTable_AdcToTableValue(uint16_t adcValue, uint32_t rPull, uint
 //  Others     : 输出温度单位为 °C；越界时输出对应端点温度。
 //  Author     : Leo Chen 2026-08-29
 *******************************************************************************/
-ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
-                                        uint16_t           adcValue,
-                                        float             *pTemperatureC)
+ntc_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
+                                        uint16_t     adcValue,
+                                        float       *pTemperatureC)
 {
     uint16_t lowIndex;
     uint16_t highIndex;
@@ -130,20 +130,20 @@ ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
     ||  (pNtcTable->unit   == 0U)
     ||  (pNtcTable->maxTemp < pNtcTable->minTemp))
     {
-        return NTC_TABLE_STATUS_PARAM_ERROR;
+        return NTC_STATUS_PARAM_ERROR;
     }
 
     /* uint16_t 输入可能大于 12 位 ADC 有效范围，统一按开路/高端异常处理。 */
     if (adcValue >= NTC_ADC_OPEN_THRESHOLD)
     {
         *pTemperatureC = pNtcTable->minTemp;
-        return NTC_TABLE_STATUS_OPEN_CIRCUIT;
+        return NTC_STATUS_OPEN_CIRCUIT;
     }
 
     if (adcValue <= NTC_ADC_SHORT_THRESHOLD)
     {
         *pTemperatureC = pNtcTable->maxTemp;
-        return NTC_TABLE_STATUS_SHORT_CIRCUIT;
+        return NTC_STATUS_SHORT_CIRCUIT;
     }
 
     /* 由于开路阈值小于满量程，到达这里时分母一定大于 0。 */
@@ -155,7 +155,7 @@ ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
     if (tableValue > (uint32_t)UINT16_MAX)
     {
         *pTemperatureC = pNtcTable->minTemp;
-        return NTC_TABLE_STATUS_BELOW_RANGE;
+        return NTC_STATUS_BELOW_RANGE;
     }
 
     searchStatus = BinarySearch_U16Descending(pNtcTable->pTable,
@@ -167,18 +167,18 @@ ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
     if (searchStatus == BINARY_SEARCH_STATUS_ABOVE_RANGE)
     {
         *pTemperatureC = pNtcTable->minTemp;
-        return NTC_TABLE_STATUS_BELOW_RANGE;
+        return NTC_STATUS_BELOW_RANGE;
     }
 
     if (searchStatus == BINARY_SEARCH_STATUS_BELOW_RANGE)
     {
         *pTemperatureC = pNtcTable->maxTemp;
-        return NTC_TABLE_STATUS_ABOVE_RANGE;
+        return NTC_STATUS_ABOVE_RANGE;
     }
 
     if (searchStatus != BINARY_SEARCH_STATUS_OK)
     {
-        return NTC_TABLE_STATUS_PARAM_ERROR;
+        return NTC_STATUS_PARAM_ERROR;
     }
 
     /* 防御性检查，避免异常搜索结果造成数组越界。 */
@@ -186,13 +186,13 @@ ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
     ||  (highIndex >= pNtcTable->len)
     ||  (lowIndex  >  highIndex))
     {
-        return NTC_TABLE_STATUS_PARAM_ERROR;
+        return NTC_STATUS_PARAM_ERROR;
     }
 
     if (lowIndex == highIndex)
     {
         *pTemperatureC = pNtcTable->minTemp + ((float)lowIndex * pNtcTable->step);
-        return NTC_TABLE_STATUS_OK;
+        return NTC_STATUS_OK;
     }
 
     resHigh = pNtcTable->pTable[lowIndex];
@@ -200,7 +200,7 @@ ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
 
     if (resHigh <= resLow)
     {
-        return NTC_TABLE_STATUS_PARAM_ERROR;
+        return NTC_STATUS_PARAM_ERROR;
     }
 
     /*
@@ -240,5 +240,5 @@ ntc_table_status_t NtcTable_ConvertAdc( const ntc_table_t *pNtcTable,
         /* 无需处理。 */
     }
 
-    return NTC_TABLE_STATUS_OK;
+    return NTC_STATUS_OK;
 }

@@ -21,7 +21,7 @@ button_t buttonList[BUTTON_ITEM_NUM] = {0};
  
 /* Macro -------------------------------------------------------------------------------------------------------------*/ 
 /* 按键读取函数定义 */ 
-DEF_BTN_CTRL_FUNC(SW1,(LL_GPIO_ReadInputPort(FAN_SW_PORT) & FAN_SW_PIN)) 
+DEF_BTN_CTRL_FUNC(SW1,(LL_GPIO_ReadInputPort(FAN_SW_PORT)  & FAN_SW_PIN)) 
 DEF_BTN_CTRL_FUNC(SW2,(LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
 DEF_BTN_CTRL_FUNC(SW3,(ADCxConvertedDatas[ADC_CH_SW] > 2048)) 
  
