@@ -39,9 +39,6 @@
 /** 电池过流保护阈值，单位 mA；按电流绝对值判断，0 表示未启用 */
 #define BMS_PROTECT_CURRENT_HIGH_MA          0.0f
 
-/** 实时故障消失后的保持时间，单位 s */
-#define BMS_PROTECT_HOLD_TIME_S              20U
-
 /** 当前支持的故障位数量 */
 #define BMS_PROTECT_FAULT_NUM                7U
 

@@ -86,14 +86,14 @@ void bsp_tim16_Stop(void);
 ErrorStatus bsp_tim16_ch1_pwm_set(uint32_t freq, uint16_t duty);
 
 /*******************************************************************************
-//  Function   : bsp_tim16_ch1_pwm_setfrequency
+//  Function   : bsp_tim16_ch1_pwm_setfreq
 //  Description: 设置 TIM16 PWM 频率
-//  Param      : frequency_hz - 目标频率，单位 Hz
+//  Param      : freq - 目标频率，单位 Hz
 //  Return     : SUCCESS - 成功；ERROR - 未初始化或频率超范围
 //  Others     : 范围 1 Hz 至 TIM16 时钟的一半；保留占空比，运行期间不关闭 PWM
 //  Author     : Chen Liang 2026-10-12
 *******************************************************************************/
-ErrorStatus bsp_tim16_ch1_pwm_setfrequency(uint32_t frequency_hz);
+void bsp_tim16_ch1_pwm_setfreq(uint32_t freq);
 
 /*******************************************************************************
 //  Function   : bsp_tim16_ch1_pwm_setduty

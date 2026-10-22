@@ -88,6 +88,7 @@ static void bsp_exti_sleep_Init(void)
 //               又可进入 EXTI 中断服务函数进行软件处理
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
+#if 0
 static void bsp_exti_usb_Init(void)
 {
     LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
@@ -122,7 +123,7 @@ static void bsp_exti_usb_Init(void)
     NVIC_SetPriority(EXTI4_15_IRQn, 2);
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 }
-
+#endif
 
 /*******************************************************************************
 //  Function   : bsp_exti_Init

@@ -13,8 +13,9 @@
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 #include "app_system.h"
 #include "app_sampling.h"
+#include "app_bms.h"
+#include "app_display.h"
 
-#include "bms_app.h"
 #include "bms.h"
 
 #include "bsp_adc.h"
@@ -42,10 +43,17 @@ system_t     System;              /* 系统运行状态、工作模式、计时�
 uint8_t rx_buffer[200];
 uint8_t tx_buffer[200];
 
-uint32_t fre_hz = 1000;
-uint16_t duty   = 200;
-
 /* Function implementations ------------------------------------------------------------------------------------------*/
+void system_loop_delay()
+{
+	static uint32_t lastDelay = 0;
+	static uint32_t currDelay = 0;
+	
+	currDelay = getSystemMs(); 
+	System.systemLoopDelay = currDelay - lastDelay;
+	lastDelay = currDelay;
+}
+
 /*******************************************************************************
 //  Function   : system_bsp_init
 //  Description: 初始化系统使用的底层硬件驱动
@@ -89,11 +97,11 @@ void system_data_init(void)
 
     fan_Init();
     button_Init();
-    bms_app_Init();
-
+    app_bms_Init();
     app_sampling_Init();
-
     s_uart1PortApi.Init(rx_buffer,200,tx_buffer,200);
+	
+    app_display_Init();
 
 }
 /*******************************************************************************
@@ -109,7 +117,6 @@ void system_init(void)
     system_bsp_init();  
     system_data_init();
 	
-	
 }
 /*******************************************************************************
 //  Function   : system_run
@@ -119,11 +126,23 @@ void system_init(void)
 //  Others     : 每次调用处理通信和 Modbus；按 1ms、10ms 周期调度业务任务
 //  Author     : 陈亮 2026-06-06
 *******************************************************************************/
-
+uint32_t freq = 100000;
+uint16_t duty = 200;
 void system_run(void)
 {
     static timer_base_t _timer_logic;
-    static timer_base_t _timer_test;
+
+    static uint32_t old_freq = 0U;
+    static uint16_t old_duty = 0U;
+
+    if ((freq != old_freq) || (duty != old_duty))
+    {
+        if (bsp_tim16_ch1_pwm_set(freq, duty) == SUCCESS)
+        {
+            old_freq = freq;
+            old_duty = duty;
+        }
+    }
 
     app_sampling_task();
 	
@@ -131,30 +150,11 @@ void system_run(void)
     {
         fan_1ms_task();  
         button_1ms_task();
-        bms_app_1ms_task();
+        app_bms_1ms_task();
         uart1_port_1msTask();
+        app_display_task();
     }
-
-    if(timer_base_Timing(&_timer_test, 500))
-    {
-        uint8_t *data = s_uart1PortApi.transfer_data();
-        uint8_t i;
-
-        if(data != NULL)
-        {
-            for(i = 0; i < 10; i++)
-            {
-                data[i] = i;
-            }
-            s_uart1PortApi.start_transfer(10);
-        }
-    }
-
-    if (s_uart1PortApi.receive_state() == COMMON_PORT_RX_DONE)
-    {
-        s_uart1PortApi.receive_rst();
-    }
-    (void)bsp_tim16_ch1_pwm_set(fre_hz, duty);
+	 system_loop_delay();
 }
 
 

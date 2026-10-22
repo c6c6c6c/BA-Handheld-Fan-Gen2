@@ -28,9 +28,10 @@
  */
 typedef struct
 {
-    uint8_t bms_err    : 1;    /* BMS错误标志 */
+    uint8_t bms_err    : 1;    /* BMS错误标志  */
     uint8_t comm_err   : 1;    /* 通信错误标志 */
-    uint8_t res        : 6;    /* 保留位 */
+	uint8_t ntc_err    : 1;    /* ntc错误标志  */
+    uint8_t res        : 5;    /* 保留位 */
 } error_t;
 
 /**
@@ -41,13 +42,11 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t         power;               /* 系统电源状态：0-关机，1-开机 */
     error_t         err;                 /* 系统通信错误状态 */
-
-    uint8_t         forceFlg;            /* 强制控制标志 */
-
     uint32_t        onTimes;             /* 连续开机时间，单位：ms */
     uint32_t        offTimes;            /* 连续关机时间，单位：ms */
+	uint32_t        systemLoopDelay;
+	float           ntc_temp;
 } system_t;
 
 extern system_t System;

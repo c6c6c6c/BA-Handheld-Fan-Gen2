@@ -229,8 +229,12 @@ bool common_port_Transfer(common_port_t *port,uint16_t length)
 //  Others     : 接收缓冲区满时进入 COMMON_PORT_RX_ERROR 状态
 //  Author     : Leo Chen 2026-09-02
 *******************************************************************************/
+uint8_t dataqwe[20];
+uint8_t lenqwe = 0;
 void common_port_RxEventCallback(common_port_t *port, uint8_t data)
 {
+    dataqwe[lenqwe] = data;
+    lenqwe++;
     if ((port == 0) || (port->init == 0U))
     {
         return;
@@ -248,6 +252,7 @@ void common_port_RxEventCallback(common_port_t *port, uint8_t data)
         return;
     }
 
+    lenqwe %= 20;
     port->rx.Buffer[port->rx.Length] = data;
     port->rx.Length++;
     port->rx.TimerMs   = 0U;

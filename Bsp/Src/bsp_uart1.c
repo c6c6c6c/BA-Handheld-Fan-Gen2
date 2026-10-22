@@ -120,6 +120,15 @@ void bsp_uart1_Init(void)
     }
 
     bsp_uart1_ReceiveStart();
+
+
+    #if UART1_FULL_DUPLEX
+    LL_GPIO_SetPinMode(UART1_TX_PORT, UART1_TX_PIN, LL_GPIO_MODE_ALTERNATE);
+
+    LL_UART_EnableIT_LS(UART1);
+    LL_UART_EnableIT_RXNE(UART1);
+
+    #endif
 }
 
 /*******************************************************************************
@@ -168,7 +177,9 @@ void bsp_uart1_Deinit(void)
 *******************************************************************************/
 void bsp_uart1_HalfDuplexTx(void)
 {
+    #if UART1_FULL_DUPLEX == 0
     LL_GPIO_SetPinMode(UART1_TX_PORT, UART1_TX_PIN, LL_GPIO_MODE_ALTERNATE);
+    #endif
 }
 
 /*******************************************************************************
@@ -181,7 +192,9 @@ void bsp_uart1_HalfDuplexTx(void)
 *******************************************************************************/
 void bsp_uart1_HalfDuplexRx(void)
 {
+    #if UART1_FULL_DUPLEX == 0
     LL_GPIO_SetPinMode(UART1_TX_PORT, UART1_TX_PIN, LL_GPIO_MODE_INPUT);
+    #endif
 }
 
 /*******************************************************************************
@@ -194,9 +207,11 @@ void bsp_uart1_HalfDuplexRx(void)
 *******************************************************************************/
 void bsp_uart1_ReceiveStart(void)
 {
+    #if UART1_FULL_DUPLEX == 0
     bsp_uart1_HalfDuplexRx();
     LL_UART_EnableIT_LS(UART1);
     LL_UART_EnableIT_RXNE(UART1);
+    #endif
 }
 
 /*******************************************************************************
@@ -209,8 +224,10 @@ void bsp_uart1_ReceiveStart(void)
 *******************************************************************************/
 void bsp_uart1_ReceiveStop(void)
 {
+    #if UART1_FULL_DUPLEX == 0
     LL_UART_DisableIT_LS(UART1);
     LL_UART_DisableIT_RXNE(UART1);
+    #endif
 }
 
 /*******************************************************************************

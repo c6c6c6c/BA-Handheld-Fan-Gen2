@@ -1,66 +1,75 @@
+
 /**
  ***********************************************************************************************************************
  * @file    aip650e.c
- * @brief   AiP650E 两线通信及显示板驱动
+ * @brief   AiP650E 软件两线通信、数码管显示及矩阵按键驱动
  * @author  Leo Chen
- * @version 1.0.0
- * @date    2026-10-15
+ * @version 1.1.0
+ * @date    2026-10-21
  ***********************************************************************************************************************
  */
 
 #include "aip650e.h"
 #include "bsp_gpio.h"
+
 #include <stddef.h>
 
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
+/* Private variables -------------------------------------------------------------------------------------------------*/
 
-/** 系统控制寄存器命令 */
-#define AIP650E_CMD_SYSTEM          0x48U
-
-/** DIG1 显示 RAM 起始地址 */
-#define AIP650E_ADDR_DIG1           0x68U
-
-/** 相邻 DIG 显示 RAM 地址步长 */
-#define AIP650E_ADDR_STEP           0x02U
-
-/** 显示开启控制位 */
-#define AIP650E_CONTROL_DISPLAY_ON  0x01U
-
-/** 亮度控制位偏移 */
-#define AIP650E_BRIGHTNESS_SHIFT    4U
-
-
-/* Variables ---------------------------------------------------------------------------------------------------------*/
-
-static bool s_initialized;                                  /**< 驱动初始化状态 */
-static bool s_displayEnabled;                               /**< 当前显示开关状态 */
-static uint8_t s_brightness = AIP650E_DEFAULT_BRIGHTNESS;   /**< 当前全局亮度等级 */
+/** AiP650E 驱动实例，保存当前控制状态及显示缓存 */
+static aip650e_t s_aip650e =
+{
+    .ctrl =
+    {
+        .segment        = AIP650_8_SEGMENT,
+        .brightness     = BRIGHTNESS_4_LEVEL,
+        .displayEnabled = false,
+        .sleeping       = false
+    },
+    .show = {0U}
+};
 
 
-/* Constant ----------------------------------------------------------------------------------------------------------*/
 
-/** 数字 0~9 对应段码，bit0~bit6 对应 A~G */
+/* Private constants -------------------------------------------------------------------------------------------------*/
+
+/** 数字 0~9 对应的七段数码管显示编码 */
 static const uint8_t s_numberSegments[10] =
 {
-    0x3FU, 0x06U, 0x5BU, 0x4FU, 0x66U,
-    0x6DU, 0x7DU, 0x07U, 0x7FU, 0x6FU
+    NUMBER_0, NUMBER_1, NUMBER_2, NUMBER_3, NUMBER_4,
+    NUMBER_5, NUMBER_6, NUMBER_7, NUMBER_8, NUMBER_9
+};
+
+
+/** AiP650E 原始按键编码与矩阵行列编码映射表 */
+static const aip650_key_map_t s_keyTable[] =
+{
+    {0x44U, 0x11U}, {0x4CU, 0x12U}, {0x54U, 0x13U}, {0x5CU, 0x14U},
+    {0x64U, 0x15U}, {0x6CU, 0x16U}, {0x74U, 0x17U},
+    {0x45U, 0x21U}, {0x4DU, 0x22U}, {0x55U, 0x23U}, {0x5DU, 0x24U},
+    {0x65U, 0x25U}, {0x6DU, 0x26U}, {0x75U, 0x27U},
+    {0x46U, 0x31U}, {0x4EU, 0x32U}, {0x56U, 0x33U}, {0x5EU, 0x34U},
+    {0x66U, 0x35U}, {0x6EU, 0x36U}, {0x76U, 0x37U},
+    {0x47U, 0x41U}, {0x4FU, 0x42U}, {0x57U, 0x43U}, {0x5FU, 0x44U},
+    {0x67U, 0x45U}, {0x6FU, 0x46U}, {0x77U, 0x47U}
 };
 
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
-//  Function   : aip650e_Delay
-//  Description: AiP650E 软件总线时序延时
+//  Function   : aip650_Delay
+//  Description: 软件延时，满足 AiP650E 两线通信时序要求
 //  Param      : None
 //  Return     : None
-//  Others     : 延时时间由 AIP650E_DELAY_CYCLES 和系统主频共同决定
-//  Author     : Chen Liang 2026-10-15
+//  Others     : 延时长度由 AIP650E_DELAY_CYCLES 配置，实际时间受 MCU 主频影响
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-static void aip650e_Delay(void)
+static void aip650_Delay(void)
 {
-    uint32_t count;
+    volatile uint32_t count;
 
     for (count = 0U; count < AIP650E_DELAY_CYCLES; ++count)
     {
@@ -70,388 +79,349 @@ static void aip650e_Delay(void)
 
 
 /*******************************************************************************
-//  Function   : aip650e_SetClock
-//  Description: 设置 AiP650E CLK 总线电平
-//  Param      : high - true：释放总线为高；false：输出低电平
-//  Return     : None
-//  Others     : CLK 使用开漏输出，高电平由外部上拉电阻提供
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-static void aip650e_SetClock(bool high)
-{
-    if (high)
-    {
-        LL_GPIO_SetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN);
-    }
-    else
-    {
-        LL_GPIO_ResetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN);
-    }
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_SetData
-//  Description: 设置 AiP650E DIO 总线电平
-//  Param      : high - true：释放总线为高；false：输出低电平
-//  Return     : None
-//  Others     : DIO 使用开漏输出，高电平由外部上拉电阻提供
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-static void aip650e_SetData(bool high)
-{
-    if (high)
-    {
-        LL_GPIO_SetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN);
-    }
-    else
-    {
-        LL_GPIO_ResetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN);
-    }
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_Start
-//  Description: 产生 AiP650E 两线通信起始条件
+//  Function   : aip650_Start
+//  Description: 产生 AiP650E 两线通信起始信号
 //  Param      : None
 //  Return     : None
-//  Others     : CLK 为高电平期间 DIO 由高变低表示通信开始
-//  Author     : Chen Liang 2026-10-15
+//  Others     : CLK 为高电平时将 DIO 从高拉低，再拉低 CLK
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-static void aip650e_Start(void)
+static void aip650_Start(void)
 {
-    aip650e_SetData(true);
-    aip650e_SetClock(true);
-    aip650e_Delay();
+    AIP650_DIO_HIGH();
+    AIP650_CLK_HIGH();
+    aip650_Delay();
 
-    aip650e_SetData(false);
-    aip650e_Delay();
+    /* CLK 保持高电平时拉低 DIO，产生 START 条件。 */
+    AIP650_DIO_LOW();
+    aip650_Delay();
 
-    aip650e_SetClock(false);
-    aip650e_Delay();
+    AIP650_CLK_LOW();
+    aip650_Delay();
 }
 
 
 /*******************************************************************************
-//  Function   : aip650e_Stop
-//  Description: 产生 AiP650E 两线通信停止条件
+//  Function   : aip650_Stop
+//  Description: 产生 AiP650E 两线通信停止信号
 //  Param      : None
 //  Return     : None
-//  Others     : CLK 为高电平期间 DIO 由低变高表示通信结束
-//  Author     : Chen Liang 2026-10-15
+//  Others     : CLK 为高电平时释放 DIO，使其从低电平变为高电平
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-static void aip650e_Stop(void)
+static void aip650_Stop(void)
 {
-    aip650e_SetData(false);
-    aip650e_Delay();
+    AIP650_DIO_LOW();
+    aip650_Delay();
 
-    aip650e_SetClock(true);
-    aip650e_Delay();
+    AIP650_CLK_HIGH();
+    aip650_Delay();
 
-    aip650e_SetData(true);
-    aip650e_Delay();
+    /* CLK 为高时释放 DIO，产生 STOP 条件。 */
+    AIP650_DIO_HIGH();
+    aip650_Delay();
 }
 
 
 /*******************************************************************************
-//  Function   : aip650e_WriteByte
-//  Description: 向 AiP650E 写入一个字节
-//  Param      : value - 待发送数据
+//  Function   : aip650_WriteByte
+//  Description: 发送一个字节并读取从机应答
+//  Param      : value - 待发送的 8 位数据
 //  Return     : true：收到 ACK；false：未收到 ACK
-//  Others     : 数据高位先发送，第 9 个时钟读取低有效 ACK
-//  Author     : Chen Liang 2026-10-15
+//  Others     : 数据按 MSB 优先发送，第 9 个时钟周期读取低有效 ACK
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-static bool aip650e_WriteByte(uint8_t value)
+static bool aip650_WriteByte(uint8_t value)
 {
     uint8_t bit;
     bool acknowledged;
 
-    /* 高位先发送 8bit 数据。 */
+    /* 按高位优先顺序依次发送 8 位数据。 */
     for (bit = 0U; bit < 8U; ++bit)
     {
-        aip650e_SetData((value & 0x80U) != 0U);
-        aip650e_Delay();
+        if ((value & 0x80U) != 0U)
+        {
+            AIP650_DIO_HIGH();
+        }
+        else
+        {
+            AIP650_DIO_LOW();
+        }
 
-        aip650e_SetClock(true);
-        aip650e_Delay();
+        aip650_Delay();
 
-        aip650e_SetClock(false);
-        aip650e_Delay();
+        AIP650_CLK_HIGH();
+        aip650_Delay();
+
+        AIP650_CLK_LOW();
+        aip650_Delay();
 
         value <<= 1U;
     }
 
-    /* 释放 DIO，在第 9 个时钟读取芯片 ACK。 */
-    aip650e_SetData(true);
-    aip650e_Delay();
+    /* 释放开漏数据线，允许从机驱动 ACK。 */
+    AIP650_DIO_HIGH();
+    aip650_Delay();
 
-    aip650e_SetClock(true);
-    aip650e_Delay();
+    AIP650_CLK_HIGH();
+    aip650_Delay();
 
-    acknowledged = (LL_GPIO_IsInputPinSet(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN) == 0U);
+    /* ACK 为低电平，表示从机已接收当前字节。 */
+    acknowledged = (AIP650_DIO_READ() == 0U);
 
-    aip650e_SetClock(false);
-    aip650e_Delay();
+    AIP650_CLK_LOW();
+    aip650_Delay();
 
     return acknowledged;
 }
 
 
 /*******************************************************************************
-//  Function   : aip650e_WriteRegister
-//  Description: 向 AiP650E 指定地址写入一个字节
-//  Param      : address - 寄存器地址或命令
-//               value   - 写入数据
-//  Return     : true：写入成功；false：通信未应答
-//  Others     : 一次通信依次发送地址和数据，两个字节均需要 ACK
-//  Author     : Chen Liang 2026-10-15
+//  Function   : aip650_ReadByte
+//  Description: 从 AiP650E 读取一个字节
+//  Param      : None
+//  Return     : 读取的 8 位原始数据
+//  Others     : 数据按 MSB 优先接收，读取结束后由主机发送 NACK
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-static bool aip650e_WriteRegister(uint8_t address, uint8_t value)
+static uint8_t aip650_ReadByte(void)
+{
+    uint8_t bit;
+    uint8_t value = 0U;
+
+    /* 释放数据线，由芯片输出读取数据。 */
+    AIP650_DIO_HIGH();
+
+    for (bit = 0U; bit < 8U; ++bit)
+    {
+        value <<= 1U;
+
+        AIP650_CLK_HIGH();
+        aip650_Delay();
+
+        if (AIP650_DIO_READ() != 0U)
+        {
+            value |= 0x01U;
+        }
+
+        AIP650_CLK_LOW();
+        aip650_Delay();
+    }
+
+    /* 单字节读取完成后，主机释放 DIO 发送 NACK。 */
+    AIP650_DIO_HIGH();
+    aip650_Delay();
+
+    AIP650_CLK_HIGH();
+    aip650_Delay();
+
+    AIP650_CLK_LOW();
+    aip650_Delay();
+
+    return value;
+}
+
+
+/*******************************************************************************
+//  Function   : aip650_WriteRegister
+//  Description: 向 AiP650E 指定寄存器或显示 RAM 写入数据
+//  Param      : address - 寄存器或命令地址
+//               value   - 待写入的数据
+//  Return     : true：写入成功；false：地址或数据未收到 ACK
+//  Others     : 按 START、地址、数据、STOP 的顺序完成一次写操作
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+static bool aip650_WriteRegister(uint8_t address, uint8_t value)
 {
     bool acknowledged;
 
-    aip650e_Start();
+    aip650_Start();
 
-    acknowledged = aip650e_WriteByte(address);
+    /* 发送地址，收到 ACK 后继续发送数据。 */
+    acknowledged = aip650_WriteByte(address);
 
     if (acknowledged)
     {
-        acknowledged = aip650e_WriteByte(value);
+        acknowledged = aip650_WriteByte(value);
     }
 
-    aip650e_Stop();
+    /* 无论操作是否成功，均发送停止信号释放总线。 */
+    aip650_Stop();
 
     return acknowledged;
 }
 
 
 /*******************************************************************************
-//  Function   : aip650e_WriteControl
-//  Description: 写入 AiP650E 显示及亮度控制参数
-//  Param      : brightness - 亮度等级
-//               enabled    - true：开启显示；false：关闭显示
-//  Return     : true：写入成功；false：通信未应答
-//  Others     : 亮度等级 8 对应控制字段编码 0
-//  Author     : Chen Liang 2026-10-15
+//  Function   : aip650_WriteControl
+//  Description: 将控制状态转换为系统控制字并写入 AiP650E
+//  Param      : ctrl - 系统控制状态结构体
+//  Return     : true：控制配置写入成功；false：参数无效或通信失败
+//  Others     : 将显示模式、亮度、显示使能及睡眠状态组合为控制寄存器数据
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-static bool aip650e_WriteControl(uint8_t brightness, bool enabled)
+bool aip650_WriteControl(const aip650e_ctrl_t *ctrl)
 {
-    uint8_t brightnessBits = (brightness == AIP650E_BRIGHTNESS_MAX) ? 0U : brightness;
-    uint8_t control = (uint8_t)(brightnessBits << AIP650E_BRIGHTNESS_SHIFT);
+    uint8_t control;
 
-    if (enabled)
+    if (ctrl == NULL)
     {
-        control |= AIP650E_CONTROL_DISPLAY_ON;
+        return false;
     }
 
-    return aip650e_WriteRegister(AIP650E_CMD_SYSTEM, control);
+    /* 亮度编码位于系统控制字的高四位。 */
+    control = (uint8_t)((uint8_t)ctrl->brightness << 4U);
+
+    /* 设置七段显示模式选择位。 */
+    if (ctrl->segment == AIP650_7_SEGMENT)
+    {
+        control |= AIP650_CONTROL_7SEG;
+    }
+
+    /* 设置芯片睡眠控制位。 */
+    if (ctrl->sleeping)
+    {
+        control |= AIP650_CONTROL_SLEEP;
+    }
+
+    /* 设置显示输出使能位。 */
+    if (ctrl->displayEnabled)
+    {
+        control |= AIP650_CONTROL_DISPLAY;
+    }
+
+    return aip650_WriteRegister(AIP650_CMD_SYSTEM, control);
 }
 
 
-/* Exported functions ------------------------------------------------------------------------------------------------*/
+/* Main API ----------------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
-//  Function   : aip650e_Init
-//  Description: 初始化 AiP650E 通信引脚及显示 RAM
+//  Function   : aip650_init
+//  Description: 初始化 AiP650E 软件两线通信接口及显示芯片
 //  Param      : None
-//  Return     : true：初始化成功；false：总线异常或芯片未应答
-//  Others     : 先写入四个 COM 的空白数据，再按默认亮度开启显示
-//  Author     : Chen Liang 2026-10-15
+//  Return     : None
+//  Others     : 初始化控制参数，配置开漏 GPIO，检查总线电平，
+//               清除显示 RAM，最后使能显示输出
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-bool aip650e_Init(void)
+void aip650_init(void)
 {
-    uint8_t com;
+    uint8_t digit;
 
-    s_initialized = false;
-    s_displayEnabled = false;
-    s_brightness = AIP650E_DEFAULT_BRIGHTNESS;
+    /* 初始化显示控制参数。 */
+    s_aip650e.ctrl.segment        = AIP650_7_SEGMENT;
+    s_aip650e.ctrl.brightness     = BRIGHTNESS_4_LEVEL;
+    s_aip650e.ctrl.displayEnabled = false;
+    s_aip650e.ctrl.sleeping       = false;
 
-    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
-    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
+    /*
+     * 配置 CLK 与 DIO 为开漏输出。
+     * GPIO 时钟由 bsp_gpio_Init() 统一初始化，
+     * 两线通过外部上拉电阻恢复高电平。
+     */
+    AIP650_CLK_HIGH();
+    AIP650_DIO_HIGH();
 
-    /* 先释放输出锁存，再将 CLK/DIO 切换为开漏；高电平由板上电阻提供。 */
-    aip650e_SetClock(true);
-    aip650e_SetData(true);
     LL_GPIO_SetPinOutputType(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_OUTPUT_OPENDRAIN);
     LL_GPIO_SetPinOutputType(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_OUTPUT_OPENDRAIN);
+
     LL_GPIO_SetPinPull(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_PULL_NO);
     LL_GPIO_SetPinPull(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_PULL_NO);
+
     LL_GPIO_SetPinSpeed(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_SPEED_FREQ_VERY_HIGH);
     LL_GPIO_SetPinSpeed(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+
     LL_GPIO_SetPinMode(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_MODE_OUTPUT);
-    aip650e_Delay();
 
-    if ((LL_GPIO_IsInputPinSet(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN) == 0U) ||
-        (LL_GPIO_IsInputPinSet(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN) == 0U))
+    aip650_Delay();
+
+    /* 检查两线释放后是否为高电平，避免总线异常时继续通信。 */
+    if ((AIP650_DIO_READ() == 0U) || (AIP650_CLK_READ() == 0U))
     {
-        return false;
+        return;
     }
 
-    for (com = 0U; com < AIP650E_COM_COUNT; ++com)
+    /* 清除 DIG1~DIG4 显示 RAM，防止上电后出现残留显示。 */
+    for (digit = 0U; digit < AIP650E_COM_COUNT; ++digit)
     {
-        if (!aip650e_WriteRegister((uint8_t)(AIP650E_ADDR_DIG1 + com * AIP650E_ADDR_STEP), 0U))
+        if (!aip650_WriteRegister((uint8_t)(DIG1 + digit * AIP650_ADDR_STEP), 0U))
         {
-            return false;
-        }
-    }
-
-    if (!aip650e_WriteControl(s_brightness, true))
-    {
-        return false;
-    }
-
-    s_displayEnabled = true;
-    s_initialized = true;
-    return true;
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_SetBrightness
-//  Description: 设置 AiP650E 全局亮度
-//  Param      : level - 亮度等级 1~8
-//  Return     : true：写入成功；false：参数无效、未初始化或通信失败
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-bool aip650e_SetBrightness(uint8_t level)
-{
-    if ((!s_initialized) || (level < AIP650E_BRIGHTNESS_MIN) || (level > AIP650E_BRIGHTNESS_MAX))
-    {
-        return false;
-    }
-
-    if (!aip650e_WriteControl(level, s_displayEnabled))
-    {
-        return false;
-    }
-
-    s_brightness = level;
-    return true;
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_SetDisplay
-//  Description: 开关显示，保留显示 RAM 和亮度
-//  Param      : enabled - true：开启显示；false：关闭显示
-//  Return     : true：写入成功；false：未初始化或通信失败
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-bool aip650e_SetDisplay(bool enabled)
-{
-    if ((!s_initialized) || (!aip650e_WriteControl(s_brightness, enabled)))
-    {
-        return false;
-    }
-
-    s_displayEnabled = enabled;
-    return true;
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_ShowSegments
-//  Description: 写入 COM1 或 COM2 的七段段码
-//  Param      : digit - 数码管位号 1~2；segments - A~G 对应 bit0~bit6
-//  Return     : true：写入成功；false：参数无效、未初始化或通信失败
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-bool aip650e_ShowSegments(uint8_t digit, uint8_t segments)
-{
-    uint8_t address;
-
-    if ((!s_initialized) || (digit == 0U) || (digit > AIP650E_DIGIT_COUNT) ||
-        ((segments & AIP650E_SEG_DP) != 0U))
-    {
-        return false;
-    }
-
-    address = (uint8_t)(AIP650E_ADDR_DIG1 + (digit - 1U) * AIP650E_ADDR_STEP);
-    return aip650e_WriteRegister(address, segments);
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_ShowDigit
-//  Description: 在 COM1 或 COM2 显示一位十进制数字
-//  Param      : digit - 数码管位号 1~2；value - 0~9
-//  Return     : true：写入成功；false：参数无效、未初始化或通信失败
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-bool aip650e_ShowDigit(uint8_t digit, uint8_t value)
-{
-    if (value > 9U)
-    {
-        return false;
-    }
-
-    return aip650e_ShowSegments(digit, s_numberSegments[value]);
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_ShowNumber
-//  Description: 在 COM1/COM2 显示 0~99
-//  Param      : value - 待显示数值；leadingZeros - 是否显示前导零
-//  Return     : true：两位均写入成功；false：参数无效、未初始化或通信失败
-//  Others     : 不改变 COM3/COM4；若第二位写入失败，第一位不回滚
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-bool aip650e_ShowNumber(uint16_t value, bool leadingZeros)
-{
-    uint8_t tens;
-
-    if ((!s_initialized) || (value > 99U))
-    {
-        return false;
-    }
-
-    tens = ((value >= 10U) || leadingZeros) ? s_numberSegments[value / 10U] : 0U;
-    if (!aip650e_ShowSegments(1U, tens))
-    {
-        return false;
-    }
-
-    return aip650e_ShowSegments(2U, s_numberSegments[value % 10U]);
-}
-
-
-/*******************************************************************************
-//  Function   : aip650e_ShowData
-//  Description: 按显示板 COM1/COM2/COM3/COM4 连接关系写入四字节数据
-//  Param      : data - 4 字节数组；COM3 的 D/E/F 不推定颜色，COM4 为 0/1 指示灯
-//  Return     : true：四个 COM 均写入成功；false：参数无效、未初始化或通信失败
-//  Others     : COM4 的 A/B 两个发光支路由一个逻辑开关同时控制
-//  Author     : Chen Liang 2026-10-15
-*******************************************************************************/
-bool aip650e_ShowData(const uint8_t *data)
-{
-    uint8_t com;
-    uint8_t segments;
-
-    if ((!s_initialized) || (data == NULL) ||
-        ((data[AIP650E_COM1_INDEX] & AIP650E_SEG_DP) != 0U) ||
-        ((data[AIP650E_COM2_INDEX] & AIP650E_SEG_DP) != 0U) ||
-        ((data[AIP650E_COM3_INDEX] & (uint8_t)~AIP650E_COM3_VALID_MASK) != 0U) ||
-        (data[AIP650E_COM4_INDEX] > AIP650E_COM4_ON))
-    {
-        return false;
-    }
-
-    for (com = 0U; com < AIP650E_COM_COUNT; ++com)
-    {
-        segments = data[com];
-        if (com == AIP650E_COM4_INDEX)
-        {
-            segments = (data[com] == AIP650E_COM4_ON) ? (AIP650E_SEG_A | AIP650E_SEG_B) : 0U;
+            return;
         }
 
-        if (!aip650e_WriteRegister((uint8_t)(AIP650E_ADDR_DIG1 + com * AIP650E_ADDR_STEP), segments))
-        {
-            return false;
-        }
+        s_aip650e.show[digit] = 0U;
+    }
+
+    /* 显示 RAM 初始化完成后开启显示输出。 */
+    s_aip650e.ctrl.displayEnabled = true;
+
+    if (!aip650_WriteControl(&s_aip650e.ctrl))
+    {
+        s_aip650e.ctrl.displayEnabled = false;
+        return;
+    }
+}
+
+
+/*******************************************************************************
+//  Function   : aip650_write_digit
+//  Description: 向指定 DIG 显示寄存器写入段码数据
+//  Param      : digit    - DIG 索引，范围 0~AIP650E_COM_COUNT-1
+//               segments - 待写入的显示段码
+//  Return     : true：写入成功；false：DIG 索引无效或通信失败
+//  Others     : 成功写入后同步更新软件显示缓存
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+bool aip650_write_digit(uint8_t digit, uint8_t segments)
+{
+    /* 检查显示寄存器索引范围。 */
+    if (digit >= AIP650E_COM_COUNT)
+    {
+        return false;
+    }
+
+    /* 根据 DIG 索引计算对应的显示 RAM 地址。 */
+    if (!aip650_WriteRegister((uint8_t)(DIG1 + digit * AIP650_ADDR_STEP), segments))
+    {
+        return false;
+    }
+
+    /* 硬件写入成功后更新软件镜像。 */
+    s_aip650e.show[digit] = segments;
+
+    return true;
+}
+
+
+/*******************************************************************************
+//  Function   : aip650_write_segments
+//  Description: 批量更新 DIG1~DIG4 显示数据
+//  Param      : data - 指向 AIP650E_COM_COUNT 字节的段码数组
+//  Return     : true：全部写入成功；false：参数无效或通信失败
+//  Others     : 仅写入与缓存不同的段码，减少总线通信；
+//               发生部分写入失败时保留此前已成功更新的缓存
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+bool aip650_write_segments(const uint8_t data[AIP650E_COM_COUNT])
+{
+    uint8_t digit;
+
+    if (data == NULL)
+    {
+        return false;
+    }
+
+    /* 遍历所有 DIG，仅更新发生变化的显示数据。 */
+    for (digit = 0U; digit < AIP650E_COM_COUNT; ++digit)
+    {
+//        if ((s_aip650e.show[digit] != data[digit]) &&
+//            !aip650_write_digit(digit, data[digit]))
+//        {
+//            return false;
+//        }
+		aip650_write_digit(digit, data[digit]);
     }
 
     return true;
@@ -459,15 +429,83 @@ bool aip650e_ShowData(const uint8_t *data)
 
 
 /*******************************************************************************
-//  Function   : aip650e_Clear
-//  Description: 清空四个 COM 的显示 RAM
+//  Function   : aip650_write_number
+//  Description: 使用原始显示段码数组更新 DIG1~DIG4
+//  Param      : data - 待显示段码数组首地址
+//  Return     : None
+//  Others     : 兼容原有接口，调用 aip650_write_segments() 完成写入，
+//               不向调用方返回通信结果
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+void aip650_write_number(uint8_t *data)
+{
+    (void)aip650_write_segments(data);
+}
+
+
+/*******************************************************************************
+//  Function   : aip650_clear
+//  Description: 清除 DIG1~DIG4 的全部显示内容
 //  Param      : None
-//  Return     : true：四个 COM 均清空；false：未初始化或通信失败
-//  Author     : Chen Liang 2026-10-15
+//  Return     : true：清屏成功；false：通信失败
+//  Others     : 将所有 DIG 的显示段码设置为 0，保留当前显示控制参数
+//  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
-bool aip650e_Clear(void)
+bool aip650_clear(void)
 {
-    uint8_t data[AIP650E_COM_COUNT] = {0U, 0U, 0U, 0U};
+    static const uint8_t clear_data[AIP650E_COM_COUNT] = {0U};
 
-    return aip650e_ShowData(data);
+    return aip650_write_segments(clear_data);
+}
+
+
+/*******************************************************************************
+//  Function   : aip650_get_key
+//  Description: 读取 AiP650E 按键状态并转换为矩阵键值
+//  Param      : None
+//  Return     : 有效按键的矩阵行列编码；无按键或通信失败时返回 AIP650E_KEY_NONE
+//  Others     : 发送按键读取命令，读取原始键值，再通过映射表返回行列编码
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+char aip650_get_key(void)
+{
+    uint8_t index;
+    uint8_t key;
+
+    /* 芯片处于睡眠状态时不执行按键读取。 */
+    if (s_aip650e.ctrl.sleeping)
+    {
+        return (char)AIP650E_KEY_NONE;
+    }
+
+    /* 发送按键读取命令。 */
+    aip650_Start();
+
+    if (!aip650_WriteByte(AIP650_CMD_READ_KEY))
+    {
+        aip650_Stop();
+        return (char)AIP650E_KEY_NONE;
+    }
+
+    /* 读取芯片返回的原始按键编码。 */
+    key = aip650_ReadByte();
+    aip650_Stop();
+
+    /* 未检测到按键时直接返回无按键标志。 */
+    if (key == AIP650_NO_KEY_RAW)
+    {
+        return (char)AIP650E_KEY_NONE;
+    }
+
+    /* 根据原始编码查找对应的矩阵行列值。 */
+    for (index = 0U; index < (uint8_t)(sizeof(s_keyTable) / sizeof(s_keyTable[0])); ++index)
+    {
+        if (s_keyTable[index].raw == key)
+        {
+            return (char)s_keyTable[index].matrix;
+        }
+    }
+
+    /* 未匹配到有效键值。 */
+    return (char)AIP650E_KEY_NONE;
 }
