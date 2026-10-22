@@ -50,8 +50,9 @@ uint32_t getSystemMs(void)
 bool timer_base_Timing(timer_base_t *tim, uint32_t timeout)
 {
     uint32_t now = getSystemMs();
-    if (tim->CurrTime == 0U)
+    if (tim->Init == 0U)
     {	
+		tim->Init     = 1;
         tim->CurrTime = now;
         return false;
     }
@@ -74,12 +75,18 @@ bool timer_base_Timing(timer_base_t *tim, uint32_t timeout)
 *******************************************************************************/
 uint32_t timer_base_Count(timer_base_t *tim)
 {
-	if(tim->CurrTime == 0)
+	if(tim->Init == 0)
 	{
 		tim->CurrTime = getSystemMs();
+		tim->Init     = 1;
 		return 0;
 	}
-	return getSystemMs() - tim->CurrTime;
+	if(getSystemMs() > tim->CurrTime)
+	{
+		return getSystemMs() - tim->CurrTime;
+	}
+	
+	return UINT32_MAX - tim->CurrTime + getSystemMs();
 }
 
 /*******************************************************************************
@@ -91,5 +98,5 @@ uint32_t timer_base_Count(timer_base_t *tim)
 *******************************************************************************/
 void timer_base_Rst(timer_base_t *tim)
 {
-	tim->CurrTime = 0;
+	tim->Init = 0;
 }

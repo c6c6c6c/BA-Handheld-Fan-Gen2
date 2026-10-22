@@ -23,24 +23,18 @@ static aip650e_t s_aip650e =
 {
     .ctrl =
     {
-        .segment        = AIP650_8_SEGMENT,
-        .brightness     = BRIGHTNESS_4_LEVEL,
-        .displayEnabled = false,
-        .sleeping       = false
+        .bit =
+        {
+            .segment        = AIP650_8_SEGMENT,
+            .brightness     = BRIGHTNESS_4_LEVEL,
+            .displayEnabled = false,
+            .sleeping       = false
+        }
     },
     .show = {0U}
 };
 
-
-
 /* Private constants -------------------------------------------------------------------------------------------------*/
-
-/** 数字 0~9 对应的七段数码管显示编码 */
-static const uint8_t s_numberSegments[10] =
-{
-    NUMBER_0, NUMBER_1, NUMBER_2, NUMBER_3, NUMBER_4,
-    NUMBER_5, NUMBER_6, NUMBER_7, NUMBER_8, NUMBER_9
-};
 
 
 /** AiP650E 原始按键编码与矩阵行列编码映射表 */
@@ -254,43 +248,25 @@ static bool aip650_WriteRegister(uint8_t address, uint8_t value)
 
 /*******************************************************************************
 //  Function   : aip650_WriteControl
-//  Description: 将控制状态转换为系统控制字并写入 AiP650E
-//  Param      : ctrl - 系统控制状态结构体
+//  Description: 将显示控制指令写入 AiP650E
+//  Param      : ctrl - 显示控制指令联合体
 //  Return     : true：控制配置写入成功；false：参数无效或通信失败
-//  Others     : 将显示模式、亮度、显示使能及睡眠状态组合为控制寄存器数据
+//  Others     : 位域与原始 8 位指令共享存储，直接写入 data 成员
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 bool aip650_WriteControl(const aip650e_ctrl_t *ctrl)
 {
-    uint8_t control;
-
     if (ctrl == NULL)
     {
         return false;
     }
-
-    /* 亮度编码位于系统控制字的高四位。 */
-    control = (uint8_t)((uint8_t)ctrl->brightness << 4U);
-
-    /* 设置七段显示模式选择位。 */
-    if (ctrl->segment == AIP650_7_SEGMENT)
+    if(aip650_WriteRegister(AIP650_CMD_SYSTEM, ctrl->data))
     {
-        control |= AIP650_CONTROL_7SEG;
+        s_aip650e.ctrl.data = ctrl->data;
+        return true;
     }
 
-    /* 设置芯片睡眠控制位。 */
-    if (ctrl->sleeping)
-    {
-        control |= AIP650_CONTROL_SLEEP;
-    }
-
-    /* 设置显示输出使能位。 */
-    if (ctrl->displayEnabled)
-    {
-        control |= AIP650_CONTROL_DISPLAY;
-    }
-
-    return aip650_WriteRegister(AIP650_CMD_SYSTEM, control);
+    return false;
 }
 
 
@@ -308,12 +284,6 @@ bool aip650_WriteControl(const aip650e_ctrl_t *ctrl)
 void aip650_init(void)
 {
     uint8_t digit;
-
-    /* 初始化显示控制参数。 */
-    s_aip650e.ctrl.segment        = AIP650_7_SEGMENT;
-    s_aip650e.ctrl.brightness     = BRIGHTNESS_4_LEVEL;
-    s_aip650e.ctrl.displayEnabled = false;
-    s_aip650e.ctrl.sleeping       = false;
 
     /*
      * 配置 CLK 与 DIO 为开漏输出。
@@ -352,15 +322,6 @@ void aip650_init(void)
         }
 
         s_aip650e.show[digit] = 0U;
-    }
-
-    /* 显示 RAM 初始化完成后开启显示输出。 */
-    s_aip650e.ctrl.displayEnabled = true;
-
-    if (!aip650_WriteControl(&s_aip650e.ctrl))
-    {
-        s_aip650e.ctrl.displayEnabled = false;
-        return;
     }
 }
 
@@ -416,12 +377,11 @@ bool aip650_write_segments(const uint8_t data[AIP650E_COM_COUNT])
     /* 遍历所有 DIG，仅更新发生变化的显示数据。 */
     for (digit = 0U; digit < AIP650E_COM_COUNT; ++digit)
     {
-//        if ((s_aip650e.show[digit] != data[digit]) &&
-//            !aip650_write_digit(digit, data[digit]))
-//        {
-//            return false;
-//        }
-		aip650_write_digit(digit, data[digit]);
+        if ((s_aip650e.show[digit] != data[digit]) &&
+            !aip650_write_digit(digit, data[digit]))
+        {
+            return false;
+        }
     }
 
     return true;
@@ -473,7 +433,7 @@ char aip650_get_key(void)
     uint8_t key;
 
     /* 芯片处于睡眠状态时不执行按键读取。 */
-    if (s_aip650e.ctrl.sleeping)
+    if (s_aip650e.ctrl.bit.sleeping)
     {
         return (char)AIP650E_KEY_NONE;
     }
@@ -508,4 +468,18 @@ char aip650_get_key(void)
 
     /* 未匹配到有效键值。 */
     return (char)AIP650E_KEY_NONE;
+}
+
+
+/*******************************************************************************
+//  Function   : aip650_clear
+//  Description: 清除 DIG1~DIG4 的全部显示内容
+//  Param      : None
+//  Return     : true：清屏成功；false：通信失败
+//  Others     : 将所有 DIG 的显示段码设置为 0，保留当前显示控制参数
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+uint8_t aip650_ctrl_data(void)
+{
+    return s_aip650e.ctrl.data;
 }

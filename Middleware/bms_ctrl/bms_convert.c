@@ -251,11 +251,11 @@ double bms_usb_in_voltage(uint32_t usbAdc)
 *******************************************************************************/
 battery_state_t bms_battery_state(double currentA)
 {
-    if (currentA > 0.2)
+    if (currentA > 0.0)
     {
         return BAT_STATE_DISCHARGING;
     }
-    else if (currentA < -0.2)
+    else if (currentA < 0.0)
     {
         return BAT_STATE_CHARGING;
     }

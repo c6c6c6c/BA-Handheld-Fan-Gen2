@@ -12,6 +12,7 @@
  */
 
 #include "app_bms.h"
+#include "app_system.h"
 #include "bms.h"
 
 #include <float.h>
@@ -244,6 +245,48 @@ void app_bms_Init(void)
 
 
 /*******************************************************************************
+//  Function   : app_bms_key_ctrl
+//  Description: 根据系统休眠状态及电池电流控制 IP5326 KEY
+//  Param      : None
+//  Return     : None
+//  Others     : 1. 系统进入休眠时请求 IP5326 待机
+//               2. 系统退出休眠且上次完成待机操作时请求唤醒
+//               3. 检测到电池充电时，每隔 10s 请求一次唤醒
+//  Author     : Chen Liang 2026-10-21
+*******************************************************************************/
+void app_bms_key_ctrl(void)
+{
+    static timer_base_t _time = {0};
+
+    /* 系统休眠时，请求 IP5326 进入待机状态。 */
+    if (System.sleep_flg)
+    {
+        bms_key_Request(BMS_KEY_STANDBY);
+		return;
+    }
+    else
+    {
+        /* 上一次完成待机操作时，请求唤醒并复位计时器。 */
+        if (bms_key_GetStatus()->lastComplete == BMS_KEY_STANDBY)
+        {
+            bms_key_Request(BMS_KEY_WAKEUP);
+            timer_base_Rst(&_time);
+        }
+    }
+
+    /* 电池电流小于 0，表示处于放电方向。 */
+    if (bms_battery.current_ma < 0)
+    {
+        /* 每隔 10s 请求一次 KEY 唤醒操作。 */
+        if (timer_base_Count(&_time) > 10000)
+        {
+            bms_key_Request(BMS_KEY_WAKEUP);
+            timer_base_Rst(&_time);
+        }
+    }
+}
+
+/*******************************************************************************
 //  Function   : app_bms_1ms_task
 //  Description: BMS 应用层 1ms 周期任务
 //  Param      : None
@@ -271,7 +314,7 @@ void app_bms_1ms_task(void)
          * 根据电池电流判断充放电状态。
          * 状态判断输入单位为 A，需将 mA 转换为 A。
          */
-        bms_battery.state = bms_battery_state(bms_battery.current_ma / BMS_BATTERY_CURRENT_MA_PER_A);
+        bms_battery.state = bms_battery_state(bms_battery.current_ma);
 
         /* 更新 IP5326 LED 反馈状态。 */
         bms_status_check(bms_battery.state);
@@ -288,4 +331,6 @@ void app_bms_1ms_task(void)
             (void)bms_soh_update(&bms_battery);
         }
     }
+	
+	app_bms_key_ctrl();
 }

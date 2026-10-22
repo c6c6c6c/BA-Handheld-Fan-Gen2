@@ -14,9 +14,27 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "aip650e.h"
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
+/**
+ * @brief 显示状态结构体
+ */
+typedef union
+{
+	uint8_t data[AIP650E_COM_COUNT];
+	struct
+	{      
+		uint8_t showNum[3];            /**< 显示数字 */
+		uint8_t mist           : 1;    /**< 喷雾指示灯模式 */
+		uint8_t cooling        : 3;    /**< 制冷指示灯模式 */
+		uint8_t percentageIcon : 1;    /**< 百分比图标 */
+		uint8_t fanIcon        : 1;    /**< 风扇图标 */
+		uint8_t reserved       : 2;    /**< 保留 */
+	}bit;
+} app_display_t;
+
 
 /** 初始化 AiP650E、清空显示，并设置应用默认亮度。 */
 void app_display_Init(void);

@@ -127,7 +127,10 @@ void system_init(void)
 //  Author     : 陈亮 2026-06-06
 *******************************************************************************/
 uint32_t freq = 100000;
-uint16_t duty = 200;
+uint16_t duty = 0;
+bool vbat_ctrl = 1;
+bool vin_ctrl  = 1;
+
 void system_run(void)
 {
     static timer_base_t _timer_logic;
@@ -155,6 +158,25 @@ void system_run(void)
         app_display_task();
     }
 	 system_loop_delay();
+	
+	if(vbat_ctrl)
+	{
+		LL_GPIO_SetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN);
+	}
+	else
+	{
+		LL_GPIO_ResetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN);
+	}
+	
+	
+	if(vin_ctrl)
+	{
+		LL_GPIO_SetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
+	}
+	else
+	{
+		LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
+	}
 }
 
 

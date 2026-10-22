@@ -17,7 +17,7 @@
 /** 各 KEY 命令对应的阶段时间配置 */
 const bms_key_process_t s_process[BMS_KEY_NUM] =
 {
-    [BMS_KEY_WAKEUP]       = { 1U, (const uint16_t[]){1000U}},
+    [BMS_KEY_WAKEUP]       = { 1U, (const uint16_t[]){1000}},
     [BMS_KEY_STANDBY]      = { 1U, (const uint16_t[]){2100U}},
     [BMS_KEY_LIGHT_TOGGLE] = { 3U, (const uint16_t[]){150U, 200U, 150U}}
 };
@@ -90,7 +90,7 @@ void bms_key_RequestForce(bms_key_command_t command)
     if (s_bms_key.execute < BMS_KEY_NUM)
     {
         s_bms_key.execute    = BMS_KEY_GUARD;
-        s_bms_key.step_times = 0U;
+		timer_base_Rst(&s_bms_key.step_times);
     }
 
     s_bms_key.target     = command;
@@ -111,7 +111,7 @@ void bms_key_Init(void)
     s_bms_key.execute      = BMS_KEY_LIGHT_IDEL;
     s_bms_key.lastComplete = BMS_KEY_LIGHT_IDEL;
     s_bms_key.step         = 0U;
-    s_bms_key.step_times   = 0U;
+    timer_base_Rst(&s_bms_key.step_times);
 }
 
 
@@ -127,10 +127,7 @@ void bms_key_Init(void)
 void bms_key_1ms_task(void)
 {
     static bool io_pressed = BMS_KEY_IDLE_IO;
-
-    /* 当前阶段运行时间累计。 */
-    s_bms_key.step_times++;
-
+	
     switch (s_bms_key.execute)
     {
         case BMS_KEY_LIGHT_IDEL:
@@ -139,11 +136,11 @@ void bms_key_1ms_task(void)
             /* 存在有效目标命令时开始执行。 */
             if (s_bms_key.target < BMS_KEY_NUM)
             {
-                s_bms_key.execute    = s_bms_key.target;
-                s_bms_key.target     = BMS_KEY_LIGHT_IDEL;
-                s_bms_key.step       = 0U;
-                s_bms_key.step_times = 0U;
-                io_pressed          = !BMS_KEY_IDLE_IO;
+                s_bms_key.execute = s_bms_key.target;
+                s_bms_key.target  = BMS_KEY_LIGHT_IDEL;
+                s_bms_key.step    = 0U;
+                io_pressed        = !BMS_KEY_IDLE_IO;
+				timer_base_Rst(&s_bms_key.step_times);
             }
             break;
 
@@ -151,7 +148,7 @@ void bms_key_1ms_task(void)
             /* Guard 阶段保持 KEY 释放状态。 */
             io_pressed = BMS_KEY_IDLE_IO;
 
-            if (s_bms_key.step_times >= BMS_KEY_GUARD_TIME_MS)
+            if (timer_base_Count(&s_bms_key.step_times) >= BMS_KEY_GUARD_TIME_MS)
             {
                 s_bms_key.execute = BMS_KEY_LIGHT_IDEL;
             }
@@ -159,7 +156,7 @@ void bms_key_1ms_task(void)
 
         case BMS_KEY_NUM:
             /* 非法执行状态，恢复为空闲状态。 */
-            io_pressed       = BMS_KEY_IDLE_IO;
+            io_pressed        = BMS_KEY_IDLE_IO;
             s_bms_key.execute = BMS_KEY_LIGHT_IDEL;
             break;
 
@@ -170,11 +167,11 @@ void bms_key_1ms_task(void)
              */
             if (s_bms_key.step < s_process[s_bms_key.execute].count)
             {
-                if (s_bms_key.step_times >= s_process[s_bms_key.execute].times[s_bms_key.step])
+                if (timer_base_Count(&s_bms_key.step_times) >= s_process[s_bms_key.execute].times[s_bms_key.step])
                 {
                     s_bms_key.step++;
-                    s_bms_key.step_times = 0U;
-                    io_pressed          = !io_pressed;
+                    io_pressed = !io_pressed;
+					timer_base_Rst(&s_bms_key.step_times);
                 }
             }
             else
@@ -182,8 +179,9 @@ void bms_key_1ms_task(void)
                 /* 所有阶段执行完成，进入 Guard 状态。 */
                 s_bms_key.lastComplete = s_bms_key.execute;
                 s_bms_key.execute      = BMS_KEY_GUARD;
-                s_bms_key.step_times   = 0U;
-                io_pressed            = BMS_KEY_IDLE_IO;
+                io_pressed             = BMS_KEY_IDLE_IO;
+				
+				timer_base_Rst(&s_bms_key.step_times);
             }
             break;
     }

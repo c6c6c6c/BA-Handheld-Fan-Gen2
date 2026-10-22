@@ -121,8 +121,8 @@
  */
 typedef enum
 {
-    AIP650_7_SEGMENT = 0x09U,       /**< 七段显示模式 */
-    AIP650_8_SEGMENT = 0x01U        /**< 八段显示模式，支持 DP 段 */
+    AIP650_7_SEGMENT = 0x01U,       /**< 七段显示模式，S = 1 */
+    AIP650_8_SEGMENT = 0x00U        /**< 八段显示模式，S = 0，支持 DP 段 */
 } E_Segment;
 
 
@@ -186,14 +186,21 @@ typedef struct
 
 
 /**
- * @brief AiP650E 系统控制状态
+ * @brief AiP650E 显示控制指令
+ * @note  位定义：B0 显示开关，B2 工作/睡眠模式，B3 段显示设置，B4~B6 亮度。
  */
-typedef struct
+typedef union
 {
-    E_Segment      segment;         /**< 七段或八段显示模式 */
-    E_Bright_level brightness;      /**< 当前显示亮度等级 */
-    bool           displayEnabled;  /**< 显示使能状态 */
-    bool           sleeping;        /**< 芯片睡眠状态 */
+    uint8_t data;                   /**< 完整的 8 位显示控制指令 */
+    struct
+    {
+        uint8_t displayEnabled : 1; /**< B0：1=显示开，0=显示关 */
+        uint8_t reserved0      : 1; /**< B1：无关位 */
+        uint8_t sleeping       : 1; /**< B2：1=睡眠模式，0=工作模式 */
+        uint8_t segment        : 1; /**< B3：1=七段显示，0=八段显示 */
+        uint8_t brightness     : 3; /**< B4~B6：亮度编码 */
+        uint8_t reserved1      : 1; /**< B7：无关位 */
+    } bit;
 } aip650e_ctrl_t;
 
 
@@ -284,4 +291,14 @@ char aip650_get_key(void);
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 bool aip650_WriteControl(const aip650e_ctrl_t *ctrl);
+
+/*******************************************************************************
+//  Function   : aip650_clear
+//  Description: 清除 DIG1~DIG4 的全部显示内容
+//  Param      : None
+//  Return     : true：清屏成功；false：通信失败
+//  Others     : 将所有 DIG 的显示段码设置为 0，保留当前显示控制参数
+//  Author     : Leo Chen 2026-10-21
+*******************************************************************************/
+uint8_t aip650_ctrl_data(void);
 #endif /* _AIP650E_H_ */

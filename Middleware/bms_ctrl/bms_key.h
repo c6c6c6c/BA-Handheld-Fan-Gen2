@@ -14,7 +14,7 @@
 #define _BMS_KEY_H_
 
 #include "bms_config.h"
-
+#include "timer_base.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
@@ -31,7 +31,7 @@
 #define BMS_KEY_GUARD_TIME_MS       2000U
 
 /** KEY 空闲状态对应的软件按下状态 */
-#define BMS_KEY_IDLE_IO             true
+#define BMS_KEY_IDLE_IO             false
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
@@ -66,9 +66,9 @@ typedef struct
  */
 typedef struct
 {
-    bool pressed;                       /**< 当前 MCU 模拟 KEY 按下状态 */
-    uint32_t step_times;                /**< 当前阶段已经运行时间，单位 ms */
-    uint16_t step;                      /**< 当前执行阶段索引 */
+    bool              pressed;          /**< 当前 MCU 模拟 KEY 按下状态 */
+    timer_base_t      step_times;       /**< 当前阶段已经运行时间，单位 ms */
+    uint16_t          step;             /**< 当前执行阶段索引 */
     bms_key_command_t target;           /**< 当前待执行目标命令 */
     bms_key_command_t execute;          /**< 当前正在执行的命令或状态 */
     bms_key_command_t lastComplete;     /**< 当前正在执行的命令或状态 */

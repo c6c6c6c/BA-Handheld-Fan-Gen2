@@ -47,6 +47,7 @@ typedef struct
     uint32_t        offTimes;            /* 连续关机时间，单位：ms */
 	uint32_t        systemLoopDelay;
 	float           ntc_temp;
+	bool            sleep_flg;
 } system_t;
 
 extern system_t System;
