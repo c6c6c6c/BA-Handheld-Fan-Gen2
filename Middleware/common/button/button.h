@@ -62,8 +62,8 @@ typedef enum
  */
 typedef enum
 {
-    BUTTON_ITEM_SW1 = 0,    /**< SW1 按键 */
-    BUTTON_ITEM_SW2,        /**< SW2 按键 */
+    BUTTON_ITEM_FAN = 0,    /**< SW1 按键 */
+    BUTTON_ITEM_MIST,        /**< SW2 按键 */
     BUTTON_ITEM_ADC,        /**< ADC 按键 */
     BUTTON_ITEM_NUM         /**< 按键总数量 */
 } button_item_t;

@@ -17,7 +17,7 @@
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
 /** ADC 多缓冲累计采样器 */
-static sample_accum_t adc_accum;
+sample_accum_t adc_accum;
 
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
@@ -110,6 +110,7 @@ void sample_accum_push(uint16_t *adcValue)
 //  Others     : 读取完成后释放当前缓冲区，并切换到下一读缓冲区
 //  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
+uint16_t curr_adc;
 bool sample_accum_get(double *adcValue)
 {
     sample_accum_buf_t *buf;
@@ -144,6 +145,7 @@ bool sample_accum_get(double *adcValue)
         buf->sum[i] = 0U;
     }
 
+	curr_adc = adcValue[BMS_ADC_CURRENT];
     buf->count    = 0U;
     buf->complete = false;
 
@@ -208,6 +210,8 @@ double bms_battery_current(uint32_t pgaAdc, double vbat)
         return 0.0;
     }
 
+	
+	return ((double)pgaAdc - 2048.0) * 0.946564 / 3.3 * vbat + 12.225;
     /*
      * V_PGA   = ADC_PGA / ADC_FULL_SCALE × VCCA
      * V_ZERO  = ZERO_RATIO × VCCA
@@ -215,8 +219,8 @@ double bms_battery_current(uint32_t pgaAdc, double vbat)
      * I_mA    = V_SHUNT / R_SHUNT × 1000
      * 合并固定系数后：I_mA = (ADC_PGA - ZERO_ADC) × VCCA × MA_PER_CODE_V
      */
-    return ((double)pgaAdc - BMS_BATTERY_CURRENT_ZERO_ADC) *
-           vbat * BMS_BATTERY_CURRENT_MA_PER_CODE_V;
+//    return ((double)pgaAdc - BMS_BATTERY_CURRENT_ZERO_ADC) *
+//           vbat * BMS_BATTERY_CURRENT_MA_PER_CODE_V;
 }
 
 

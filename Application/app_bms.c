@@ -307,7 +307,7 @@ void app_bms_1ms_task(void)
     {
         /* 将 ADC 采样值换算为电池电压、电流及 USB 输入电压。 */
         bms_battery.voltage_v  = bms_battery_voltage(adcValue[BMS_ADC_VOLTAGE]);
-        bms_battery.current_ma = bms_battery_current(adcValue[BMS_ADC_CURRENT], bms_battery.voltage_v);
+        bms_battery.current_ma = bms_battery_current(adcValue[BMS_ADC_CURRENT], 3.3);
         bms_battery.usb_in_v   = bms_usb_in_voltage(adcValue[BMS_ADC_USB_VOLTAGE]);
 
         /*

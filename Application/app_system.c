@@ -15,6 +15,7 @@
 #include "app_sampling.h"
 #include "app_bms.h"
 #include "app_display.h"
+#include "app_dev.h"
 
 #include "bms.h"
 
@@ -156,6 +157,7 @@ void system_run(void)
         app_bms_1ms_task();
         uart1_port_1msTask();
         app_display_task();
+		add_dev_1ms_task();
     }
 	 system_loop_delay();
 	

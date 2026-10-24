@@ -21,114 +21,60 @@
 /** AiP650E 显示 RAM 寄存器数量 */
 #define AIP650E_COM_COUNT              4U
 
-/** 当前硬件使用的七段数码管数量 */
+/** 当前硬件使用的数码管数量 */
 #define AIP650E_DIGIT_COUNT            2U
-
-/** COM1 显示数据缓存索引 */
-#define AIP650E_COM1_INDEX             0U
-
-/** COM2 显示数据缓存索引 */
-#define AIP650E_COM2_INDEX             1U
-
-/** COM3 显示数据缓存索引，用于指示灯及 RGB 控制 */
-#define AIP650E_COM3_INDEX             2U
-
-/** COM4 显示数据缓存索引，用于独立指示灯控制 */
-#define AIP650E_COM4_INDEX             3U
 
 /** 软件两线通信延时循环次数，需根据 MCU 主频及实测波形调整 */
 #define AIP650E_DELAY_CYCLES           30U
 
-/** 显示亮度最大等级，软件接口范围为 1~8 */
-#define AIP650E_BRIGHTNESS_MAX         8U
-
 /** 无有效按键时返回的键值 */
 #define AIP650E_KEY_NONE               0U
 
-/** 七段数码管小数点 DP 对应的段码位 */
-#define AIP650E_SEGMENT_DP             0x80U
 
-
-/* COM3 Indicator Control --------------------------------------------------------------------------------------------*/
-
-/** COM3 bit0：指示灯 LAMP1 */
-#define AIP650E_COM3_LAMP1             (1U << 0)
-
-/** COM3 bit1：指示灯 LAMP2 */
-#define AIP650E_COM3_LAMP2             (1U << 1)
-
-/** COM3 bit2：指示灯 LAMP3 */
-#define AIP650E_COM3_LAMP3             (1U << 2)
-
-/** COM3 bit3：RGB D 通道 */
-#define AIP650E_COM3_RGB_D             (1U << 3)
-
-/** COM3 bit4：RGB E 通道 */
-#define AIP650E_COM3_RGB_E             (1U << 4)
-
-/** COM3 bit5：RGB F 通道 */
-#define AIP650E_COM3_RGB_F             (1U << 5)
-
-
-/* COM4 Indicator Control --------------------------------------------------------------------------------------------*/
-
-/** COM4 指示灯关闭时的控制值 */
-#define AIP650E_COM4_OFF               0U
-
-/** COM4 指示灯开启时的控制值 */
-#define AIP650E_COM4_ON                1U
+/* Command -----------------------------------------------------------------------------------------------------------*/
 
 /** AiP650E 系统控制命令地址 */
-#define AIP650_CMD_SYSTEM             0x48U
+#define AIP650_CMD_SYSTEM              0x48U
 
-/** AiP650E 按键读取命令地址 */
-#define AIP650_CMD_READ_KEY           0x4FU
+/** AiP650E 矩阵按键读取命令地址 */
+#define AIP650_CMD_READ_KEY            0x4FU
 
-/** 相邻显示 RAM 地址的偏移量 */
-#define AIP650_ADDR_STEP              0x02U
+/** 相邻显示 RAM 寄存器的地址间隔 */
+#define AIP650_ADDR_STEP               0x02U
 
 /** 芯片未检测到按键时返回的原始编码 */
-#define AIP650_NO_KEY_RAW             0x2EU
-
-/** 系统控制字：睡眠使能位 */
-#define AIP650_CONTROL_SLEEP          0x04U
-
-/** 系统控制字：显示使能位 */
-#define AIP650_CONTROL_DISPLAY        0x01U
-
-/** 系统控制字：七段显示模式选择位 */
-#define AIP650_CONTROL_7SEG           0x08U
+#define AIP650_NO_KEY_RAW              0x2EU
 
 
-/* 软件两线 GPIO 操作，使用开漏输出，高电平表示释放总线 */
-#define AIP650_CLK_HIGH()             LL_GPIO_SetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN)
-#define AIP650_CLK_LOW()              LL_GPIO_ResetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN)
-#define AIP650_DIO_HIGH()             LL_GPIO_SetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN)
-#define AIP650_DIO_LOW()              LL_GPIO_ResetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN)
-#define AIP650_DIO_READ()             LL_GPIO_IsInputPinSet(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN)
-#define AIP650_CLK_READ()             LL_GPIO_IsInputPinSet(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN)
+/* GPIO Control ------------------------------------------------------------------------------------------------------*/
 
+/** 软件两线使用开漏输出，写入高电平表示释放总线 */
+#define AIP650_CLK_HIGH()              LL_GPIO_SetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN)
+#define AIP650_CLK_LOW()               LL_GPIO_ResetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN)
+#define AIP650_DIO_HIGH()              LL_GPIO_SetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN)
+#define AIP650_DIO_LOW()               LL_GPIO_ResetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN)
 
-/* Typedef -----------------------------------------------------------------------------------------------------------*/
-
-
+/** 读取两线总线当前实际电平 */
+#define AIP650_DIO_READ()              LL_GPIO_IsInputPinSet(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN)
+#define AIP650_CLK_READ()              LL_GPIO_IsInputPinSet(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN)
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
 
 /**
  * @brief AiP650E 数码管显示模式
+ * @note  对应系统控制字中的 S 位。
  */
 typedef enum
 {
     AIP650_7_SEGMENT = 0x01U,       /**< 七段显示模式，S = 1 */
-    AIP650_8_SEGMENT = 0x00U        /**< 八段显示模式，S = 0，支持 DP 段 */
+    AIP650_8_SEGMENT = 0x00U        /**< 八段显示模式，S = 0 */
 } E_Segment;
 
 
 /**
- * @brief AiP650E 显示亮度寄存器编码
- * @note  亮度编码并非完全按数值递增，最高亮度等级编码为 0x00。
+ * @brief AiP650E 显示亮度等级编码
+ * @note  对应系统控制字 B4~B6；第 8 级亮度的寄存器编码为 0。
  */
 typedef enum
 {
@@ -144,74 +90,62 @@ typedef enum
 
 
 /**
- * @brief AiP650E 显示 RAM 地址
- * @note  相邻 DIG 寄存器地址间隔为 2。
+ * @brief AiP650E 显示 RAM 寄存器地址
+ * @note  DIG1~DIG4 分别对应四组显示数据，相邻寄存器地址间隔为 2。
  */
 typedef enum
 {
-    DIG1 = 0x68U,                  /**< DIG1 显示数据寄存器 */
-    DIG2 = 0x6AU,                  /**< DIG2 显示数据寄存器 */
-    DIG3 = 0x6CU,                  /**< DIG3 显示数据寄存器 */
-    DIG4 = 0x6EU                   /**< DIG4 显示数据寄存器 */
+    DIG1 = 0x68U,                  /**< DIG1 显示 RAM 地址 */
+    DIG2 = 0x6AU,                  /**< DIG2 显示 RAM 地址 */
+    DIG3 = 0x6CU,                  /**< DIG3 显示 RAM 地址 */
+    DIG4 = 0x6EU                   /**< DIG4 显示 RAM 地址 */
 } E_Digit_Bit;
 
 
 /**
- * @brief 七段数码管数字及符号段码
- * @note  bit0~bit6 分别对应 A~G 段，不包含 DP 段。
- */
-typedef enum
-{
-    NUMBER_0 = 0x3FU,              /**< 数字 0 */
-    NUMBER_1 = 0x06U,              /**< 数字 1 */
-    NUMBER_2 = 0x5BU,              /**< 数字 2 */
-    NUMBER_3 = 0x4FU,              /**< 数字 3 */
-    NUMBER_4 = 0x66U,              /**< 数字 4 */
-    NUMBER_5 = 0x6DU,              /**< 数字 5 */
-    NUMBER_6 = 0x7DU,              /**< 数字 6 */
-    NUMBER_7 = 0x07U,              /**< 数字 7 */
-    NUMBER_8 = 0x7FU,              /**< 数字 8 */
-    NUMBER_9 = 0x6FU,              /**< 数字 9 */
-    MINUS    = 0x40U               /**< 负号，仅点亮 G 段 */
-} E_Number;
-
-/**
- * @brief AiP650E 按键原始编码映射结构
+ * @brief AiP650E 按键编码映射结构
  */
 typedef struct
 {
-    uint8_t raw;                    /**< 芯片返回的原始按键编码 */
-    uint8_t matrix;                 /**< 对应的矩阵行列编码 */
+    uint8_t raw;                   /**< 芯片返回的原始按键编码 */
+    uint8_t matrix;                /**< 对应的矩阵行列编码 */
 } aip650_key_map_t;
 
 
 /**
- * @brief AiP650E 显示控制指令
- * @note  位定义：B0 显示开关，B2 工作/睡眠模式，B3 段显示设置，B4~B6 亮度。
+ * @brief AiP650E 系统显示控制字
+ * @note  通过位域管理显示使能、工作模式、段显示模式及亮度。
+ *        位域布局按照当前编译器的约定映射，需确认 data 与 bit 的对应关系。
  */
 typedef union
 {
-    uint8_t data;                   /**< 完整的 8 位显示控制指令 */
+    uint8_t data;                   /**< 完整的 8 位系统控制字 */
+
     struct
     {
-        uint8_t displayEnabled : 1; /**< B0：1=显示开，0=显示关 */
-        uint8_t reserved0      : 1; /**< B1：无关位 */
-        uint8_t sleeping       : 1; /**< B2：1=睡眠模式，0=工作模式 */
-        uint8_t segment        : 1; /**< B3：1=七段显示，0=八段显示 */
-        uint8_t brightness     : 3; /**< B4~B6：亮度编码 */
-        uint8_t reserved1      : 1; /**< B7：无关位 */
+        uint8_t displayEnabled : 1; /**< B0：显示使能，1=开启，0=关闭 */
+        uint8_t reserved0      : 1; /**< B1：保留位 */
+        uint8_t sleeping       : 1; /**< B2：工作模式，1=睡眠，0=正常工作 */
+        uint8_t segment        : 1; /**< B3：显示模式，1=七段，0=八段 */
+        uint8_t brightness     : 3; /**< B4~B6：显示亮度等级编码 */
+        uint8_t reserved1      : 1; /**< B7：保留位 */
     } bit;
+
 } aip650e_ctrl_t;
 
 
 /**
  * @brief AiP650E 驱动运行数据
+ * @note  保存目标系统控制字及 DIG1~DIG4 显示数据，
+ *        可用于应用层显示状态转换与刷新管理。
  */
 typedef struct
 {
-    aip650e_ctrl_t ctrl;                         /**< 系统控制寄存器软件镜像 */
-    uint8_t        show[AIP650E_COM_COUNT];      /**< DIG1~DIG4 显示 RAM 软件镜像 */
+    aip650e_ctrl_t ctrl;                    /**< 系统控制寄存器软件镜像 */
+    uint8_t        show[AIP650E_COM_COUNT]; /**< DIG1~DIG4 显示数据缓存 */
 } aip650e_t;
+
+
 /* Main API ----------------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
@@ -232,7 +166,7 @@ void aip650_init(void);
 //  Param      : digit    - DIG 索引，范围 0~AIP650E_COM_COUNT-1
 //               segments - 待写入的原始段码
 //  Return     : true：写入成功；false：索引无效或通信失败
-//  Others     : 写入成功后同步更新内部显示缓存
+//  Others     : 硬件写入成功后同步更新内部显示缓存
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 bool aip650_write_digit(uint8_t digit, uint8_t segments);
@@ -243,7 +177,8 @@ bool aip650_write_digit(uint8_t digit, uint8_t segments);
 //  Description: 批量更新 DIG1~DIG4 显示数据
 //  Param      : data - 包含 AIP650E_COM_COUNT 个段码的数组
 //  Return     : true：全部写入成功；false：参数无效或通信失败
-//  Others     : 仅写入与内部缓存不同的数据，减少总线通信次数
+//  Others     : 仅写入与内部缓存不同的显示数据，减少两线通信次数；
+//               部分写入失败时，已成功更新的数据仍保留在内部缓存中
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 bool aip650_write_segments(const uint8_t data[AIP650E_COM_COUNT]);
@@ -254,7 +189,8 @@ bool aip650_write_segments(const uint8_t data[AIP650E_COM_COUNT]);
 //  Description: 使用原始段码数组更新 DIG1~DIG4 显示内容
 //  Param      : data - 待写入的显示段码数组
 //  Return     : None
-//  Others     : 兼容接口，内部调用 aip650_write_segments()，不返回通信状态
+//  Others     : 兼容接口，内部调用 aip650_write_segments()；
+//               不向调用方返回通信结果
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 void aip650_write_number(uint8_t *data);
@@ -262,10 +198,10 @@ void aip650_write_number(uint8_t *data);
 
 /*******************************************************************************
 //  Function   : aip650_clear
-//  Description: 清除全部 DIG 显示数据
+//  Description: 清除 DIG1~DIG4 的全部显示内容
 //  Param      : None
 //  Return     : true：清屏成功；false：通信失败
-//  Others     : 将 DIG1~DIG4 段码设置为 0，不改变显示模式及亮度配置
+//  Others     : 将全部显示数据置零，不修改当前显示模式及亮度配置
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 bool aip650_clear(void);
@@ -275,30 +211,36 @@ bool aip650_clear(void);
 //  Function   : aip650_get_key
 //  Description: 读取 AiP650E 矩阵按键状态
 //  Param      : None
-//  Return     : 有效按键的矩阵行列编码；无按键时返回 AIP650E_KEY_NONE
-//  Others     : 通过软件两线通信读取原始按键编码，并使用内部映射表转换；
-//               芯片处于软件睡眠状态时不执行按键读取
+//  Return     : 有效按键的矩阵行列编码；无有效按键时返回 AIP650E_KEY_NONE
+//  Others     : 通过两线接口读取原始按键编码，并使用按键映射表进行转换；
+//               软件睡眠状态下不执行按键读取
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 char aip650_get_key(void);
 
+
 /*******************************************************************************
 //  Function   : aip650_WriteControl
-//  Description: 将控制状态转换为系统控制字并写入 AiP650E
-//  Param      : ctrl - 系统控制状态结构体
-//  Return     : true：控制配置写入成功；false：参数无效或通信失败
-//  Others     : 将显示模式、亮度、显示使能及睡眠状态组合为控制寄存器数据
+//  Description: 向 AiP650E 写入系统显示控制字
+//  Param      : ctrl - 目标显示控制配置
+//  Return     : true：写入成功；false：参数无效或通信失败
+//  Others     : 根据控制字配置显示使能、睡眠模式、七段/八段模式及亮度；
+//               用于应用层初始化及显示控制状态同步
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 bool aip650_WriteControl(const aip650e_ctrl_t *ctrl);
 
+
 /*******************************************************************************
-//  Function   : aip650_clear
-//  Description: 清除 DIG1~DIG4 的全部显示内容
+//  Function   : aip650_ctrl_data
+//  Description: 获取驱动当前保存的显示控制字
 //  Param      : None
-//  Return     : true：清屏成功；false：通信失败
-//  Others     : 将所有 DIG 的显示段码设置为 0，保留当前显示控制参数
+//  Return     : 当前显示控制寄存器的软件镜像值
+//  Others     : 仅读取驱动内部保存的控制数据，不直接访问芯片；
+//               可用于比较应用层目标控制字与驱动控制缓存是否一致
 //  Author     : Leo Chen 2026-10-21
 *******************************************************************************/
 uint8_t aip650_ctrl_data(void);
+
+
 #endif /* _AIP650E_H_ */

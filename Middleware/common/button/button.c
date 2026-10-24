@@ -11,10 +11,8 @@
  */ 
  
 /* Includes ----------------------------------------------------------------------------------------------------------*/ 
- 
-#include "bsp_gpio.h" 
 #include "button.h" 
-
+#include "bsp_gpio.h" 
 #include "app_sampling.h"
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/ 
@@ -22,9 +20,9 @@ button_t buttonList[BUTTON_ITEM_NUM] = {0};
  
 /* Macro -------------------------------------------------------------------------------------------------------------*/ 
 /* 按键读取函数定义 */ 
-DEF_BTN_CTRL_FUNC(SW1,(LL_GPIO_ReadInputPort(FAN_SW_PORT)  & FAN_SW_PIN)) 
-DEF_BTN_CTRL_FUNC(SW2,(LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
-DEF_BTN_CTRL_FUNC(SW3,(get_sw_val() > 3900)) 
+DEF_BTN_CTRL_FUNC(FAN, (LL_GPIO_ReadInputPort(FAN_SW_PORT)  & FAN_SW_PIN)) 
+DEF_BTN_CTRL_FUNC(MIST,(LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
+DEF_BTN_CTRL_FUNC(ADC, (get_sw_val() > 3200)) 
  
  /*******************************************************************************
 //  Function   : button_all_passCallback
@@ -159,9 +157,9 @@ button_event_t button_event_Update(button_item_t Item , uint16_t longPassTime)
 *******************************************************************************/ 
 void button_Init(void) 
 { 
-    button_register(BUTTON_ITEM_SW1,   GET_BTN_CTRL_FUNC(SW1)); 
-    button_register(BUTTON_ITEM_SW2,   GET_BTN_CTRL_FUNC(SW2)); 
-    button_register(BUTTON_ITEM_ADC,   GET_BTN_CTRL_FUNC(SW3)); 
+    button_register(BUTTON_ITEM_FAN,   GET_BTN_CTRL_FUNC(FAN)); 
+    button_register(BUTTON_ITEM_MIST,   GET_BTN_CTRL_FUNC(MIST)); 
+    button_register(BUTTON_ITEM_ADC,   GET_BTN_CTRL_FUNC(ADC)); 
 } 
 
 /******************************************************************************* 

@@ -14,6 +14,7 @@
 #define _APP_SYSTEM_H_
 
 #include "main.h"
+#include "app_dev.h"
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
 
@@ -48,6 +49,8 @@ typedef struct
 	uint32_t        systemLoopDelay;
 	float           ntc_temp;
 	bool            sleep_flg;
+
+    app_dev_t       dev;
 } system_t;
 
 extern system_t System;
