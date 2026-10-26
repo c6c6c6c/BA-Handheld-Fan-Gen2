@@ -29,10 +29,10 @@ const battery_config_t battery_config =
 {
     .design_capacity_mah  = 5000.0f,    /* 设计容量，单位 mAh */
     .full_voltage_v       = 4.20f,      /* 满充电压，单位 V */
-    .cutoff_voltage_v     = 2.50f,      /* 放电截止电压，单位 V */
+    .cutoff_voltage_v     = 3.00f,      /* 放电截止电压，单位 V */
     .rest_current_ma      = 50.0f,      /* 静置电流阈值，单位 mA */
     .rest_dvdt_v_per_s    = 0.0002f,    /* 静置电压变化率阈值，单位 V/s */
-    .rest_time_ms         = 1800000U,   /* OCV 修正所需静置时间，单位 ms */
+    .rest_time_ms         = 3000U,      /* OCV 修正所需静置时间，单位 ms */
     .charge_efficiency    = 0.99f,      /* 充电库仑效率 */
     .discharge_efficiency = 1.00f       /* 放电库仑效率 */
 };
@@ -241,6 +241,8 @@ void app_bms_Init(void)
 {
     bms_convert_Init();
     bms_key_Init();
+    
+    bms_battery.soc_Init = false;
 }
 
 
@@ -286,6 +288,66 @@ void app_bms_key_ctrl(void)
     }
 }
 
+
+/*******************************************************************************
+//  Function   : app_bms_key_ctrl
+//  Description: 根据系统休眠状态及电池电流控制 IP5326 KEY
+//  Param      : None
+//  Return     : None
+//  Others     : 1. 系统进入休眠时请求 IP5326 待机
+//               2. 系统退出休眠且上次完成待机操作时请求唤醒
+//               3. 检测到电池充电时，每隔 10s 请求一次唤醒
+//  Author     : Chen Liang 2026-10-21
+*******************************************************************************/
+void app_bms_state_update(void)
+{
+    /*
+    * 根据电池电流判断充放电状态。
+    * 状态判断输入单位为 A，需将 mA 转换为 A。
+    */
+    bms_battery.state = bms_battery_state(bms_battery.current_ma);
+
+    
+    bms_battery.hardware_state = ; 
+
+    /* 如果硬件辅助判断 */
+    if(bms_status_GetStatus()->state == IP5326_STATUS_FULL)
+    {
+        bms_battery.state = BAT_STATE_FAULT;
+    }
+}
+
+
+/*******************************************************************************
+//  Function   : app_bms_key_ctrl
+//  Description: 根据系统休眠状态及电池电流控制 IP5326 KEY
+//  Param      : None
+//  Return     : None
+//  Others     : 1. 系统进入休眠时请求 IP5326 待机
+//               2. 系统退出休眠且上次完成待机操作时请求唤醒
+//               3. 检测到电池充电时，每隔 10s 请求一次唤醒
+//  Author     : Chen Liang 2026-10-21
+*******************************************************************************/
+void app_bms_soc_update(void)
+{
+    /*
+    * 根据采样间隔进行库仑积分。
+    * SOC 更新成功后，继续更新等效循环次数及 SOH。
+    */
+    if(bms_battery.soc_Init == false)
+    {
+        
+    }
+    else
+    {
+        if (bms_soc_update(&bms_battery, SAMPLE_ACCUM_COUNT))
+        {
+            (void)bms_soh_update(&bms_battery);
+        }
+    }
+
+}
+
 /*******************************************************************************
 //  Function   : app_bms_1ms_task
 //  Description: BMS 应用层 1ms 周期任务
@@ -313,23 +375,12 @@ void app_bms_1ms_task(void)
         bms_battery.current_ma = bms_battery_current(adcValue[BMS_ADC_CURRENT], 3.3);
         bms_battery.usb_in_v   = bms_usb_in_voltage(adcValue[BMS_ADC_USB_VOLTAGE]);
 
-        /*
-         * 根据电池电流判断充放电状态。
-         * 状态判断输入单位为 A，需将 mA 转换为 A。
-         */
-        bms_battery.state = bms_battery_state(bms_battery.current_ma);
+        app_bms_state_update();
 
         /* 检查电池欠压、过压、USB 输入、温度及电流保护。 */
         bms_protect_check(&bms_battery);
 
-        /*
-         * 根据采样间隔进行库仑积分。
-         * SOC 更新成功后，继续更新等效循环次数及 SOH。
-         */
-        if (bms_soc_update(&bms_battery, SAMPLE_ACCUM_COUNT))
-        {
-            (void)bms_soh_update(&bms_battery);
-        }
+
     }
 	
 	app_bms_key_ctrl();

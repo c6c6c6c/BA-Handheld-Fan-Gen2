@@ -259,13 +259,11 @@ float bms_soc_from_ocv(float voltage_v)
 //  Others     : 不自行猜测初始电量；掉电恢复时由上层传入已校验的保存值
 //  Author     : Chen Liang 2026-10-16
 ***********************************************************************************************************************/
-bool bms_soc_init(bms_battery_t *battery, float initial_soc_percent)
+bool bms_soc_init(bms_battery_t *battery)
 {
     /* 检查对象、配置及初始 SOC 范围。 */
     if ((battery == NULL)
-    || !bms_soc_config_valid(battery->configInfo)
-    || !(initial_soc_percent >= 0.0f)
-    || !(initial_soc_percent <= BMS_SOC_PERCENT_FULL))
+    || !bms_soc_config_valid(battery->configInfo))
     {
         return false;
     }
@@ -278,25 +276,11 @@ bool bms_soc_init(bms_battery_t *battery, float initial_soc_percent)
     s_soc.config                 = battery->configInfo;
     s_soc.rest_ms                = 0U;
     s_soc.empty_ms               = 0U;
-
-    /*
-     * 根据初始 SOC 反推出当前剩余容量：
-     *
-     * remaining_capacity = design_capacity * SOC / 100
-     */
-    s_soc.remaining_capacity_mah =
-        (double)battery->configInfo->design_capacity_mah *
-        ((double)initial_soc_percent / (double)BMS_SOC_PERCENT_FULL);
-
     s_soc.last_voltage_v         = 0.0f;
     s_soc.charge_fraction_mah    = 0.0;
     s_soc.discharge_fraction_mah = 0.0;
     s_soc.has_last_voltage       = false;
-
-    /* 同步更新对外可见的电池运行数据。 */
-    battery->soc_info.soc                    = initial_soc_percent;
-    battery->soc_info.remaining_capacity_mah = (float)s_soc.remaining_capacity_mah;
-
+    battery->IsRun               = false;
     return true;
 }
 
