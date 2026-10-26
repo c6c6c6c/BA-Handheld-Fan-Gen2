@@ -185,20 +185,22 @@ static void app_display_showNum(uint8_t num, bool IsDisplay)
 *******************************************************************************/
 static void app_display_logic(void)
 {
-    if (System.dev.power)
+    if (System.logic.power)
     {
         /* 系统开启时显示百分比及风机图标。 */
         display.bit.percentageIcon = true;
         display.bit.fanIcon        = true;
+		display.bit.mist           = System.logic.mist_duty != 0;
 
         /* 风机档位每级对应 20，最大支持显示 100。 */
-        app_display_showNum(System.dev.fan_dev * 20U, true);
+        app_display_showNum(System.logic.fan_dev * 20U, true);
     }
     else
     {
         /* 系统关闭时清除百分比、风机图标和数字显示。 */
         display.bit.percentageIcon = false;
         display.bit.fanIcon        = false;
+		display.bit.mist           = false;
 
         app_display_showNum(0U, false);
     }

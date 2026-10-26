@@ -679,9 +679,9 @@
               <FilePath>..\..\..\Application\app_display.c</FilePath>
             </File>
             <File>
-              <FileName>app_dev.c</FileName>
+              <FileName>app_logic.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Application\app_dev.c</FilePath>
+              <FilePath>..\..\..\Application\app_logic.c</FilePath>
             </File>
           </Files>
         </Group>

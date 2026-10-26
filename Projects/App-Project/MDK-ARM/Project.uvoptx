@@ -119,6 +119,10 @@
       <TargetDriverDllRegistry>
         <SetRegEntry>
           <Number>0</Number>
+          <Key>DLGUARM</Key>
+        </SetRegEntry>
+        <SetRegEntry>
+          <Number>0</Number>
           <Key>JL2CM3</Key>
           <Name>-U601012478 -O78 -S2 -ZTIFSpeedSel5000 -A0 -C0 -JU1 -JI127.0.0.1 -JP0 -RST0 -N00("ARM CoreSight SW-DP") -D00(0BC11477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -TB1 -TFE0 -FO7 -FD20000000 -FC1000 -FN1 -FF0PY106xx_64.FLM -FS08000000 -FL010000 -FP0($$Device:PY32F032x8$CMSIS\Flash\PY106xx_64.FLM)</Name>
         </SetRegEntry>
@@ -147,82 +151,58 @@
           <Key>ARMDBGFLAGS</Key>
           <Name></Name>
         </SetRegEntry>
-        <SetRegEntry>
-          <Number>0</Number>
-          <Key>DLGUARM</Key>
-        </SetRegEntry>
       </TargetDriverDllRegistry>
       <Breakpoint/>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>SystemMs,0x0A</ItemText>
+          <ItemText>bms_battery.current_ma</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>System,0x0A</ItemText>
+          <ItemText>curr_adc,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>bms_battery</ItemText>
+          <ItemText>current_k</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
           <WinNumber>1</WinNumber>
-          <ItemText>fan,0x0A</ItemText>
+          <ItemText>current_b</ItemText>
         </Ww>
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>buttonList</ItemText>
+          <ItemText>bms_battery.voltage_v</ItemText>
         </Ww>
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
-          <ItemText>display</ItemText>
+          <ItemText>s_status,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>6</count>
           <WinNumber>1</WinNumber>
-          <ItemText>TABLE_FAN_PWM_DUTY_NORMAL,0x0A</ItemText>
+          <ItemText>bms_battery</ItemText>
         </Ww>
         <Ww>
           <count>7</count>
           <WinNumber>1</WinNumber>
-          <ItemText>ADCxConvertedDatas,0x0A</ItemText>
+          <ItemText>SystemMs,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>8</count>
           <WinNumber>1</WinNumber>
-          <ItemText>(int)ADCxConvertedDatas[5]-2048,0x0A</ItemText>
+          <ItemText>avgFilterList[FILTER_LIST_SW]</ItemText>
         </Ww>
         <Ww>
           <count>9</count>
           <WinNumber>1</WinNumber>
-          <ItemText>adc_accum</ItemText>
-        </Ww>
-        <Ww>
-          <count>10</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>((int)curr_adc - 2048+23)/35.0</ItemText>
-        </Ww>
-        <Ww>
-          <count>11</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>((int)curr_adc - 2048)* 0.936564 + 12.225</ItemText>
-        </Ww>
-        <Ww>
-          <count>12</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>adc_accum,0x0A</ItemText>
-        </Ww>
-        <Ww>
-          <count>13</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>bms_battery.current_ma/29</ItemText>
+          <ItemText>ADCxConvertedDatas,0x0A</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -847,7 +827,7 @@
 
   <Group>
     <GroupName>Middleware/mist</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -879,7 +859,7 @@
 
   <Group>
     <GroupName>Middleware/protocol</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -970,8 +950,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Application\app_dev.c</PathWithFileName>
-      <FilenameWithoutPath>app_dev.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Application\app_logic.c</PathWithFileName>
+      <FilenameWithoutPath>app_logic.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

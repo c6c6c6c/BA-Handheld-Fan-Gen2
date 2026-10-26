@@ -14,6 +14,7 @@
 #define _BMS_STATUS_H_
 
 #include "bms_config.h"
+#include "timer_base.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
@@ -33,15 +34,8 @@
 #endif
 
 
-/* IP5326 LED 模式识别；两灯模式中 D1=LED1、D2=LED3。单位均为 ms。 */
-#define BMS_STATUS_LED_DEBOUNCE_MS               0U   /* LED 输入抗毛刺时间 */
-#define BMS_STATUS_SLOW_HALF_MIN_MS              50U  /* 0.5Hz 闪烁半周期下限 */
-#define BMS_STATUS_SLOW_HALF_MAX_MS              250U /* 0.5Hz 闪烁半周期上限 */
-#define BMS_STATUS_FAST_HALF_MIN_MS              50U  /* 1Hz 闪烁半周期下限 */
-#define BMS_STATUS_FAST_HALF_MAX_MS              50U  /* 1Hz 闪烁半周期上限 */
-#define BMS_STATUS_OTHER_OFF_MS                  400U /* 另一盏灯持续熄灭后才确认闪烁模式 */
-#define BMS_STATUS_LED_STEADY_MS                 300U /* 大于 D1 完整周期，才认定常亮 */
-
+/** LED 状态统计窗口，单位 ms。 */
+#define BMS_STATUS_DETECT_WINDOW_MS    2000U
 
 /* LED GPIO 状态读取 -------------------------------------------------------------------------------------------------*/
 
@@ -81,12 +75,15 @@ typedef enum
  */
 typedef enum
 {
-    BMS_STATUS_UNKNOWN = 0,     /**< 状态未知或 LED 组合不符合当前模式 */
-    BMS_STATUS_CHARGING,        /**< 充电中 */
-    BMS_STATUS_FULL,            /**< 充电完成 */
-    BMS_STATUS_DISCHARGING,     /**< 正常放电 */
-    BMS_STATUS_LOW_BATTERY      /**< 低电量放电 */
-} bms_status_mode_t;
+    IP5326_STATUS_UNKNOWN = 0,     /**< 状态未知或检测尚未完成 */
+    IP5326_STATUS_CHARGING,        /**< 充电中，LED1 0.5Hz 闪烁 */
+    IP5326_STATUS_FULL,            /**< 充电完成，LED1 常亮 */
+    IP5326_STATUS_DISCHARGING,     /**< 正常放电，LED3 常亮 */
+    IP5326_STATUS_LOW_BATTERY,     /**< 低电量放电，LED3 1.0Hz 闪烁 */
+    IP5326_STATUS_IDLE,            /**< LED 全灭，可能为待机或关机 */
+    IP5326_STATUS_LOCKED,          /**< 低电锁定，需结合其他信号确认 */
+    IP5326_STATUS_INVALID          /**< LED 组合异常或不符合当前模式 */
+} ip5326_status_t;
 
 
 /**
@@ -94,21 +91,13 @@ typedef enum
  */
 typedef struct
 {
-    uint8_t  last_level;        /**< 上一次采样电平 */
-    uint32_t last_edge_tick;    /**< 上一次电平跳变时刻，单位 ms */
-    uint32_t last_period_ms;    /**< 最近一次检测到的闪烁周期，单位 ms */
-    uint8_t  edge_count;        /**< 已检测到的有效边沿数量 */
+	uint8_t         level;             /**< 上一次采样电平 */
+    uint8_t         last_level;        /**< 上一次采样电平 */
+	uint8_t         count;             /**< 已检测到的有效边沿数量 */
+    uint8_t         edge_count;        /**< 已检测到的有效边沿数量 */
+    led_state_t     state;
+    timer_base_t   _timer;
 } led_detect_t;
-
-
-/**
- * @brief 单路 LED 状态数据
- */
-typedef struct
-{
-    led_state_t  state;         /**< 当前 LED 识别状态 */
-    led_detect_t detect;        /**< LED 闪烁检测数据 */
-} led_dat;
 
 
 /**
@@ -116,34 +105,23 @@ typedef struct
  */
 typedef struct
 {
-    led_dat led1;               /**< LED1 状态 */
+    led_detect_t led1;               /**< LED1 状态 */
 
 #if (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_2_LED) || \
     (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED)
-    led_dat led2;               /**< LED2 状态 */
+    led_detect_t led2;               /**< LED2 状态 */
 #endif
 
 #if (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED)
-    led_dat led3;               /**< LED3 状态 */
-    led_dat led4;               /**< LED4 状态 */
+    led_detect_t led3;               /**< LED3 状态 */
+    led_detect_t led4;               /**< LED4 状态 */
 #endif
 
-    bms_status_mode_t mode;     /**< 根据 LED 组合识别出的当前 BMS 状态 */
+    ip5326_status_t state;           /**< 根据 LED 组合识别出的当前 BMS 状态 */
 } bms_status_t;
 
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
-
-/*******************************************************************************
-//  Function   : bms_status_Init
-//  Description: 初始化 BMS LED 状态识别模块
-//  Param      : None
-//  Return     : true：初始化成功；false：LED 输入 GPIO 配置错误
-//  Others     : 仅初始化状态识别，不控制 VIN/VBAT、KEY 或保护模块
-//  Author     : Chen Liang 2026-10-14
-*******************************************************************************/
-bool bms_status_Init(void);
-
 
 /*******************************************************************************
 //  Function   : bms_status_check

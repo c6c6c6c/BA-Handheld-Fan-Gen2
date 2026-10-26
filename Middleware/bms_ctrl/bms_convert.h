@@ -22,7 +22,7 @@
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
 /** 每组 ADC 累计采样次数 */
-#define SAMPLE_ACCUM_COUNT                       128U
+#define SAMPLE_ACCUM_COUNT                       512U
 
 /** ADC 累计采样缓冲区数量 */
 #define SAMPLE_SUM_COUNT                         2U
@@ -36,7 +36,7 @@
 /* battery voltage conversion --------------------------------------------------------------------------------------------*/
 
 /** MCU 内部参考电压 VREFINT，单位 V */
-#define BMS_BATTERY_VREFINT_V                    1.216f
+#define BMS_BATTERY_VREFINT_V                    1.2155f
 
 /** 电池电压换算分子，单位 V·ADC码值；固定参数由编译器提前计算 */
 #define BMS_BATTERY_VOLTAGE_NUMERATOR            \

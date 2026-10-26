@@ -302,6 +302,9 @@ void app_bms_1ms_task(void)
     /* 推进 IP5326 KEY 非阻塞状态机。 */
     bms_key_1ms_task();
 
+    /* 更新 IP5326 LED 反馈状态。 */
+    bms_status_check(bms_battery.state);
+
     /* 仅在一组 ADC 累计采样完成后执行数据换算。 */
     if (sample_accum_get(adcValue))
     {
@@ -315,9 +318,6 @@ void app_bms_1ms_task(void)
          * 状态判断输入单位为 A，需将 mA 转换为 A。
          */
         bms_battery.state = bms_battery_state(bms_battery.current_ma);
-
-        /* 更新 IP5326 LED 反馈状态。 */
-        bms_status_check(bms_battery.state);
 
         /* 检查电池欠压、过压、USB 输入、温度及电流保护。 */
         bms_protect_check(&bms_battery);

@@ -11,7 +11,6 @@
  */
 
 #include "bms_status.h"
-#include "timer_base.h"
 #include <string.h>
 
 
@@ -26,62 +25,47 @@ bms_status_t s_status;
 //  Description: 检测单路 LED 当前状态
 //  Param      : det     - LED 检测数据
 //               level   - 当前 GPIO 电平
-//               tick_ms - 当前系统时间，单位 ms
 //  Return     : LED 常亮、常灭、0.5Hz、1Hz 或 UNKNOWN
-//  Others     : 根据边沿间隔计算闪烁周期，长时间无边沿时判断为常亮或常灭
+//  Others     : 每 2s 统计一次边沿数量；无边沿时根据当前电平判断常亮或常灭
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
-static led_state_t bms_status_detect(led_detect_t *det, uint8_t level, uint32_t tick_ms)
+static led_state_t bms_status_detect(led_detect_t *det, uint8_t level)
 {
-    uint32_t elapsed;
-    uint32_t period;
-
-    /* 电平变化时记录边沿间隔。 */
-    if (level != det->last_level)
+    /* 统计窗口内的 LED 跳变次数。 */
+	if(level)
+	{
+		det->count = 100;
+	}
+	
+	det->count = det->count == 0 ? det->count : det->count - 1;
+	
+	det->level = det->count != 0;
+	
+	
+    if (det->level != det->last_level)
     {
-        elapsed = tick_ms - det->last_edge_tick;
-
-        det->last_edge_tick = tick_ms;
-        det->last_level     = level;
-        det->edge_count++;
-
-        /* 相邻边沿间隔为半周期。 */
-        period = elapsed * 2U;
-        det->last_period_ms = period;
+		det->last_level = det->level;
+		det->edge_count++;
     }
 
-    /* 超过 2.5s 无边沿变化时认为 LED 常亮或常灭。 */
-    if ((tick_ms - det->last_edge_tick) > 2500U)
+    if (timer_base_Timing(&det->_timer, BMS_STATUS_DETECT_WINDOW_MS))
     {
-        det->edge_count = 0U;
-
-        if (level != 0U)
+        if (det->edge_count == 0U)
         {
-            return LED_STATE_ON;
+            det->state = (det->level != 0U) ? LED_STATE_ON : LED_STATE_OFF;
+        }
+        else if (det->edge_count > 2U)
+        {
+            det->state = LED_STATE_BLINK_1HZ;
         }
         else
         {
-            return LED_STATE_OFF;
+            det->state = LED_STATE_BLINK_0_5HZ;
         }
+        det->edge_count = 0U;
     }
 
-    /* 至少检测到两个边沿后再判断闪烁频率。 */
-    if (det->edge_count >= 2U)
-    {
-        period = det->last_period_ms;
-
-        if ((period >= 800U) && (period <= 1200U))
-        {
-            return LED_STATE_BLINK_1HZ;
-        }
-
-        if ((period >= 1600U) && (period <= 2400U))
-        {
-            return LED_STATE_BLINK_0_5HZ;
-        }
-    }
-
-    return LED_STATE_UNKNOWN;
+    return det->state;
 }
 
 
@@ -94,34 +78,44 @@ static led_state_t bms_status_detect(led_detect_t *det, uint8_t level, uint32_t 
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 #if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_1_LED
-static bms_status_mode_t bms_status_mode1_check(battery_state_t state)
+static ip5326_status_t bms_status_mode1_check(battery_state_t state)
 {
-    if (state == BAT_STATE_CHARGING)
+    if (s_status.led1.state == LED_STATE_UNKNOWN)
+    {
+        return IP5326_STATUS_UNKNOWN;
+    }
+
+    if (s_status.led1.state == LED_STATE_OFF)
+    {
+        return IP5326_STATUS_IDLE;
+    }
+
+    if ((state == BAT_STATE_CHARGING) || (state == BAT_STATE_FULL))
     {
         if (s_status.led1.state == LED_STATE_BLINK_0_5HZ)
         {
-            return BMS_STATUS_CHARGING;
+            return IP5326_STATUS_CHARGING;
         }
 
         if (s_status.led1.state == LED_STATE_ON)
         {
-            return BMS_STATUS_FULL;
+            return IP5326_STATUS_FULL;
         }
     }
-    else
+    else if (state == BAT_STATE_DISCHARGING)
     {
         if (s_status.led1.state == LED_STATE_BLINK_1HZ)
         {
-            return BMS_STATUS_LOW_BATTERY;
+            return IP5326_STATUS_LOW_BATTERY;
         }
 
         if (s_status.led1.state == LED_STATE_ON)
         {
-            return BMS_STATUS_DISCHARGING;
+            return IP5326_STATUS_DISCHARGING;
         }
     }
 
-    return BMS_STATUS_UNKNOWN;
+    return IP5326_STATUS_INVALID;
 }
 #endif
 
@@ -134,37 +128,44 @@ static bms_status_mode_t bms_status_mode1_check(battery_state_t state)
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 #if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_2_LED
-static bms_status_mode_t bms_status_mode2_check(battery_state_t state)
+static ip5326_status_t bms_status_mode2_check(battery_state_t state)
 {
-    if (state == BAT_STATE_CHARGING)
+    if ((s_status.led1.state == LED_STATE_UNKNOWN) ||
+        (s_status.led2.state == LED_STATE_UNKNOWN))
     {
-        if (s_status.led2.state == LED_STATE_OFF)
-        {
-            if (s_status.led1.state == LED_STATE_BLINK_0_5HZ)
-            {
-                return BMS_STATUS_CHARGING;
-            }
+        return IP5326_STATUS_UNKNOWN;
+    }
 
-            if (s_status.led1.state == LED_STATE_ON)
-            {
-                return BMS_STATUS_FULL;
-            }
+    if ((s_status.led1.state == LED_STATE_OFF) && (s_status.led2.state == LED_STATE_OFF))
+    {
+        return IP5326_STATUS_IDLE;
+    }
+    else if (s_status.led2.state == LED_STATE_OFF)
+    {
+        if (s_status.led1.state == LED_STATE_BLINK_0_5HZ)
+        {
+            return IP5326_STATUS_CHARGING;
+        }
+
+        if (s_status.led1.state == LED_STATE_ON)
+        {
+            return IP5326_STATUS_FULL;
         }
     }
-    else if (s_status.led1.state == LED_STATE_OFF)
+    else if(s_status.led1.state == LED_STATE_OFF)
     {
         if (s_status.led2.state == LED_STATE_BLINK_1HZ)
         {
-            return BMS_STATUS_LOW_BATTERY;
+            return IP5326_STATUS_LOW_BATTERY;
         }
 
         if (s_status.led2.state == LED_STATE_ON)
         {
-            return BMS_STATUS_DISCHARGING;
+            return IP5326_STATUS_DISCHARGING;
         }
     }
 
-    return BMS_STATUS_UNKNOWN;
+    return IP5326_STATUS_INVALID;
 }
 #endif
 
@@ -177,7 +178,7 @@ static bms_status_mode_t bms_status_mode2_check(battery_state_t state)
 //  Author     : Chen Liang 2026-10-14
 *******************************************************************************/
 #if BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED
-static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
+static ip5326_status_t bms_status_mode4_check(battery_state_t state)
 {
     led_state_t led[4];
     uint8_t i;
@@ -189,7 +190,26 @@ static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
     led[2] = s_status.led3.state;
     led[3] = s_status.led4.state;
 
-    if (state == BAT_STATE_CHARGING)
+    for (i = 0U; i < 4U; i++)
+    {
+        if (led[i] == LED_STATE_UNKNOWN)
+        {
+            return IP5326_STATUS_UNKNOWN;
+        }
+    }
+
+    matched = true;
+    for (i = 0U; i < 4U; i++)
+    {
+        matched = matched && (led[i] == LED_STATE_OFF);
+    }
+
+    if (matched)
+    {
+        return IP5326_STATUS_IDLE;
+    }
+
+    if ((state == BAT_STATE_CHARGING) || (state == BAT_STATE_FULL))
     {
         /* 四灯全亮表示充满。 */
         matched = true;
@@ -200,7 +220,7 @@ static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
 
         if (matched)
         {
-            return BMS_STATUS_FULL;
+            return IP5326_STATUS_FULL;
         }
 
         /* 充电中：前灯常亮，当前灯 0.5Hz 闪烁，后灯常灭。 */
@@ -220,11 +240,11 @@ static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
 
             if (matched)
             {
-                return BMS_STATUS_CHARGING;
+                return IP5326_STATUS_CHARGING;
             }
         }
     }
-    else
+    else if (state == BAT_STATE_DISCHARGING)
     {
         /* LED1 1Hz 闪烁，其余熄灭表示低电量。 */
         if ((led[0] == LED_STATE_BLINK_1HZ) &&
@@ -232,7 +252,7 @@ static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
             (led[2] == LED_STATE_OFF) &&
             (led[3] == LED_STATE_OFF))
         {
-            return BMS_STATUS_LOW_BATTERY;
+            return IP5326_STATUS_LOW_BATTERY;
         }
 
         /* 正常放电：前 1~4 灯常亮，其余常灭。 */
@@ -252,14 +272,15 @@ static bms_status_mode_t bms_status_mode4_check(battery_state_t state)
 
             if (matched)
             {
-                return BMS_STATUS_DISCHARGING;
+                return IP5326_STATUS_DISCHARGING;
             }
         }
     }
 
-    return BMS_STATUS_UNKNOWN;
+    return IP5326_STATUS_INVALID;
 }
 #endif
+
 
 /*******************************************************************************
 //  Function   : bms_status_check
@@ -273,25 +294,25 @@ void bms_status_check(battery_state_t state)
 {
 #if (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_1_LED)
 
-    s_status.led1.state = bms_status_detect(&s_status.led1.detect, BMS_IO_LED1_IS_HIGH(), getSystemMs());
+    s_status.led1.state = bms_status_detect(&s_status.led1, (uint8_t)BMS_IO_LED1_IS_HIGH());
 
-    s_status.mode = bms_status_mode1_check(state);
+    s_status.state = bms_status_mode1_check(state);
 
 #elif (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_2_LED)
 
-    s_status.led1.state = bms_status_detect(&s_status.led1.detect, BMS_IO_LED1_IS_HIGH(), getSystemMs());
-    s_status.led2.state = bms_status_detect(&s_status.led2.detect, BMS_IO_LED2_IS_HIGH(), getSystemMs());
+    s_status.led1.state = bms_status_detect(&s_status.led1, (uint8_t)BMS_IO_LED1_IS_HIGH());
+    s_status.led2.state = bms_status_detect(&s_status.led2, (uint8_t)BMS_IO_LED2_IS_HIGH());
 
-    s_status.mode = bms_status_mode2_check(state);
+    s_status.state = bms_status_mode2_check(state);
 
 #elif (BMS_STATUS_LED_MODE == BMS_STATUS_MODE_4_LED)
 
-    s_status.led1.state = bms_status_detect(&s_status.led1.detect, BMS_IO_LED1_IS_HIGH(), getSystemMs());
-    s_status.led2.state = bms_status_detect(&s_status.led2.detect, BMS_IO_LED2_IS_HIGH(), getSystemMs());
-    s_status.led3.state = bms_status_detect(&s_status.led3.detect, BMS_IO_LED3_IS_HIGH(), getSystemMs());
-    s_status.led4.state = bms_status_detect(&s_status.led4.detect, BMS_IO_LED4_IS_HIGH(), getSystemMs());
+    s_status.led1.state = bms_status_detect(&s_status.led1, (uint8_t)BMS_IO_LED1_IS_HIGH());
+    s_status.led2.state = bms_status_detect(&s_status.led2, (uint8_t)BMS_IO_LED2_IS_HIGH());
+    s_status.led3.state = bms_status_detect(&s_status.led3, (uint8_t)BMS_IO_LED3_IS_HIGH());
+    s_status.led4.state = bms_status_detect(&s_status.led4, (uint8_t)BMS_IO_LED4_IS_HIGH());
 
-    s_status.mode = bms_status_mode4_check(state);
+    s_status.state = bms_status_mode4_check(state);
 
 #endif
 }

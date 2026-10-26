@@ -22,7 +22,7 @@ button_t buttonList[BUTTON_ITEM_NUM] = {0};
 /* 按键读取函数定义 */ 
 DEF_BTN_CTRL_FUNC(FAN, (LL_GPIO_ReadInputPort(FAN_SW_PORT)  & FAN_SW_PIN)) 
 DEF_BTN_CTRL_FUNC(MIST,(LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
-DEF_BTN_CTRL_FUNC(ADC, (get_sw_val() > 3200)) 
+DEF_BTN_CTRL_FUNC(ADC, (get_sw_val() > 3000)) 
  
  /*******************************************************************************
 //  Function   : button_all_passCallback

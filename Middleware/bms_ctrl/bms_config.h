@@ -93,9 +93,12 @@ typedef union
  */
 typedef struct
 {
-    const battery_config_t *configInfo;               /**< 电池配置参数，运行期间只读 */
+    const battery_config_t *configInfo;                 /**< 电池配置参数，运行期间只读 */
+
+    bool                    IsRun;                      /**< 是否运行 */
 
     battery_state_t         state;                      /**< 当前电池工作状态 */
+	battery_state_t         hardware_state;             /**< 当前充放电检测状态 */
   
     double                  usb_in_v;                   /**< usb输入电压，单位 V */
     double                  voltage_v;                  /**< 电池电压，单位 V */
