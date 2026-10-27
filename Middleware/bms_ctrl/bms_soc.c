@@ -33,7 +33,7 @@ static const BmsSocOcvPoint s_ocv_table[] =
     {3.9470f, 692U}, {3.9615f, 716U}, {3.9765f, 740U}, {3.9925f, 764U},
     {4.0090f, 788U}, {4.0265f, 812U}, {4.0453f, 836U}, {4.0645f, 860U},
     {4.0850f, 884U}, {4.1055f, 908U}, {4.1270f, 932U}, {4.1490f, 956U},
-    {4.1725f, 980U}
+    {4.1725f, 980U}, {4.2000f, 1000U}
 };
 
 #define BMS_SOC_OCV_POINT_COUNT    (sizeof(s_ocv_table) / sizeof(s_ocv_table[0]))
@@ -47,7 +47,7 @@ static const BmsSocOcvPoint s_ocv_table[] =
  * charge/discharge_fraction_mah 用于保存不足 1 mAh 的小数部分，
  * 这些运行变量不属于掉电保存数据。
  */
-static struct
+struct
 {
     bms_battery_t          *owner;                   /* 当前绑定的电池对象。 */
     const battery_config_t *config;                  /* 初始化时绑定的配置对象。 */
@@ -89,7 +89,7 @@ static float bms_soc_clamp(float value, float maximum)
 //  Others     : SOC 模块内部使用，避免额外依赖数学库
 //  Author     : Chen Liang 2026-10-16
 ***********************************************************************************************************************/
-static float bms_soc_abs(float value)
+float bms_soc_abs(float value)
 {
     return (value < 0.0f) ? -value : value;
 }
@@ -178,8 +178,8 @@ static bool bms_soc_config_valid(const battery_config_t *config)
         && (config->full_voltage_v       > config->cutoff_voltage_v)
         && (config->charge_efficiency    >  0.0f)
         && (config->discharge_efficiency >  0.0f)
-        && (config->charge_efficiency    <= 1.0f)
-        && (config->discharge_efficiency <= 1.0f);
+        && (config->charge_efficiency    <= 10.0f)
+        && (config->discharge_efficiency <= 10.0f);
 }
 
 
@@ -259,11 +259,13 @@ float bms_soc_from_ocv(float voltage_v)
 //  Others     : 不自行猜测初始电量；掉电恢复时由上层传入已校验的保存值
 //  Author     : Chen Liang 2026-10-16
 ***********************************************************************************************************************/
-bool bms_soc_init(bms_battery_t *battery)
+bool bms_soc_init(bms_battery_t *battery, float initial_soc_percent)
 {
     /* 检查对象、配置及初始 SOC 范围。 */
     if ((battery == NULL)
-    || !bms_soc_config_valid(battery->configInfo))
+    || !bms_soc_config_valid(battery->configInfo)
+    || !(initial_soc_percent >= 0.0f)
+    || !(initial_soc_percent <= BMS_SOC_PERCENT_FULL))
     {
         return false;
     }
@@ -276,11 +278,25 @@ bool bms_soc_init(bms_battery_t *battery)
     s_soc.config                 = battery->configInfo;
     s_soc.rest_ms                = 0U;
     s_soc.empty_ms               = 0U;
+
+    /*
+     * 根据初始 SOC 反推出当前剩余容量：
+     *
+     * remaining_capacity = design_capacity * SOC / 100
+     */
+    s_soc.remaining_capacity_mah =
+        (double)battery->configInfo->design_capacity_mah *
+        ((double)initial_soc_percent / (double)BMS_SOC_PERCENT_FULL);
+
     s_soc.last_voltage_v         = 0.0f;
     s_soc.charge_fraction_mah    = 0.0;
     s_soc.discharge_fraction_mah = 0.0;
     s_soc.has_last_voltage       = false;
-    battery->IsRun               = false;
+
+    /* 同步更新对外可见的电池运行数据。 */
+    battery->soc_info.soc                    = initial_soc_percent;
+    battery->soc_info.remaining_capacity_mah = (float)s_soc.remaining_capacity_mah;
+
     return true;
 }
 
@@ -294,6 +310,8 @@ bool bms_soc_init(bms_battery_t *battery)
 //  Others     : SOH 无可靠测量依据，本函数不修改 soh；累计电量整数部分以 mAh 保存
 //  Author     : Chen Liang 2026-10-16
 ***********************************************************************************************************************/
+double val[5];
+
 bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
 {
     const  battery_config_t *config;
@@ -346,10 +364,10 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
                 ((double)elapsed_ms / (double)BMS_SOC_MS_PER_HOUR);
 
     /*
-     * current_ma < 0：充电
-     * current_ma > 0：放电
+     * current_ma > 0：充电
+     * current_ma < 0：放电
      */
-    if (battery->current_ma < 0.0f)
+    if (battery->current_ma > 0.0f)
     {
         /* 累计历史充电量。 */
         bms_soc_add_total(&soc_info->charge_mah_total, &s_soc.charge_fraction_mah, delta_mah);
@@ -361,7 +379,7 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
          */
         s_soc.remaining_capacity_mah += delta_mah * (double)config->charge_efficiency;
     }
-    else if (battery->current_ma > 0.0f)
+    else if (battery->current_ma < 0.0f)
     {
         /* 累计历史放电量。 */
         bms_soc_add_total(&soc_info->discharge_mah_total, &s_soc.discharge_fraction_mah, delta_mah);
@@ -421,6 +439,8 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
         s_soc.rest_ms = 0U;
     }
 
+
+    soc_info->static_soc = bms_soc_from_ocv(battery->voltage_v);
     /*
      * 放空端点判定：
      *
@@ -478,8 +498,9 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
         /*
          * SOCnew = SOCold + alpha * (SOCocv - SOCold)
          */
-        soc_info->soc += alpha * (bms_soc_from_ocv(battery->voltage_v) - soc_info->soc);
-        soc_info->soc  = bms_soc_clamp(soc_info->soc, BMS_SOC_PERCENT_FULL);
+        soc_info->soc += alpha * (soc_info->static_soc - soc_info->soc);
+		//
+        soc_info->soc = bms_soc_clamp(soc_info->soc, BMS_SOC_PERCENT_FULL);
 
         /*
          * OCV 修正 SOC 后，同步反算剩余容量，

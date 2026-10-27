@@ -24,17 +24,6 @@ extern bms_battery_t bms_battery;
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
-/*******************************************************************************
-//  Function   : app_bms_ConfigureBattery
-//  Description: 配置电池参数并初始化 SOC、SOH 运行数据
-//  Param      : config              - 电池配置参数
-//               initial_soc_percent - 初始 SOC，单位 %，范围 0.0~100.0
-//  Return     : true：配置成功；false：配置参数或初始 SOC 无效
-//  Others     : 应在周期任务启动前调用；配置失败时恢复原 configInfo
-//  Author     : Chen Liang 2026-10-16
-*******************************************************************************/
-bool app_bms_ConfigureBattery(const battery_config_t *config, float initial_soc_percent);
-
 
 /*******************************************************************************
 //  Function   : app_bms_Restore
@@ -45,7 +34,7 @@ bool app_bms_ConfigureBattery(const battery_config_t *config, float initial_soc_
 //               Flash 数据读取由上层实现，恢复失败时保留原运行数据
 //  Author     : Chen Liang 2026-10-16
 *******************************************************************************/
-bool app_bms_Restore(const battery_soc_t *saved);
+void app_bms_Restore(void);
 
 
 /*******************************************************************************
@@ -56,7 +45,7 @@ bool app_bms_Restore(const battery_soc_t *saved);
 //  Others     : 仅生成数据快照，不执行 Flash 写入；应与 BMS 周期任务串行调用
 //  Author     : Chen Liang 2026-10-16
 *******************************************************************************/
-bool app_bms_Save(battery_soc_t *output);
+void app_bms_Save(void);
 
 
 /*******************************************************************************

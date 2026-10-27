@@ -15,9 +15,18 @@
 #define _APP_LOGIC_H_
 
 #include "main.h"
-
+#include "fan.h"
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
+
+typedef enum
+{
+    MIST_MODE_CLOSE = 0,
+    MIST_MODE_CONTINUE,
+    MIST_MODE_PULSATING,
+    MIST_MODE_NUM
+}mist_mode_enum_t;
+
 
 /**
  * @brief 应用层设备运行状态
@@ -26,19 +35,22 @@
  */
 typedef struct
 {
-    uint8_t  fan_dev;        /**< 当前风扇档位，0=关闭，1~5=运行档位 */
-    uint8_t  fan_dir;        /**< 风扇调档方向，0=加档，1=减档 */
+    fan_mode_enum_t   fan_mode;       /**< 当前风扇档位，0=关闭，1~5=运行档位 */
+    mist_mode_enum_t  mist_mode;      /**< 雾化功能状态，true=开启，false=关闭 */
+    bool              power;          /**< 当前设备电源状态，true=开机，false=关机 */
 
-    bool     mist_dev;       /**< 雾化功能状态，true=开启，false=关闭 */
-    bool     power;          /**< 当前设备电源状态，true=开机，false=关机 */
-    bool     lastpower;      /**< 上一次设备电源状态，用于检测开关机变化 */
+    uint8_t          fan_dir;         /**< 风扇调档方向，0=加档，1=减档 */
+    bool             lastpower;       /**< 上一次设备电源状态，用于检测开关机变化 */
+         
+    uint32_t         mist_freq;       /**< 雾化片 PWM 目标频率，单位 Hz */
+    uint16_t         mist_duty;       /**< 雾化片 PWM 目标占空比参数 */
+                 
+    uint32_t         onTimes;         /**< 设备连续开机时间，单位 ms */
+    uint32_t         offTimes;        /**< 设备连续关机时间，单位 ms */
+    uint32_t         mistTimes;       /**< 雾化功能运行累计时间，单位 ms */
 
-    uint32_t mist_freq;      /**< 雾化片 PWM 目标频率，单位 Hz */
-    uint16_t mist_duty;      /**< 雾化片 PWM 目标占空比参数 */
 
-    uint32_t onTimes;        /**< 设备连续开机时间，单位 ms */
-    uint32_t offTimes;       /**< 设备连续关机时间，单位 ms */
-    uint32_t mistTimes;      /**< 雾化功能运行累计时间，单位 ms */
+    bool     display_flg;   //显示
 } app_logic_t;
 
 

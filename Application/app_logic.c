@@ -50,15 +50,15 @@ void btn_fan_event(button_event_t event, uint16_t triggerInterval)
             if (++Cnt >= triggerInterval)
             {
                 Cnt = 0U;
-				
-				System.logic.fan_dev += System.logic.fan_dir ? -1 : 1;
+                
+                // System.logic.fan_mode += System.logic.fan_dir ? -1 : 1;
 
-				/* 达到最高档或最低档时反转调档方向。 */
-				if ((System.logic.fan_dev == FAN_MODE_5)
-				||  (System.logic.fan_dev == FAN_MODE_1))
-				{
-					System.logic.fan_dir = !System.logic.fan_dir;
-				}
+                // /* 达到最高档或最低档时反转调档方向。 */
+                // if ((System.logic.fan_mode == FAN_MODE_5)
+                // ||  (System.logic.fan_mode == FAN_MODE_1))
+                // {
+                // 	System.logic.fan_dir = !System.logic.fan_dir;
+                // }
             }
             break;
 
@@ -66,14 +66,18 @@ void btn_fan_event(button_event_t event, uint16_t triggerInterval)
             /* 短按释放时根据当前调档方向切换一次档位。 */
             Cnt = triggerInterval;
 
-            System.logic.fan_dev += System.logic.fan_dir ? -1 : 1;
+            
+            System.logic.fan_mode ++;
+            System.logic.fan_mode %= FAN_MODE_TYPE_NUM;
+            System.logic.display_flg  = true;
+            // System.logic.fan_mode += System.logic.fan_dir ? -1 : 1;
 
-            /* 达到最高档或最低档时反转调档方向。 */
-            if ((System.logic.fan_dev == FAN_MODE_5)
-            ||  (System.logic.fan_dev == FAN_MODE_1))
-            {
-                System.logic.fan_dir = !System.logic.fan_dir;
-            }
+            // /* 达到最高档或最低档时反转调档方向。 */
+            // if ((System.logic.fan_mode == FAN_MODE_5)
+            // ||  (System.logic.fan_mode == FAN_MODE_1))
+            // {
+            //     System.logic.fan_dir = !System.logic.fan_dir;
+            // }
             break;
 
         default:
@@ -112,7 +116,9 @@ void btn_mist_event(button_event_t event, uint16_t triggerInterval)
             /* 短按释放时切换雾化功能状态。 */
             Cnt = triggerInterval;
 
-            System.logic.mist_dev = !System.logic.mist_dev;
+            System.logic.mist_mode ++;
+            System.logic.mist_mode %= MIST_MODE_NUM;
+            System.logic.display_flg  = true;
             break;
 
         default:
@@ -151,8 +157,8 @@ void btn_power_event(void)
 //  Description: 根据雾化功能状态更新 TIM16 PWM 输出参数
 //  Param      : None
 //  Return     : None
-//  Others     : 当前逻辑中 mist_dev 为 true 时将占空比设置为 0；
-//               mist_dev 为 false 时设置频率为 150kHz、占空比参数为 200；
+//  Others     : 当前逻辑中 mist_mode 为 true 时将占空比设置为 0；
+//               mist_mode 为 false 时设置频率为 150kHz、占空比参数为 200；
 //               仅在目标参数变化且底层配置成功后更新参数缓存
 //  Author     : 陈亮 2026-10-26
 *******************************************************************************/
@@ -161,13 +167,21 @@ void app_logic_mist(void)
     /* 保存上一次成功配置的雾化片 PWM 参数。 */
     static uint32_t old_freq = 0U;
     static uint16_t old_duty = 0U;
+    static uint16_t Cnt = 0U;
 
     /* 根据雾化功能状态确定 PWM 输出参数。 */
-    if (System.logic.mist_dev)
+    if (System.logic.mist_mode == MIST_MODE_CONTINUE)
     {
 		System.logic.mist_freq = 150000U;
         System.logic.mist_duty = 200U;
 		System.logic.mistTimes ++;
+    }
+    else if(System.logic.mist_mode == MIST_MODE_PULSATING)
+    {
+        System.logic.mist_freq = 150000U; 
+        System.logic.mist_duty = Cnt < 1000 ? 200U : 0U;
+		System.logic.mistTimes ++;
+        Cnt = Cnt < 2000 ? Cnt + 1 : 0;
     }
     else
     {
@@ -206,7 +220,8 @@ void app_dev_logic(void)
     if (System.logic.power == 0)
     {
         /* 设备关机时关闭风扇并累计关机时间。 */
-        System.logic.fan_dev = FAN_MODE_0;
+        System.logic.fan_mode  = FAN_MODE_0;
+        System.logic.mist_mode = MIST_MODE_CLOSE;
         System.logic.offTimes++;
 
         /* 检测开机转关机事件，清零运行计时器。 */
@@ -224,17 +239,18 @@ void app_dev_logic(void)
         /* 检测关机转开机事件，初始化设备运行状态。 */
         if (System.logic.lastpower != System.logic.power)
         {
-            System.logic.fan_dev  = FAN_MODE_1;
-            System.logic.fan_dir  = 0U;
-            System.logic.mist_dev = false;
+            System.logic.fan_mode  = FAN_MODE_0;
+            System.logic.fan_dir   = 0U;
+            System.logic.mist_mode = MIST_MODE_CLOSE;
 
             System.logic.offTimes = 0U;
             System.logic.onTimes  = 0U;
+            System.logic.display_flg  = true;
         }
     }
 
     /* 同步目标风扇运行档位。 */
-    fan_set_speedmode(System.logic.fan_dev);
+    fan_set_speedmode(System.logic.fan_mode);
 
     /* 根据雾化功能状态更新 TIM16 PWM。 */
     app_logic_mist();
@@ -256,10 +272,10 @@ void app_dev_logic(void)
 void add_logic_1ms_task(void)
 {
     /* 更新风扇按键事件，长按判定时间为 500ms。 */
-    button_event_Update(BUTTON_ITEM_FAN, 500);
+    button_event_Update(BUTTON_ITEM_FAN, 2000);
 
-    /* 更新雾化按键事件，长按判定时间为 500ms。 */
-    button_event_Update(BUTTON_ITEM_MIST, 500);
+    /* 更新雾化按键事件，长按判定时间为 2000ms。 */
+    button_event_Update(BUTTON_ITEM_MIST, 2000);
 
     /* 处理风扇按键事件，长按触发计数间隔为 200。 */
     btn_fan_event(botton_getEvent(BUTTON_ITEM_FAN), 200);

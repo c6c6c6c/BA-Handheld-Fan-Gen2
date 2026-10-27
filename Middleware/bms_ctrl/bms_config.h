@@ -47,6 +47,7 @@ typedef struct
 {
     uint32_t cycle_count;             /**< 等效完整放电循环数，整数部分 */
     float    soc;                     /**< SOC，范围 0.0~100.0% */
+    float    static_soc;              /**< SOC，范围 0.0~100.0% */
     float    soh;                     /**< SOH，范围 0.0~100.0% */
     float    remaining_capacity_mah;  /**< 当前剩余容量，单位 mAh */
     uint32_t charge_mah_total;        /**< 累计充入电量，单位 mAh */
@@ -59,14 +60,14 @@ typedef struct
  */
 typedef struct
 {
-    float design_capacity_mah;        /**< 电池设计容量，单位 mAh */
-    float full_voltage_v;             /**< 满充电压，单位 V */
-    float cutoff_voltage_v;           /**< 放电截止电压，单位 V */
-    float rest_current_ma;            /**< 静置电流阈值，单位 mA */
-    float rest_dvdt_v_per_s;          /**< 静置电压变化率阈值，单位 V/s */
-    uint32_t rest_time_ms;            /**< OCV 修正所需静置时间，单位 ms */
-    float charge_efficiency;          /**< 充电库仑效率 */
-    float discharge_efficiency;       /**< 放电库仑效率 */
+    float     design_capacity_mah;        /**< 电池设计容量，单位 mAh */
+    float     full_voltage_v;             /**< 满充电压，单位 V */
+    float     cutoff_voltage_v;           /**< 放电截止电压，单位 V */
+    float     rest_current_ma;            /**< 静置电流阈值，单位 mA */
+    float     rest_dvdt_v_per_s;          /**< 静置电压变化率阈值，单位 V/s */
+	float     charge_efficiency;          /**< 充电库仑效率 */
+    float     discharge_efficiency;       /**< 放电库仑效率 */
+	uint32_t  rest_time_ms;               /**< OCV 修正所需静置时间，单位 ms */
 } battery_config_t;
 
 
@@ -104,7 +105,6 @@ typedef struct
     double                  current_ma;                 /**< 电池电流，单位 mA */
 
     battery_soc_t           soc_info;                    /**< soc 参数 */
-    battery_soc_t           soc_persist;                /**< 掉电保存数据 */
 
     bms_protect_fault_t     fault_real;                 /**< 实时故障 */
     bms_protect_fault_t     fault_hold;                 /**< 保持故障 */

@@ -53,4 +53,13 @@ bool bms_soc_init(bms_battery_t *battery, float initial_soc_percent);
 *******************************************************************************/
 bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms);
 
+/***********************************************************************************************************************
+//  Function   : bms_soc_abs
+//  Description: 计算 float 类型数值的绝对值
+//  Param      : value - 输入值
+//  Return     : value 的绝对值
+//  Others     : SOC 模块内部使用，避免额外依赖数学库
+//  Author     : Chen Liang 2026-10-16
+***********************************************************************************************************************/
+float bms_soc_abs(float value);
 #endif /* BMS_SOC_H */

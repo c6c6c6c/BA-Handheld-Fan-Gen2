@@ -22,7 +22,7 @@
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
 /** 每组 ADC 累计采样次数 */
-#define SAMPLE_ACCUM_COUNT                       512U
+#define SAMPLE_ACCUM_COUNT                       256U
 
 /** ADC 累计采样缓冲区数量 */
 #define SAMPLE_SUM_COUNT                         2U
