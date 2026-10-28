@@ -50,15 +50,6 @@ void btn_fan_event(button_event_t event, uint16_t triggerInterval)
             if (++Cnt >= triggerInterval)
             {
                 Cnt = 0U;
-                
-                // System.logic.fan_mode += System.logic.fan_dir ? -1 : 1;
-
-                // /* 达到最高档或最低档时反转调档方向。 */
-                // if ((System.logic.fan_mode == FAN_MODE_5)
-                // ||  (System.logic.fan_mode == FAN_MODE_1))
-                // {
-                // 	System.logic.fan_dir = !System.logic.fan_dir;
-                // }
             }
             break;
 
@@ -66,18 +57,10 @@ void btn_fan_event(button_event_t event, uint16_t triggerInterval)
             /* 短按释放时根据当前调档方向切换一次档位。 */
             Cnt = triggerInterval;
 
-            
             System.logic.fan_mode ++;
-            System.logic.fan_mode %= FAN_MODE_TYPE_NUM;
+            System.logic.fan_mode    %= FAN_MODE_TYPE_NUM;
             System.logic.display_flg  = true;
-            // System.logic.fan_mode += System.logic.fan_dir ? -1 : 1;
-
-            // /* 达到最高档或最低档时反转调档方向。 */
-            // if ((System.logic.fan_mode == FAN_MODE_5)
-            // ||  (System.logic.fan_mode == FAN_MODE_1))
-            // {
-            //     System.logic.fan_dir = !System.logic.fan_dir;
-            // }
+		
             break;
 
         default:
@@ -117,7 +100,7 @@ void btn_mist_event(button_event_t event, uint16_t triggerInterval)
             Cnt = triggerInterval;
 
             System.logic.mist_mode ++;
-            System.logic.mist_mode %= MIST_MODE_NUM;
+            System.logic.mist_mode   %= MIST_MODE_NUM;
             System.logic.display_flg  = true;
             break;
 

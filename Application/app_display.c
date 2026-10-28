@@ -253,14 +253,14 @@ static void app_display_logic(void)
     {
         /* 根据设备运行状态更新功能图标。 */
         display.bit.percentageIcon = false;
-        display.bit.fanIcon        = (System.logic.fan_mode != 0U);
+        display.bit.fanIcon        = (System.logic.fan_mode  != 0U);
         display.bit.mist           = (System.logic.mist_duty != 0U);
 
         /*
          * 风机或雾化按键处于长按保持状态时，
          * 显示当前电池 SOC 百分比。
          */
-        if ((botton_getEvent(BUTTON_ITEM_FAN) == BUTTON_EVENT_LONG_PRESS_HOLD)
+        if ((botton_getEvent(BUTTON_ITEM_FAN)  == BUTTON_EVENT_LONG_PRESS_HOLD)
         ||  (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
         {
             /* 将 SOC 四舍五入后转换为整数百分比显示。 */
@@ -269,6 +269,8 @@ static void app_display_logic(void)
             /* 标记显示操作并开启百分比图标。 */
             System.logic.display_flg   = true;
             display.bit.percentageIcon = true;
+			display.bit.fanIcon        = false;
+			display.bit.mist           = false;
         }
         else
         {

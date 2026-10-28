@@ -564,6 +564,11 @@
               <FilePath>..\..\..\Middleware\common\filter\filter.c</FilePath>
             </File>
             <File>
+              <FileName>param.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\param\param.c</FilePath>
+            </File>
+            <File>
               <FileName>button.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\button\button.c</FilePath>
@@ -587,11 +592,6 @@
               <FileName>common_port.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
-            </File>
-            <File>
-              <FileName>param.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\common\param\param.c</FilePath>
             </File>
           </Files>
         </Group>

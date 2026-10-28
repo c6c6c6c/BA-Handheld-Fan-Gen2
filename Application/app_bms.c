@@ -104,6 +104,8 @@ void app_bms_Init(void)
 
     /* 初始化 IP5326 KEY 控制状态机。 */
     bms_key_Init();
+	
+	bms_key_Request(BMS_KEY_WAKEUP);
 }
 
 
@@ -143,7 +145,7 @@ void app_bms_key_ctrl(void)
      */
     // if (bms_battery.current_ma < 0)
     {
-        if (timer_base_Count(&_time) > 10000U)
+        if (timer_base_Count(&_time) > 3000U)
         {
             bms_key_Request(BMS_KEY_WAKEUP);
             timer_base_Rst(&_time);

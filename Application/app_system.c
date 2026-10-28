@@ -156,6 +156,27 @@ void system_data_init(void)
     app_display_Init();
 }
 
+void system_test()
+{
+	static timer_base_t _timer;
+	
+	if(s_uart1PortApi.receive_state() == COMMON_PORT_RX_DONE)
+	{
+		s_uart1PortApi.receive_rst();
+	}
+	
+	if (timer_base_Timing(&_timer, 1000))
+    {
+		((uint8_t *)s_uart1PortApi.transfer_data())[0] = '1';
+		((uint8_t *)s_uart1PortApi.transfer_data())[1] = '2';
+		((uint8_t *)s_uart1PortApi.transfer_data())[2] = '3';
+		((uint8_t *)s_uart1PortApi.transfer_data())[3] = '4';
+		((uint8_t *)s_uart1PortApi.transfer_data())[4] = '5';
+		((uint8_t *)s_uart1PortApi.transfer_data())[5] = 0x0A;
+		((uint8_t *)s_uart1PortApi.transfer_data())[6] = 0x0D;
+		s_uart1PortApi.start_transfer(7);
+	}
+}
 
 /*******************************************************************************
 //  Function   : system_init
@@ -188,7 +209,7 @@ void system_run(void)
 
     /* 处理 ADC 采样滤波及相关状态更新。 */
     app_sampling_task();
-
+	system_test();
     /* 执行 1ms 周期任务。 */
     if (timer_base_Timing(&_timer_logic, 1))
     {
