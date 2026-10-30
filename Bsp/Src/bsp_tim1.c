@@ -163,8 +163,9 @@ void bsp_tim1_Init(void)
      *
      * ClockDivision     : 不分频
      * CounterMode       : 向上计数
-     * Prescaler         : 72 - 1，72 MHz 时钟下计数步长为 1 us
-     * AutoReload        : 1000 - 1，PWM 和更新频率为 1 kHz
+     * Prescaler         : 1 - 1，72 MHz 时钟下直接计数
+     * AutoReload        : 2880 - 1，PWM 和更新频率为 25 kHz
+     * PWM frequency     : 72 MHz / 1 / 2880 = 25 kHz
      * RepetitionCounter : 0
      */
     TIM1CountInit.ClockDivision      = LL_TIM_CLOCKDIVISION_DIV1;
@@ -261,9 +262,9 @@ void bsp_tim1_ch1_pwm_setduty(uint16_t duty)
         return;
     }
 
-    if (duty > 1000U)
+    if (duty >= 1000U)
     {
-        duty = 1000U;
+        duty = 999U;
     }
 
     TIM1_CH1_PWM_OutputSet(((uint32_t)duty * TIM1_SYS_TIMER_AUTORELOAD) / 1000U);

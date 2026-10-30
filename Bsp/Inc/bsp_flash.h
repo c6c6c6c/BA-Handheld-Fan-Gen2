@@ -56,10 +56,9 @@ void bsp_flash_PageErase(uint32_t addr);
 /*******************************************************************************
 //  Function   : bsp_flash_ReadUID
 //  Description: 读取芯片 UID 区域数据
-//  Param      : buffer - 接收缓冲区，至少容纳 4 个 uint32_t（16 字节）
+//  Param      : buffer - 接收缓冲区，至少容纳 3 个 uint32_t（12 字节）
 //  Return     : None
-//  Others     : 当前实现读取连续 4 个字；标准 96 位 UID 为前 3 个字，
-//               第 4 个字不属于标准 UID，调用方不应将其纳入 UID
+//  Others     : PY32F032 的标准 UID 长度为 96 位
 //  Author     : Chen Liang 2026-10-12
 *******************************************************************************/
 void bsp_flash_ReadUID(uint32_t *buffer);

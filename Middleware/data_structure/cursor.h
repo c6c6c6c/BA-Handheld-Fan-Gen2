@@ -16,70 +16,92 @@
 #include <stdint.h>
 
 
-/* Typedef -----------------------------------------------------------------------------------------------------------*/
+/* Cursor Macro ------------------------------------------------------------------------------------------------------*/
 
 /**
- * @brief 数据缓冲区写入游标
- * @note  用于管理固定长度缓冲区的数据追加写入。
- *        pin 表示当前写入偏移量，同时也是已写入的数据长度。
+ * @brief 启动数据缓冲区游标
+ * @param p_dat 缓冲区首地址
+ * @param p_len 当前写入长度变量，单位 Byte
+ * @note  创建局部游标指针和偏移量指针。
+ *        必须与 _STOP_CURSOR() 配对使用。
  */
-typedef struct
-{
-    uint8_t  *data;             /**< 数据缓冲区首地址 */
-    uint16_t  length;           /**< 数据缓冲区总容量，单位 Byte */
-    uint16_t  pin;              /**< 当前写入位置，单位 Byte，范围 0~length */
-} cursor_t;
+#define _START_CURSOR_WRITE(p_dat, p_len)                      \
+    do {                                                       \
+        uint8_t  *cursor = (p_dat);                            \
+        uint16_t *offset = &(p_len);
+
+/**
+ * @brief 向缓冲区追加一个字节
+ * @param byte 待写入的数据
+ * @note  写入完成后偏移量自动加 1。
+ */
+#define _CURSOR_WRITE_BYTE(byte)                               \
+    do {                                                       \
+        cursor[(*offset)++] = (uint8_t)(byte);                 \
+    } while (0)
+
+/**
+ * @brief 跳过一个字节位置
+ * @note  仅增加偏移量，不修改缓冲区原有数据。
+ *        适用于预留 CRC、长度字段等位置。
+ */
+#define _CURSOR_WRITE_BYTE_NULL()                              \
+    do {                                                       \
+        (*offset)++;                                           \
+    } while (0)
+
+/**
+ * @brief 修改已写入区域中的指定字节
+ * @param pin  需要修改的缓冲区索引
+ * @param byte 待写入的数据
+ * @note  仅允许修改当前偏移量之前的数据。
+ */
+#define _CURSOR_WRITE_BYTE_SPECIFY(pin, byte)                  \
+    do {                                                       \
+        if ((pin) < (*offset))                                 \
+        {                                                      \
+            cursor[(pin)] = (uint8_t)(byte);                   \
+        }                                                      \
+    } while (0)
+
+/**
+ * @brief 向缓冲区追加指定长度的数据
+ * @param dat 待写入数据数组或指针
+ * @param len 待写入的数据长度，单位 Byte
+ * @note  按顺序复制数据，完成后更新偏移量。
+ */
+#define _CURSOR_WRITE_DATA(dat, len)                           \
+    do {                                                       \
+        uint16_t _cursor_len = (uint16_t)(len);                \
+        for (uint16_t i = 0U; i < _cursor_len; i++)            \
+        {                                                      \
+            cursor[(*offset)++] = (dat)[i];                    \
+        }                                                      \
+    } while (0)
+
+/**
+ * @brief 将变量的内存数据追加到缓冲区
+ * @param var 待写入的变量
+ * @note  按变量在内存中的字节顺序写入。
+ *        多字节整数受 MCU 字节序影响。
+ */
+#define _CURSOR_WRITE_VAR(var)                                 \
+    do {                                                       \
+        const uint8_t *_cursor_ptr =(const uint8_t *)&(var);   \
+        for (uint16_t i = 0U; i < sizeof(var); i++)            \
+        {                                                      \
+            cursor[(*offset)++] = _cursor_ptr[i];              \
+        }                                                      \
+    } while (0)
+
+/**
+ * @brief 结束游标写入操作
+ * @note  与 _START_CURSOR() 配对，结束局部作用域。
+ */
+#define _STOP_CURSOR()                                         \
+    } while (0)
 
 
-/* Function declarations ---------------------------------------------------------------------------------------------*/
 
-/*******************************************************************************
-//  Function   : cursor_init
-//  Description: 初始化数据缓冲区游标
-//  Param      : cursor - 游标结构体指针
-//               data   - 数据缓冲区首地址
-//               length - 数据缓冲区容量，单位 Byte
-//  Return     : None
-//  Others     : 绑定数据缓冲区并将写入位置清零，不清除原有数据
-//  Author     : Chen Liang 2026-10-30
-*******************************************************************************/
-void cursor_init(cursor_t *cursor, uint8_t *data, uint16_t length);
+#endif
 
-
-/*******************************************************************************
-//  Function   : cursor_write
-//  Description: 向缓冲区当前游标位置追加数据
-//  Param      : cursor - 游标结构体指针
-//               data   - 待写入的数据首地址
-//               length - 待写入的数据长度，单位 Byte
-//  Return     : None
-//  Others     : 写入前检查缓冲区剩余空间；空间不足时不写入；
-//               写入成功后自动更新 pin，不支持部分写入
-//  Author     : Chen Liang 2026-10-30
-*******************************************************************************/
-void cursor_write(cursor_t *cursor, void *data, uint16_t length);
-
-
-/*******************************************************************************
-//  Function   : cursor_read_len
-//  Description: 获取缓冲区当前已写入的数据长度
-//  Param      : cursor - 游标结构体指针
-//  Return     : 当前已写入字节数；游标指针无效时返回 0
-//  Others     : 返回当前 pin 值，不修改缓冲区数据或游标状态
-//  Author     : Chen Liang 2026-10-30
-*******************************************************************************/
-uint16_t cursor_read_len(cursor_t *cursor);
-
-
-/*******************************************************************************
-//  Function   : cursor_reset
-//  Description: 重置缓冲区写入游标
-//  Param      : cursor - 游标结构体指针
-//  Return     : None
-//  Others     : 仅将 pin 清零，不清除缓冲区原有数据
-//  Author     : Chen Liang 2026-10-30
-*******************************************************************************/
-void cursor_reset(cursor_t *cursor);
-
-
-#endif /* _CURSOR_H_ */

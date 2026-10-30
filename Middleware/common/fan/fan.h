@@ -77,6 +77,7 @@ typedef enum
  */
 typedef struct
 {
+	uint32_t Start_times;        /**< 当前实际 PWM 输出值 */
     uint16_t realPwm;            /**< 当前实际 PWM 输出值 */
     uint32_t times;              /**< PWM 渐变计时值 */
 } fan_ramp_t;
@@ -183,5 +184,15 @@ void fan_set_timeoutFlg(void);
 *******************************************************************************/
 void fan_clean_timeoutFlg(void);
 
+/*******************************************************************************
+//  Function   : fan_pwm_ramp_rst
+//  Description: 复位风扇 PWM 平滑加减速状态
+//  Param      : None
+//  Return     : None
+//  Others     : 清零当前实际 PWM 输出值及渐变计时值；
+//               通常在风扇停机时调用
+//  Author     : Chen Liang 2026-10-23
+*******************************************************************************/
+void fan_pwm_ramp_rst(void);
 
 #endif /* _FAN_H_ */

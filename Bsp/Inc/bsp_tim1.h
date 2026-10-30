@@ -17,9 +17,12 @@
 #include "py32f032_ll_tim.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
-#define TIM1_SYS_TIMER_AUTORELOAD                             1000       // 定时器自动重装载值
-#define TIM1_SYS_TIMER_PSC                                    72         // 定时器预分频值 - 定时器时钟为72MHz，计数频率为1MHz，计数周期为1us
-#define TIM1_SYS_TIMER_FRE                                    1000000UL  // 定时器计数频率为1MHz，计数周期为1us
+/** TIM1 输入时钟及 CH1 风扇 PWM 参数 */
+#define TIM1_INPUT_CLOCK_FRE                                  72000000UL
+#define TIM1_CH1_PWM_FRE                                      25000UL
+#define TIM1_SYS_TIMER_PSC                                    1UL
+#define TIM1_SYS_TIMER_FRE                                    (TIM1_INPUT_CLOCK_FRE / TIM1_SYS_TIMER_PSC)
+#define TIM1_SYS_TIMER_AUTORELOAD                             (TIM1_SYS_TIMER_FRE / TIM1_CH1_PWM_FRE)
 /**
   * @brief  PWM GPIO Define
   */
@@ -54,7 +57,7 @@
 //  Description: 初始化TIM1定时器
 //  Param      : 无
 //  Return     : 无
-//  Others     : 配置 CH1 为 1 kHz PWM，经 Q11 反相后 M_PWM 初始为低电平，
+//  Others     : 配置 CH1 为 25 kHz PWM，经 Q11 反相后 M_PWM 初始为低电平，
 //               同时配置 CH4 上升沿输入捕获及更新中断
 //  Author     : Leo Chen 2026-08-18
 *******************************************************************************/

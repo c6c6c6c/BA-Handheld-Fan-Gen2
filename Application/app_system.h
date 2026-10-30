@@ -22,6 +22,7 @@
 
 /** 系统看门狗使能配置，0=关闭，1=开启 */
 #define SYSTEM_WDG_EN         0
+#define SYSTEM_UID_WORD_COUNT 3U
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
@@ -41,20 +42,33 @@ typedef struct
 
 
 /**
+ * @brief 固件编译时间
+ */
+typedef struct
+{
+    uint16_t year;                    /**< 年，范围 0~9999 */
+    uint8_t  month;                   /**< 月，范围 1~12 */
+    uint8_t  day;                     /**< 日，范围 1~31 */
+    uint8_t  hour;                    /**< 时，范围 0~23 */
+    uint8_t  minute;                  /**< 分，范围 0~59 */
+    uint8_t  second;                  /**< 秒，范围 0~59 */
+} compile_param_t;
+
+
+/**
  * @brief 系统运行状态
  * @note  保存系统故障、开关机计时、主循环运行间隔、
  *        NTC 温度、休眠标志及应用层设备控制状态。
  */
 typedef struct
 {
-    error_t     err;                /**< 系统故障状态 */
-
-    uint32_t    systemLoopDelay;    /**< 相邻两次系统主循环的时间间隔，单位 ms */
-
-    float       ntc_temp;           /**< 当前 NTC 检测温度，单位 ℃ */
-    bool        sleep_flg;          /**< 系统休眠标志，true=休眠，false=正常运行 */
-
-    app_logic_t logic;              /**< 应用层设备运行及控制逻辑状态 */
+    error_t         err;                              /**< 系统故障状态 */
+    uint32_t        systemLoopDelay;                  /**< 相邻两次系统主循环的时间间隔，单位 ms */
+    uint32_t        unique_id[SYSTEM_UID_WORD_COUNT]; /**< 芯片 96 位唯一标识 */
+    compile_param_t compile_param;                    /**< 固件编译日期和时间 */
+    float           ntc_temp;                         /**< 当前 NTC 检测温度，单位 ℃ */
+    bool            sleep_flg;                        /**< 系统休眠标志，true=休眠，false=正常运行 */
+    app_logic_t     logic;                            /**< 应用层设备运行及控制逻辑状态 */
 } system_t;
 
 

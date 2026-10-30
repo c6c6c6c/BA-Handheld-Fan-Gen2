@@ -22,8 +22,8 @@
 /** 风扇转速反馈超时时间，单位 ms */
 #define FAN_FEEDBACK_DETECT_TIME        (1000)
 
-/** 输入捕获脉冲周期的最小有效计数值 */
-#define FAN_FEEDBACK_CAPTURE_VALUE_MIN  (200)
+/** 输入捕获脉冲周期的最小有效值，对应 200 us */
+#define FAN_FEEDBACK_CAPTURE_VALUE_MIN  (TIM1_SYS_TIMER_FRE / 5000UL)
 
 /**
  * @brief 将反馈脉冲周期转换为风扇转速
@@ -58,7 +58,7 @@ fan_t fan;
  */
 uint16_t TABLE_FAN_PWM_DUTY_NORMAL[FAN_MODE_TYPE_NUM] =
 {
-    0, 300, 420, 540, 660, 780, //850,
+    0, 350, 500, 650, 800, 950, //850,
 };
 
 
@@ -129,10 +129,11 @@ void bsp_tim1_ch4_inputCapture_Callback(void)
 //               通常在风扇停机时调用
 //  Author     : Chen Liang 2026-10-23
 *******************************************************************************/
-static void fan_pwm_ramp_rst(void)
+void fan_pwm_ramp_rst(void)
 {
     fan.ramp.realPwm = 0U;
     fan.ramp.times   = 0U;
+	fan.ramp.Start_times = 180;
 }
 
 
@@ -147,14 +148,21 @@ static void fan_pwm_ramp_rst(void)
 //               接近目标值时直接设置为目标值，避免越过目标
 //  Author     : Chen Liang 2026-10-23
 *******************************************************************************/
+#define FAN_START_PWM  980
 static void fan_pwm_ramp_ctrl(uint16_t tagrtPwm)
 {
     /* 首次启动时设置最低运行档位的 PWM。 */
-    if (fan.ramp.realPwm < TABLE_FAN_PWM_DUTY_NORMAL[FAN_MODE_1])
-    {
-        fan.ramp.realPwm = TABLE_FAN_PWM_DUTY_NORMAL[FAN_MODE_1];
-        fan.ramp.times   = 0U;
-    }
+	
+	if(fan.ramp.Start_times > 0)
+	{
+		fan.ramp.realPwm = FAN_START_PWM;
+		fan.ramp.Start_times --;
+		if(fan.ramp.Start_times == 0)
+		{
+			fan.ramp.realPwm = TABLE_FAN_PWM_DUTY_NORMAL[1];
+			fan.ramp.times   = 0U;
+		}
+	}
     else
     {
         /* 累计 PWM 渐变控制周期。 */

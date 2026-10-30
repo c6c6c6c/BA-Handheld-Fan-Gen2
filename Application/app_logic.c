@@ -123,6 +123,15 @@ void btn_mist_event(button_event_t event, uint16_t triggerInterval)
 *******************************************************************************/
 void btn_power_event(void)
 {
+	static uint16_t first = 0;
+	
+	if(first < 2000)
+	{
+		System.logic.power = 0;
+		first++;
+		return;
+	}
+	
     /* 根据电源按键电平状态更新设备电源标志。 */
     if (botton_getCurrState(BUTTON_ITEM_ADC) == BUTTON_PRESS)
     {

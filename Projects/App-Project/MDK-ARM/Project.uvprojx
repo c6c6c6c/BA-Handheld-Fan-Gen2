@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>PY32F032x8,USE_FULL_LL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\aip650e;..\..\..\Middleware\common\search;..\..\..\Middleware\common\param;..\..\..\Middleware\common\button;..\..\..\Middleware\common\filter;..\..\..\Middleware\common\port;..\..\..\Middleware\common\fan;..\..\..\Middleware\common\ntc;..\..\..\Middleware\protocol;..\..\..\Middleware\mist_ctrl;..\..\..\Middleware\bms_ctrl;..\..\..\Application</IncludePath>
+              <IncludePath>..\Inc;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\CMSIS\Device\PY32F032\Include;..\..\..\Drivers\PY32F032_HAL_Driver\Inc;..\..\..\Bsp\Inc;..\..\..\Middleware\common\timer_base;..\..\..\Middleware\common\aip650e;..\..\..\Middleware\common\search;..\..\..\Middleware\common\param;..\..\..\Middleware\common\button;..\..\..\Middleware\common\filter;..\..\..\Middleware\common\port;..\..\..\Middleware\common\fan;..\..\..\Middleware\common\ntc;..\..\..\Middleware\protocol;..\..\..\Middleware\mist_ctrl;..\..\..\Middleware\bms_ctrl;..\..\..\Middleware\protocol\generic_protocol;..\..\..\Middleware\data_structure;..\..\..\Middleware\algorithm;..\..\..\Application</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -652,6 +652,21 @@
               <FileName>uart1_port.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\protocol\uart1_port.c</FilePath>
+            </File>
+            <File>
+              <FileName>fan_protocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\protocol\generic_protocol\fan_protocol.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middleware/algorithm</GroupName>
+          <Files>
+            <File>
+              <FileName>crc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\algorithm\crc.c</FilePath>
             </File>
           </Files>
         </Group>
