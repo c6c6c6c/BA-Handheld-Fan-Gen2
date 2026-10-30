@@ -190,6 +190,40 @@
                 "clear": true,
                 "showReuseMessage": false
             }
+        },
+        {
+            "label": "串口: 监控",
+            "type": "process",
+            "command": "py",
+            "args": [
+                "-u",
+                "${workspaceFolder}\\Tools\\serial_monitor\\serial_monitor.py",
+                "select",
+                "--baudrate",
+                "${input:serialBaudrate}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "statusbar": {
+                    "label": "$(plug) 串口监控",
+                    "detail": "显示带时间戳的串口数据"
+                }
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "showReuseMessage": false
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "serialBaudrate",
+            "type": "promptString",
+            "description": "请输入串口波特率",
+            "default": "115200"
         }
     ]
 }

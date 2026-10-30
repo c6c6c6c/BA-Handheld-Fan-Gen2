@@ -26,7 +26,7 @@
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
 /** 风扇通信协议实例，保存收发缓冲区、通信接口及当前请求和应答命令 */
-static fan_protocol_t protocol = {0};
+fan_protocol_t protocol = {0};
 
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
@@ -116,7 +116,7 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_BYTE(PROTO_VERSION);
 
                 /* MCU 唯一设备标识的第一个元素。 */
-                _CURSOR_WRITE_VAR(System.unique_id[0]);
+                _CURSOR_WRITE_VAR(System.unique_id);
 
                 /* 固件编译日期。 */
                 _CURSOR_WRITE_VAR(System.compile_param.year);

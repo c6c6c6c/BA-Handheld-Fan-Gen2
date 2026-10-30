@@ -73,28 +73,28 @@ typedef enum
 {
     PROTO_IDLE                     = 0x00U, /**< 空闲状态 */
 
-    PROTO_INFO_REQUEST             = PROTO_REQUEST(0), /**< 设备信息请求 */
-    PROTO_SYSTEM_REQUEST           = PROTO_REQUEST(1), /**< 系统状态及控制请求 */
-    PROTO_BATTERY_INFO_REQUEST     = PROTO_REQUEST(2), /**< 系统状态及控制请求 */
-    PROTO_FACTORY_RESET_REQUEST    = PROTO_REQUEST(3), /**< 恢复出厂设置请求 */
+    PROTO_INFO_REQUEST             = PROTO_REQUEST(1), /**< 设备信息请求 */
+    PROTO_SYSTEM_REQUEST           = PROTO_REQUEST(2), /**< 系统状态及控制请求 */
+    PROTO_BATTERY_INFO_REQUEST     = PROTO_REQUEST(3), /**< 系统状态及控制请求 */
+    PROTO_FACTORY_RESET_REQUEST    = PROTO_REQUEST(4), /**< 恢复出厂设置请求 */
 
-    PROTO_COOL_REQUEST             = PROTO_REQUEST(4), /**< 制冷功能控制请求 */
+    PROTO_COOL_REQUEST             = PROTO_REQUEST(5), /**< 制冷功能控制请求 */
 
-    PROTO_ENTER_OTA_REQUEST        = PROTO_REQUEST(5), /**< 进入 OTA 模式请求 */
-    PROTO_ENTER_UPDATE_REQUEST     = PROTO_REQUEST(6), /**< 进入固件更新状态请求 */
-    PROTO_ENTER_COMPLETION_REQUEST = PROTO_REQUEST(7), /**< 固件更新完成请求 */
+    PROTO_ENTER_OTA_REQUEST        = PROTO_REQUEST(6), /**< 进入 OTA 模式请求 */
+    PROTO_ENTER_UPDATE_REQUEST     = PROTO_REQUEST(7), /**< 进入固件更新状态请求 */
+    PROTO_ENTER_COMPLETION_REQUEST = PROTO_REQUEST(8), /**< 固件更新完成请求 */
 	
 	
-	PROTO_INFO_RESPONSE             = PROTO_RESPONSE(0), /**< 设备信息请求 */
-    PROTO_SYSTEM_RESPONSE           = PROTO_RESPONSE(1), /**< 系统状态及控制请求 */
-    PROTO_BATTERY_INFO_RESPONSE     = PROTO_RESPONSE(2), /**< 系统状态及控制请求 */
-    PROTO_FACTORY_RESET_RESPONSE    = PROTO_RESPONSE(3), /**< 恢复出厂设置请求 */
+	PROTO_INFO_RESPONSE             = PROTO_RESPONSE(1), /**< 设备信息请求 */
+    PROTO_SYSTEM_RESPONSE           = PROTO_RESPONSE(2), /**< 系统状态及控制请求 */
+    PROTO_BATTERY_INFO_RESPONSE     = PROTO_RESPONSE(3), /**< 系统状态及控制请求 */
+    PROTO_FACTORY_RESET_RESPONSE    = PROTO_RESPONSE(4), /**< 恢复出厂设置请求 */
 
-    PROTO_COOL_RESPONSE             = PROTO_RESPONSE(4), /**< 制冷功能控制请求 */
+    PROTO_COOL_RESPONSE             = PROTO_RESPONSE(5), /**< 制冷功能控制请求 */
 
-    PROTO_ENTER_OTA_RESPONSE        = PROTO_RESPONSE(5), /**< 进入 OTA 模式请求 */
-    PROTO_ENTER_UPDATE_RESPONSE     = PROTO_RESPONSE(6), /**< 进入固件更新状态请求 */
-    PROTO_ENTER_COMPLETION_RESPONSE = PROTO_RESPONSE(7), /**< 固件更新完成请求 */
+    PROTO_ENTER_OTA_RESPONSE        = PROTO_RESPONSE(6), /**< 进入 OTA 模式请求 */
+    PROTO_ENTER_UPDATE_RESPONSE     = PROTO_RESPONSE(7), /**< 进入固件更新状态请求 */
+    PROTO_ENTER_COMPLETION_RESPONSE = PROTO_RESPONSE(8), /**< 固件更新完成请求 */
 
     PROTO_ERR                       = 0xFFU  /**< 协议解析错误 */
 } proto_cmd_t;
