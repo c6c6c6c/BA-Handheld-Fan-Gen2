@@ -94,7 +94,7 @@ typedef enum
     PROTO_OTA_COMPLETION_RESPONSE = PROTO_RESPONSE(8), /**< 固件更新完成请求 */
 
     PROTO_ERR                     = 0xFFU  /**< 协议解析错误 */
-} proto_cmd_t;
+} protocol_cmd_t;
 
 
 /**
@@ -108,8 +108,8 @@ typedef struct
 
     const common_port_api_t *api;       /**< UART 通信接口指针 */
 
-    proto_cmd_t request;                /**< 当前接收到的协议命令 */
-	proto_cmd_t response;               /**< 当前接收到的协议命令 */
+    protocol_cmd_t request;            /**< 当前接收到的协议命令 */
+	protocol_cmd_t response;           /**< 当前接收到的协议命令 */
 } fan_protocol_t;
 
 

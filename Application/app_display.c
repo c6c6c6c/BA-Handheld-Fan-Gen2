@@ -72,7 +72,13 @@ static const uint8_t aip650e_seglist1[] =
     SEG1_A | SEG1_B | SEG1_C,                                      /**< 7 */
     SEG1_A | SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_F | SEG1_G,  /**< 8 */
     SEG1_A | SEG1_B | SEG1_C | SEG1_D | SEG1_F | SEG1_G,           /**< 9 */
-    SEG1_A | SEG1_F | SEG1_G | SEG1_E                              /**< F */
+    SEG1_A | SEG1_F | SEG1_G | SEG1_E,                             /**< F */
+	SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_F,                    /**< U */
+	SEG1_A | SEG1_B | SEG1_E | SEG1_F | SEG1_G,                    /**< P */
+	SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_G,                    /**< d */
+	SEG1_C | SEG1_E | SEG1_G,                                      /**< n */
+	SEG1_A | SEG1_D | SEG1_E | SEG1_F | SEG1_G,                    /**< E */
+	SEG1_E | SEG1_G,                                               /**< r */
 };
 
 
@@ -93,7 +99,13 @@ static const uint8_t aip650e_seglist2[] =
     SEG2_A | SEG2_B | SEG2_C,                                      /**< 7 */
     SEG2_A | SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_F | SEG2_G,  /**< 8 */
     SEG2_A | SEG2_B | SEG2_C | SEG2_D | SEG2_F | SEG2_G,           /**< 9 */
-    SEG2_A | SEG2_F | SEG2_G | SEG2_E                              /**< F */
+    SEG2_A | SEG2_F | SEG2_G | SEG2_E,                             /**< F */
+	SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_F,                    /**< U */
+	SEG2_A | SEG2_B | SEG2_E | SEG2_F | SEG2_G,                    /**< P */
+	SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_G,                    /**< d */
+	SEG2_C | SEG2_E | SEG2_G,                                      /**< n */
+	SEG2_A | SEG2_D | SEG2_E | SEG2_F | SEG2_G,                    /**< E */
+	SEG2_E | SEG2_G,                                               /**< r */
 };
 
 
@@ -165,8 +177,7 @@ static void app_display_convert(void)
         : aip650e_seglist2[display.bit.showNum[2]];
 
     /* 根据百位显示标志控制 DIG4 对应笔段。 */
-    aip650e.show[3] =
-        display.bit.showNum[0] == 1U ? 0x03U : 0U;
+    aip650e.show[3] = display.bit.showNum[0] == 1U ? 0x03U : 0U;
 
     /* 清空 DIG3 图标缓存，重新组合功能状态。 */
     aip650e.show[2] = 0U;

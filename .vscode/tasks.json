@@ -192,13 +192,12 @@
             }
         },
         {
-            "label": "串口: 监控",
+            "label": "串口: 通信协议测试",
             "type": "process",
             "command": "py",
             "args": [
                 "-u",
-                "${workspaceFolder}\\Tools\\serial_monitor\\serial_monitor.py",
-                "select",
+                "${workspaceFolder}\\Tools\\serial_test\\serial_test.py",
                 "--baudrate",
                 "${input:serialBaudrate}"
             ],

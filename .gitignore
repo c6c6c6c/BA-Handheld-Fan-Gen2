@@ -22,6 +22,8 @@ debug.log
 
 # Python cache
 Tools/merge_bin/__pycache__
+Tools/serial_test/__pycache__
 
 # Local generated files
 commit_log.txt
+

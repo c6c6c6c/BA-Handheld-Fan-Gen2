@@ -2,29 +2,45 @@
 /**
  ***********************************************************************************************************************
  * @file    fan_protocol.c
- * @brief   风扇通信协议管理，实现 UART1 数据收发、请求解析、CRC16 校验及协议应答
+ * @brief   风扇通信协议管理，实现 UART1 数据收发、命令解析、CRC16 校验及 OTA 升级控制
  * @author  Leo Chen
  * @version 1.0.0
  * @date    2026-10-30
+ ***********************************************************************************************************************
+ * @note
+ *          1. 支持 Application 和 Bootloader 两种工程模式。
+ *          2. APP_PROJECT 用于设备信息查询、系统参数及功能控制。
+ *          3. BOOT_PROJECT 用于 OTA 数据接收及 Flash 固件烧录。
+ *          4. 通信协议使用 Cursor 宏完成数据解析及应答组帧。
+ *          5. 协议数据帧使用 CRC16 进行完整性校验。
  ***********************************************************************************************************************
  * @copyright Copyright (c) 1999-2025 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
  ***********************************************************************************************************************
  */
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
+
 #include "crc.h"
 #include "cursor.h"
-#include "button.h"
 #include "param.h"
 #include "uart1_port.h"
 #include "fan_protocol.h"
 
+#ifdef APP_PROJECT
 #include "app_bms.h"
 #include "app_system.h"
+#include "bsp_rcc.h"
+#include "button.h"
+#endif
+
+#ifdef BOOT_PROJECT
+#include "bootloader.h"
+#endif
+
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
-/** 风扇通信协议实例，保存 UART 收发缓冲区、接口及当前请求和应答命令 */
+/** 风扇通信协议实例，保存 UART 收发缓冲区及当前请求、应答命令 */
 fan_protocol_t protocol = {0};
 
 
@@ -32,35 +48,35 @@ fan_protocol_t protocol = {0};
 
 /*******************************************************************************
 //  Function   : fan_protocol_request
-//  Description: 解析接收到的风扇协议请求命令及数据区
+//  Description: 解析接收到的协议请求命令及数据区
 //  Param      : data - 接收协议帧的数据区首地址
 //  Return     : None
-//  Others     : 使用 Cursor 读取宏解析请求数据；
-//               首先清除请求命令最高位，生成对应应答命令；
-//               根据请求类型执行对应业务处理；
-//               未支持的命令设置为 PROTO_ERR；
-//               当前控制命令仅预留处理入口，尚未实现具体功能
+//  Others     : 根据协议命令选择 Application 或 Bootloader 处理逻辑；
+//               请求命令清除最高位后生成对应应答命令；
+//               不支持的命令统一设置为 PROTO_ERR；
+//               当前使用 Cursor 读取宏，调用方需保证数据区长度有效
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
 static void fan_protocol_request(uint8_t *data)
 {
     uint16_t len = 0U;
 
-    /* 启动请求数据区读取游标。 */
+    /* 启动协议请求数据区读取游标。 */
     _START_CURSOR_READ(data, len)
 
         /* 清除请求命令最高位，生成默认应答命令。 */
-        protocol.response =(proto_cmd_t)((uint8_t)protocol.request & 0x7FU);
+        protocol.response = (protocol_cmd_t)((uint8_t)protocol.request & 0x7FU);
 
         /* 根据请求命令执行对应的业务处理。 */
         switch ((uint8_t)protocol.request)
         {
+#ifdef APP_PROJECT
 
             case PROTO_INFO_REQUEST:
             case PROTO_SYSTEM_REQUEST:
             case PROTO_BATTERY_INFO_REQUEST:
             {
-                /* 查询命令无须修改设备状态，直接使用对应应答。 */
+                /* 查询命令不修改设备状态，直接生成对应应答。 */
                 break;
             }
 
@@ -68,61 +84,95 @@ static void fan_protocol_request(uint8_t *data)
             {
                 uint8_t value;
 
+                /* 读取参数恢复控制值。 */
                 _CURSOR_READ_BYTE(value);
-                param_Restore(value);
 
+                /* 根据恢复控制值执行参数恢复。 */
+                param_Restore(value);
                 break;
             }
-			
+
             case PROTO_COOL_REQUEST:
             {
+                /* 读取制冷设备目标温度。 */
                 _CURSOR_READ_VAR(System.coolDev.temp);
+
+                /* 读取制冷设备运行档位。 */
                 _CURSOR_READ_VAR(System.coolDev.level);
+
+                /* 读取制冷设备故障信息。 */
                 _CURSOR_READ_VAR(System.coolDev.err);
+
+                /* 读取制冷设备软件版本。 */
                 _CURSOR_READ_VAR(System.coolDev.version);
                 break;
             }
 
+#endif /* APP_PROJECT */
+
             case PROTO_ENTER_OTA_REQUEST:
             {
+#ifdef BOOT_PROJECT
+                /* 初始化 Bootloader 固件升级状态及烧录地址。 */
+                bootloader_Init();
+#endif
+#ifdef APP_PROJECT
+                /* 保存 OTA 升级开始状态。 */
                 param_ota_save(OTC_STATUS_START);
+                /* Application 工程通过系统复位进入升级流程。 */
+                bsp_rcc_SystemReset();
+#endif
                 break;
             }
 
+#ifdef BOOT_PROJECT
+
             case PROTO_OTA_UPDATE_REQUEST:
             {
-                /* TODO: 处理固件更新请求。 */
+                uint16_t pack_size;
+
+                /* 读取本次 OTA 固件数据包长度。 */
+                _CURSOR_READ_VAR(pack_size);
+
+                /* 烧录当前固件数据包。 */
+                if (!bootloader_burn(&data[2], pack_size))
+                {
+                    /* Flash 烧录或校验失败，返回错误应答。 */
+                    protocol.response = PROTO_ERR;
+                }
                 break;
             }
 
             case PROTO_OTA_COMPLETION_REQUEST:
             {
-                /* TODO: 处理固件更新完成请求。 */
+                /* TODO: 校验完整固件并保存 OTA 升级完成状态。 */
                 break;
             }
 
+#endif /* BOOT_PROJECT */
+
             default:
             {
-                /* 未支持的请求命令，设置错误应答。 */
+                /* 不支持的请求命令，设置错误应答。 */
                 protocol.response = PROTO_ERR;
                 break;
             }
         }
 
-    /* 结束请求数据区读取操作。 */
+    /* 结束协议请求数据区读取游标。 */
     _STOP_CURSOR_READ();
 }
 
 
 /*******************************************************************************
 //  Function   : fan_protocol_response
-//  Description: 根据当前应答命令生成并发送协议数据帧
+//  Description: 根据应答命令生成并发送协议数据帧
 //  Param      : None
 //  Return     : None
-//  Others     : 依次写入帧头、应答命令、数据长度及数据区；
-//               根据不同应答命令填充设备信息、系统状态或电池配置；
-//               完成组帧后计算并追加 CRC16；
-//               最后启动 UART1 发送并清除当前应答命令
+//  Others     : 使用 Cursor 写入宏生成帧头、命令及数据区；
+//               根据当前工程模式选择支持的应答数据；
+//               组帧完成后回填数据长度并追加 CRC16；
+//               最后启动 UART1 发送并清除应答命令
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
 static void fan_protocol_response(void)
@@ -130,10 +180,10 @@ static void fan_protocol_response(void)
     uint16_t send_len = 0U;
     uint16_t crc;
 
-    /* 检查通信接口、发送缓冲区及待应答命令。 */
-    if ((protocol.api == 0) 
-	||  (protocol.response == PROTO_IDLE)
-	||  (protocol.api->transfer_data() == 0) )
+    /* 检查通信接口及当前应答状态。 */
+    if ((protocol.api == 0)
+    ||  (protocol.response == PROTO_IDLE) 
+    ||  (protocol.api->transfer_data() == 0))
     {
         return;
     }
@@ -151,9 +201,12 @@ static void fan_protocol_response(void)
         /* 预留协议数据区长度字段。 */
         _CURSOR_WRITE_BYTE_NULL();
 
-        /* 根据应答命令生成对应的数据区。 */
+        /* 根据应答命令填写协议数据区。 */
         switch ((uint8_t)protocol.response)
         {
+
+#ifdef APP_PROJECT
+
             case PROTO_INFO_RESPONSE:
             {
                 /* 当前通信协议版本。 */
@@ -166,6 +219,7 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_VAR(System.compile_param.year);
                 _CURSOR_WRITE_VAR(System.compile_param.month);
                 _CURSOR_WRITE_VAR(System.compile_param.day);
+
                 break;
             }
 
@@ -174,7 +228,7 @@ static void fan_protocol_response(void)
                 /* 电池充放电状态。 */
                 _CURSOR_WRITE_BYTE(bms_battery.state);
 
-                /* 电池及 USB 输入实时采样数据。 */
+                /* 电池及 USB 实时采样数据。 */
                 _CURSOR_WRITE_VAR(bms_battery.usb_in_v);
                 _CURSOR_WRITE_VAR(bms_battery.voltage_v);
                 _CURSOR_WRITE_VAR(bms_battery.current_ma);
@@ -192,7 +246,7 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_VAR(bms_battery.fault_real.data);
                 _CURSOR_WRITE_VAR(bms_battery.fault_hold.data);
 
-                /* 设备电源及运行模式。 */
+                /* 系统电源及运行模式。 */
                 _CURSOR_WRITE_BYTE(System.logic.power);
                 _CURSOR_WRITE_BYTE(System.logic.fan_mode);
                 _CURSOR_WRITE_BYTE(System.logic.mist_mode);
@@ -201,13 +255,14 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_VAR(System.logic.mist_freq);
                 _CURSOR_WRITE_VAR(System.logic.mist_duty);
 
-                /* 设备运行时间统计。 */
+                /* 系统运行时间统计。 */
                 _CURSOR_WRITE_VAR(System.logic.onTimes);
                 _CURSOR_WRITE_VAR(System.logic.offTimes);
                 _CURSOR_WRITE_VAR(System.logic.mistTimes);
 
                 /* 当前按键状态。 */
                 _CURSOR_WRITE_BYTE(botton_getValue());
+
                 break;
             }
 
@@ -219,27 +274,30 @@ static void fan_protocol_response(void)
                     /* 电池设计容量。 */
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->design_capacity_mah);
 
-                    /* 满充电压与放电截止电压。 */
+                    /* 满充及截止电压。 */
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->full_voltage_v);
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->cutoff_voltage_v);
 
-                    /* 电池静置判断条件。 */
+                    /* 静置判断条件。 */
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->rest_current_ma);
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->rest_dvdt_v_per_s);
 
-                    /* 充放电库仑效率参数。 */
+                    /* 库仑积分效率参数。 */
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->charge_efficiency);
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->discharge_efficiency);
 
-                    /* OCV 静置修正时间阈值。 */
+                    /* OCV 静置修正时间。 */
                     _CURSOR_WRITE_VAR(bms_battery.configInfo->rest_time_ms);
                 }
+
                 break;
             }
 
+#endif /* APP_PROJECT */
+
             default:
             {
-                /* 其他应答命令暂不附加数据区。 */
+                /* 其他应答命令不附加数据区。 */
                 break;
             }
         }
@@ -250,10 +308,10 @@ static void fan_protocol_response(void)
         /* 计算帧头至数据区末尾的 CRC16。 */
         crc = CRC_Calculate(protocol.api->transfer_data(), send_len);
 
-        /* 追加 CRC16 校验字段。 */
+        /* 在数据帧末尾追加 CRC16。 */
         _CURSOR_WRITE_VAR(crc);
 
-    /* 结束协议数据帧组包。 */
+    /* 结束协议应答帧组包。 */
     _STOP_CURSOR_WRITE();
 
     /* 启动 UART1 数据发送。 */
@@ -271,9 +329,8 @@ static void fan_protocol_response(void)
 //  Description: 初始化风扇通信协议模块
 //  Param      : None
 //  Return     : None
-//  Others     : 绑定 UART1 底层通信接口；
-//               初始化协议收发缓冲区；
-//               将请求及应答命令设置为 PROTO_IDLE
+//  Others     : 绑定 UART1 通信接口并初始化收发缓冲区；
+//               清除当前协议请求和应答状态
 //  Author     : Chen Liang 2026-10-30
 *******************************************************************************/
 void fan_protocol_Init(void)
@@ -285,7 +342,7 @@ void fan_protocol_Init(void)
     protocol.api->Init(protocol.RxDat,PROTO_MAX_FRAME_LEN,
                        protocol.TxDat,PROTO_MAX_FRAME_LEN);
 
-    /* 清除协议请求及应答状态。 */
+    /* 初始化请求和应答命令。 */
     protocol.request  = PROTO_IDLE;
     protocol.response = PROTO_IDLE;
 }
@@ -297,12 +354,12 @@ void fan_protocol_Init(void)
 //  Param      : None
 //  Return     : None
 //  Others     : 关闭 UART1 通信接口并解除绑定；
-//               清除当前请求及应答状态
+//               清除当前请求及应答命令
 //  Author     : Chen Liang 2026-10-30
 *******************************************************************************/
 void fan_protocol_Deinit(void)
 {
-    /* 检查通信接口是否已经绑定。 */
+    /* 检查通信接口是否有效。 */
     if (protocol.api == 0)
     {
         return;
@@ -325,11 +382,11 @@ void fan_protocol_Deinit(void)
 //  Description: 执行风扇通信协议 1ms 周期任务
 //  Param      : None
 //  Return     : None
-//  Others     : 推进 UART1 收发状态机；
-//               收到完整帧后验证长度、帧头及 CRC16；
-//               校验成功后解析请求命令及数据区；
+//  Others     : 周期推进 UART1 通信状态机；
+//               接收完整协议帧后检查长度、帧头及 CRC16；
+//               校验成功时执行协议请求解析；
 //               校验失败时生成错误应答；
-//               应答处理完成后复位 UART 接收状态
+//               完成应答处理后复位 UART 接收状态
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
 void fan_protocol_1ms_task(void)
@@ -337,7 +394,7 @@ void fan_protocol_1ms_task(void)
     uint8_t *rx_data;
     uint16_t rx_len;
 
-    /* 检查通信接口是否已初始化。 */
+    /* 检查通信接口是否已经初始化。 */
     if (protocol.api == 0)
     {
         return;
@@ -355,34 +412,32 @@ void fan_protocol_1ms_task(void)
 
         /*
          * 执行协议帧有效性检查：
-         * 1. 接收缓冲区不能为空；
-         * 2. 帧长度必须处于合法范围；
-         * 3. 帧头必须符合协议定义；
-         * 4. 整帧 CRC16 校验结果必须为 0。
+         * 1. 接收数据指针有效；
+         * 2. 数据帧长度在允许范围内；
+         * 3. 帧头与协议定义一致；
+         * 4. CRC16 整帧校验结果为 0。
          */
-        if ((rx_data != 0) &&
-            (rx_len >= FAN_PROTOCOL_MIN_FRAME_LEN) &&
-            (rx_len <= PROTO_MAX_FRAME_LEN) &&
-            (rx_data[PROTO_SOF1_INDEX] == PROTO_SOF1) &&
-            (rx_data[PROTO_SOF2_INDEX] == PROTO_SOF2) &&
-            (CRC_Calculate(rx_data, rx_len) == 0U))
+        if ((rx_data != 0) 
+        &&  (rx_len >= FAN_PROTOCOL_MIN_FRAME_LEN)    && (rx_len <= PROTO_MAX_FRAME_LEN) 
+        &&  (rx_data[PROTO_SOF1_INDEX] == PROTO_SOF1) && (rx_data[PROTO_SOF2_INDEX] == PROTO_SOF2) 
+        &&  (CRC_Calculate(rx_data, rx_len) == 0U))
         {
-            /* 提取当前协议请求命令。 */
-            protocol.request = (proto_cmd_t)rx_data[PROTO_CMD_INDEX];
+            /* 获取当前协议请求命令。 */
+            protocol.request = (protocol_cmd_t)rx_data[PROTO_CMD_INDEX];
 
-            /* 解析请求命令及数据区。 */
+            /* 解析协议请求及其数据区。 */
             fan_protocol_request(&rx_data[PROTO_DATA_INDEX]);
         }
         else
         {
-            /* 接收帧无效，设置错误应答。 */
+            /* 接收帧非法，设置错误应答。 */
             protocol.response = PROTO_ERR;
         }
 
-        /* 根据应答命令组帧并发送。 */
+        /* 根据处理结果组帧并发送应答。 */
         fan_protocol_response();
 
-        /* 复位 UART1 接收状态，准备下一帧。 */
+        /* 复位 UART1 接收状态，准备接收下一帧。 */
         protocol.api->receive_rst();
     }
 }
