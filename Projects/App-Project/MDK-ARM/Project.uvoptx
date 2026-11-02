@@ -120,7 +120,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGUARM</Key>
-          <Name>?</Name>
+          <Name>d</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -164,6 +164,16 @@
           <count>1</count>
           <WinNumber>1</WinNumber>
           <ItemText>s_uart1Port</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>System,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>SystemMs,0x0A</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -475,8 +485,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_gpio.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_gpio.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_rcc.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_rcc.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -499,8 +509,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_exti.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_exti.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_wdg.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_wdg.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -511,8 +521,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_uart1.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_uart1.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_exti.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_exti.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -523,8 +533,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_pga2.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_pga2.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_tim1.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_tim1.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -535,8 +545,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_tim1.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_tim1.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_tim3.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_tim3.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -559,8 +569,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_flash.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_flash.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_gpio.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_gpio.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -571,8 +581,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_wdg.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_wdg.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_uart1.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_uart1.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -583,8 +593,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_rcc.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_rcc.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_pga2.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_pga2.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -595,8 +605,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Bsp\Src\bsp_tim3.c</PathWithFileName>
-      <FilenameWithoutPath>bsp_tim3.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Bsp\Src\bsp_flash.c</PathWithFileName>
+      <FilenameWithoutPath>bsp_flash.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -731,14 +741,26 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_protect.c</PathWithFileName>
-      <FilenameWithoutPath>bms_protect.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_soc.c</PathWithFileName>
+      <FilenameWithoutPath>bms_soc.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
     <File>
       <GroupNumber>5</GroupNumber>
       <FileNumber>41</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_soh.c</PathWithFileName>
+      <FilenameWithoutPath>bms_soh.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>5</GroupNumber>
+      <FileNumber>42</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -750,7 +772,7 @@
     </File>
     <File>
       <GroupNumber>5</GroupNumber>
-      <FileNumber>42</FileNumber>
+      <FileNumber>43</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -762,25 +784,13 @@
     </File>
     <File>
       <GroupNumber>5</GroupNumber>
-      <FileNumber>43</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_convert.c</PathWithFileName>
-      <FilenameWithoutPath>bms_convert.c</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>5</GroupNumber>
       <FileNumber>44</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_soc.c</PathWithFileName>
-      <FilenameWithoutPath>bms_soc.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_protect.c</PathWithFileName>
+      <FilenameWithoutPath>bms_protect.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -791,8 +801,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_soh.c</PathWithFileName>
-      <FilenameWithoutPath>bms_soh.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Middleware\bms_ctrl\bms_convert.c</PathWithFileName>
+      <FilenameWithoutPath>bms_convert.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -895,8 +905,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Application\app_sampling.c</PathWithFileName>
-      <FilenameWithoutPath>app_sampling.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Application\app_mist.c</PathWithFileName>
+      <FilenameWithoutPath>app_mist.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -907,8 +917,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Application\app_system.c</PathWithFileName>
-      <FilenameWithoutPath>app_system.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Application\app_bms.c</PathWithFileName>
+      <FilenameWithoutPath>app_bms.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -919,8 +929,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Application\app_mist.c</PathWithFileName>
-      <FilenameWithoutPath>app_mist.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Application\app_logic.c</PathWithFileName>
+      <FilenameWithoutPath>app_logic.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -931,8 +941,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Application\app_bms.c</PathWithFileName>
-      <FilenameWithoutPath>app_bms.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Application\app_system.c</PathWithFileName>
+      <FilenameWithoutPath>app_system.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -955,8 +965,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\Application\app_logic.c</PathWithFileName>
-      <FilenameWithoutPath>app_logic.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\Application\app_sampling.c</PathWithFileName>
+      <FilenameWithoutPath>app_sampling.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

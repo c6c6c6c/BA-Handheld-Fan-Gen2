@@ -1,16 +1,27 @@
+# Keil MDK build artifacts
 Projects/App-Project/MDK-ARM/Objects
 Projects/Boot-Project/MDK-ARM/Objects
 Projects/Test-Project/MDK-ARM/Objects
-Tools/merge_bin/__pycache__
 Projects/App-Project/MDK-ARM/RTE
 Projects/Boot-Project/MDK-ARM/RTE
 Projects/Test-Project/MDK-ARM/RTE
-commit_log.txt
-debug.log
+Projects/App-Project/MDK-ARM/Output
+Projects/Boot-Project/MDK-ARM/Output
+Projects/Test-Project/MDK-ARM/Output
+
+# Keil MDK per-user settings
 Projects/App-Project/MDK-ARM/Project.uvguix.*
 Projects/Boot-Project/MDK-ARM/Project.uvguix.*
 Projects/Test-Project/MDK-ARM/Project.uvguix.*
+
+# Debug logs
 Projects/App-Project/MDK-ARM/JLinkLog.txt
 Projects/Boot-Project/MDK-ARM/JLinkLog.txt
 Projects/Test-Project/MDK-ARM/JLinkLog.txt
-Projects/App-Project/MDK-ARM/Output
+debug.log
+
+# Python cache
+Tools/merge_bin/__pycache__
+
+# Local generated files
+commit_log.txt

@@ -489,9 +489,9 @@
           <GroupName>Bsp</GroupName>
           <Files>
             <File>
-              <FileName>bsp_gpio.c</FileName>
+              <FileName>bsp_rcc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Bsp\Src\bsp_gpio.c</FilePath>
+              <FilePath>..\..\..\Bsp\Src\bsp_rcc.c</FilePath>
             </File>
             <File>
               <FileName>bsp_adc.c</FileName>
@@ -499,9 +499,34 @@
               <FilePath>..\..\..\Bsp\Src\bsp_adc.c</FilePath>
             </File>
             <File>
+              <FileName>bsp_wdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_wdg.c</FilePath>
+            </File>
+            <File>
               <FileName>bsp_exti.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_tim1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_tim1.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_tim3.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_tim3.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_tim16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_tim16.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_gpio.c</FilePath>
             </File>
             <File>
               <FileName>bsp_uart1.c</FileName>
@@ -514,34 +539,9 @@
               <FilePath>..\..\..\Bsp\Src\bsp_pga2.c</FilePath>
             </File>
             <File>
-              <FileName>bsp_tim1.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Bsp\Src\bsp_tim1.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_tim16.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Bsp\Src\bsp_tim16.c</FilePath>
-            </File>
-            <File>
               <FileName>bsp_flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_flash.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_wdg.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Bsp\Src\bsp_wdg.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_rcc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Bsp\Src\bsp_rcc.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_tim3.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Bsp\Src\bsp_tim3.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -599,9 +599,14 @@
           <GroupName>Middleware/bms</GroupName>
           <Files>
             <File>
-              <FileName>bms_protect.c</FileName>
+              <FileName>bms_soc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\bms_ctrl\bms_protect.c</FilePath>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soc.c</FilePath>
+            </File>
+            <File>
+              <FileName>bms_soh.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soh.c</FilePath>
             </File>
             <File>
               <FileName>bms_key.c</FileName>
@@ -614,19 +619,14 @@
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_status.c</FilePath>
             </File>
             <File>
+              <FileName>bms_protect.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\bms_ctrl\bms_protect.c</FilePath>
+            </File>
+            <File>
               <FileName>bms_convert.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_convert.c</FilePath>
-            </File>
-            <File>
-              <FileName>bms_soc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soc.c</FilePath>
-            </File>
-            <File>
-              <FileName>bms_soh.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\bms_ctrl\bms_soh.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -674,16 +674,6 @@
           <GroupName>Application</GroupName>
           <Files>
             <File>
-              <FileName>app_sampling.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Application\app_sampling.c</FilePath>
-            </File>
-            <File>
-              <FileName>app_system.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Application\app_system.c</FilePath>
-            </File>
-            <File>
               <FileName>app_mist.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Application\app_mist.c</FilePath>
@@ -694,14 +684,24 @@
               <FilePath>..\..\..\Application\app_bms.c</FilePath>
             </File>
             <File>
+              <FileName>app_logic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Application\app_logic.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_system.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Application\app_system.c</FilePath>
+            </File>
+            <File>
               <FileName>app_display.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Application\app_display.c</FilePath>
             </File>
             <File>
-              <FileName>app_logic.c</FileName>
+              <FileName>app_sampling.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Application\app_logic.c</FilePath>
+              <FilePath>..\..\..\Application\app_sampling.c</FilePath>
             </File>
           </Files>
         </Group>

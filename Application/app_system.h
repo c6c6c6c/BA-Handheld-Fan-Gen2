@@ -55,6 +55,17 @@ typedef struct
 } compile_param_t;
 
 
+
+typedef struct 
+{
+    uint16_t temp;
+    uint16_t level;
+    uint16_t err;
+    uint8_t  version;
+}dev_cool_t;
+
+
+
 /**
  * @brief 系统运行状态
  * @note  保存系统故障、开关机计时、主循环运行间隔、
@@ -69,6 +80,8 @@ typedef struct
     float           ntc_temp;                         /**< 当前 NTC 检测温度，单位 ℃ */
     bool            sleep_flg;                        /**< 系统休眠标志，true=休眠，false=正常运行 */
     app_logic_t     logic;                            /**< 应用层设备运行及控制逻辑状态 */
+
+    dev_cool_t      coolDev;
 } system_t;
 
 
