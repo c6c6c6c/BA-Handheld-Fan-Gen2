@@ -1,0 +1,80 @@
+﻿SEGGER J-Link Commander V6.86 (Compiled Sep 24 2020 17:33:12)
+DLL version V6.86, compiled Sep 24 2020 17:31:31
+
+
+J-Link Command File read successfully.
+Processing script file...
+
+J-Link Commander will now exit on Error
+
+J-Link connection not established yet but required for command.
+Connecting to J-Link via USB...O.K.
+Firmware: J-Link Pro V4 compiled Sep 22 2029 15:00:37
+Hardware version: V11.00
+S/N: 601012478
+License(s): RDI, FlashBP, FlashDL, JFlash, GDB
+IP-Addr: 255.255.255.255 (DHCP)
+VTref=3.251V
+
+
+Target connection not established yet but required for command.
+Device "PY32F032X8" selected.
+
+
+Connecting to target via SWD
+Found SW-DP with ID 0x0BC11477
+DPIDR: 0x0BC11477
+Scanning AP map to find all available APs
+AP[1]: Stopped AP scan as end of AP map has been reached
+AP[0]: AHB-AP (IDR: 0x04770031)
+Iterating through AP map to find AHB-AP to use
+AP[0]: Core found
+AP[0]: AHB-AP ROM base: 0xE00FF000
+CPUID register: 0x410CC601. Implementer code: 0x41 (ARM)
+Found Cortex-M0 r0p1, Little endian.
+FPUnit: 4 code (BP) slots and 0 literal slots
+CoreSight components:
+ROMTbl[0] @ E00FF000
+ROMTbl[0][0]: E000E000, CID: B105E00D, PID: 000BB008 SCS
+ROMTbl[0][1]: E0001000, CID: B105E00D, PID: 000BB00A DWT
+ROMTbl[0][2]: E0002000, CID: B105E00D, PID: 000BB00B FPB
+Cortex-M0 identified.
+Reset delay: 0 ms
+Reset type NORMAL: Resets core & peripherals via SYSRESETREQ & VECTRESET bit.
+Reset: Halt core after reset via DEMCR.VC_CORERESET.
+Reset: Reset device via AIRCR.SYSRESETREQ.
+
+PC = FFFFFFFE, CycleCnt = 00000000
+R0 = 00000000, R1 = 40022000, R2 = 00040000, R3 = 00000001
+R4 = 000000D0, R5 = 00000001, R6 = 00000068, R7 = 00000000
+R8 = 00000000, R9 = 200004D0, R10= 00000000, R11= 00000000
+R12= 00000000
+SP(R13)= FFFFFFFC, MSP= FFFFFFFC, PSP= 20001000, R14(LR) = FFFFFFF9
+XPSR = 41000000: APSR = nZcvq, EPSR = 01000000, IPSR = 000 (NoException)
+CFBP = 00000000, CONTROL = 00, FAULTMASK = 00, BASEPRI = 00, PRIMASK = 00
+FPU regs: FPU not enabled / not implemented on connected CPU.
+
+
+Downloading file [C:\Users\80026513\Desktop\BA_handheld_Fan_Gen2\Projects\Output\ba_fan_boot.bin]...
+Comparing flash   [000%]000%]050%]050%]100%] Done.
+Erasing flash     [000%]000%]030%]030%]065%]065%]100%] Done.
+Programming flash [000%]000%]000%]000%]000%]000%]000%]000%]000%]000%]005%]005%]005%]005%]005%]005%]005%]005%]005%]005%]010%]010%]010%]010%]010%]010%]010%]010%]010%]010%]015%]015%]015%]015%]015%]015%]015%]015%]015%]015%]020%]020%]020%]020%]020%]020%]020%]020%]025%]025%]025%]025%]025%]025%]025%]025%]025%]025%]030%]030%]030%]030%]030%]030%]030%]030%]030%]030%]035%]035%]035%]035%]035%]035%]035%]035%]035%]035%]040%]040%]040%]040%]040%]040%]040%]040%]040%]040%]045%]045%]045%]045%]045%]045%]045%]045%]050%]050%]050%]050%]050%]050%]050%]050%]050%]050%]055%]055%]055%]055%]055%]055%]055%]055%]055%]055%]060%]060%]060%]060%]060%]060%]060%]060%]060%]060%]065%]065%]065%]065%]065%]100%] Done.
+Verifying flash   [000%]000%]100%] Done.
+J-Link: Flash download: Bank 0 @ 0x08000000: 1 range affected (12288 bytes)
+J-Link: Flash download: Total: 0.605s (Prepare: 0.009s, Compare: 0.086s, Erase: 0.034s, Program: 0.421s, Verify: 0.049s, Restore: 0.004s)
+J-Link: Flash download: Program speed: 28 KB/s
+O.K.
+
+Loading binary file C:\Users\80026513\Desktop\BA_handheld_Fan_Gen2\Projects\Output\ba_fan_boot.bin
+Reading 8216 bytes data from target memory @ 0x08000000.
+Verify successful.
+
+Reset delay: 0 ms
+Reset type NORMAL: Resets core & peripherals via SYSRESETREQ & VECTRESET bit.
+Reset: Halt core after reset via DEMCR.VC_CORERESET.
+Reset: Reset device via AIRCR.SYSRESETREQ.
+
+
+
+Script processing completed.
+

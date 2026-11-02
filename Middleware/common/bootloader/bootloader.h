@@ -80,6 +80,7 @@ typedef struct
 
 } boot_update_t;
 
+typedef void (*func_pointer_t)(void);
 
 /* External variables ------------------------------------------------------------------------------------------------*/
 
@@ -88,6 +89,17 @@ extern boot_update_t boot_cmd;
 
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
+/*******************************************************************************
+//  Function   : JumpToApplication
+//  Description: 从 Bootloader 跳转至 Application 程序
+//  Param      : None
+//  Return     : None
+//  Others     : 从 Application 向量表读取初始 MSP 和复位入口地址；
+//               恢复全局中断使能，设置 MSP 后跳转至 Application；
+//               调用前应确保 Application 固件有效且外设状态已妥善处理
+//  Author     : Chen Liang 2026-11-02
+*******************************************************************************/
+void JumpToApplication(void);
 
 /*******************************************************************************
 //  Function   : bootloader_Init

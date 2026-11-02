@@ -2,37 +2,55 @@
 /**
  ***********************************************************************************************************************
  * @file    app_display.c
- * @brief   AiP650E 显示应用层管理，实现风机档位、SOC 电量、功能图标及亮度控制
+ * @brief   AiP650E 显示管理，实现风机档位、SOC 电量、OTA 状态及亮度控制
  * @author  Leo Chen
  * @version 1.0.0
  * @date    2026-10-21
+ ***********************************************************************************************************************
+ * @note
+ *          1. APP_PROJECT 支持风机档位、SOC 电量及功能图标显示。
+ *          2. BOOT_PROJECT 支持 OTA 升级状态显示。
+ *          3. 通过段码表将数字和字符转换为 AiP650E 显示数据。
+ *          4. 根据控制参数变化更新亮度及显示状态。
+ *          5. 定时强制刷新显示 RAM，增强显示可靠性。
+ ***********************************************************************************************************************
+ * @copyright Copyright (c) 1999-2025 ShenZhen H&T Control Technology Co., Ltd. All rights reserved.
  ***********************************************************************************************************************
  */
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
 #include "app_display.h"
+#include "timer_base.h"
+
+#ifdef APP_PROJECT
 #include "app_system.h"
 #include "app_bms.h"
-
 #include "button.h"
-#include "timer_base.h"
+#endif
+
+#ifdef BOOT_PROJECT
+#include "param.h"
+#endif
 
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
-/** 数字显示无效值，用于关闭对应数码管 */
+/** 数字显示无效索引，用于关闭对应数码管 */
 #define APP_DISPLAY_NUM_BLANK          0xFFU
 
-/** 显示寄存器周期强制刷新时间，单位 ms */
+/** 显示寄存器强制刷新周期，单位 ms */
 #define APP_DISPLAY_REFRESH_TIME_MS    1000U
+
+/** OTA 升级状态显示切换周期，单位 ms */
+#define APP_DISPLAY_BOOT_SWITCH_MS     500U
 
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
 /**
  * @brief AiP650E 显示驱动实例
- * @note  默认使用七段显示模式、4 级亮度，并开启显示输出
+ * @note  默认使用七段显示模式、4 级亮度，并开启显示输出。
  */
 aip650e_t aip650e =
 {
@@ -41,24 +59,24 @@ aip650e_t aip650e =
         .bit =
         {
             .segment        = AIP650_7_SEGMENT,     /**< 七段显示模式 */
-            .brightness     = BRIGHTNESS_4_LEVEL,   /**< 默认亮度等级 4 */
-            .sleeping       = false,                /**< 禁用睡眠模式 */
-            .displayEnabled = true                  /**< 开启显示输出 */
+            .brightness     = BRIGHTNESS_4_LEVEL,   /**< 默认亮度等级 */
+            .sleeping       = false,                /**< 禁止睡眠 */
+            .displayEnabled = true                  /**< 使能显示 */
         }
     },
-    .show = {0xFFU, 0xFFU, 0xFFU, 0xFFU}            /**< COM1~COM4 初始显示数据 */
+    .show = {0xFFU, 0xFFU, 0xFFU, 0xFFU}            /**< COM1~COM4 显示缓存 */
 };
 
-/** 应用层显示状态，保存数字及功能图标控制信息 */
+/** 应用层显示状态，保存数字及功能图标信息 */
 app_display_t display;
 
 
-/* Private constants -------------------------------------------------------------------------------------------------*/
+/* Private constants ------------------------------------------------------------------------------------------------*/
 
 /**
  * @brief DIG1 数字及字符段码表
- * @note  索引 0~9 对应数字，索引 10 对应字符 F；
- *        段码根据 DIG1 实际硬件段线映射生成。
+ * @note  索引 0~9 对应数字 0~9；
+ *        索引 10~16 对应 F、U、P、d、n、E、r。
  */
 static const uint8_t aip650e_seglist1[] =
 {
@@ -73,19 +91,19 @@ static const uint8_t aip650e_seglist1[] =
     SEG1_A | SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_F | SEG1_G,  /**< 8 */
     SEG1_A | SEG1_B | SEG1_C | SEG1_D | SEG1_F | SEG1_G,           /**< 9 */
     SEG1_A | SEG1_F | SEG1_G | SEG1_E,                             /**< F */
-	SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_F,                    /**< U */
-	SEG1_A | SEG1_B | SEG1_E | SEG1_F | SEG1_G,                    /**< P */
-	SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_G,                    /**< d */
-	SEG1_C | SEG1_E | SEG1_G,                                      /**< n */
-	SEG1_A | SEG1_D | SEG1_E | SEG1_F | SEG1_G,                    /**< E */
-	SEG1_E | SEG1_G,                                               /**< r */
+    SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_F,                    /**< U */
+    SEG1_A | SEG1_B | SEG1_E | SEG1_F | SEG1_G,                    /**< P */
+    SEG1_B | SEG1_C | SEG1_D | SEG1_E | SEG1_G,                    /**< d */
+    SEG1_C | SEG1_E | SEG1_G,                                      /**< n */
+    SEG1_A | SEG1_D | SEG1_E | SEG1_F | SEG1_G,                    /**< E */
+    SEG1_E | SEG1_G                                                /**< r */
 };
 
 
 /**
  * @brief DIG2 数字及字符段码表
- * @note  索引 0~9 对应数字，索引 10 对应字符 F；
- *        段码根据 DIG2 实际硬件段线映射生成。
+ * @note  索引与 DIG1 段码表保持一致，
+ *        使用 DIG2 对应的硬件段线映射。
  */
 static const uint8_t aip650e_seglist2[] =
 {
@@ -100,12 +118,12 @@ static const uint8_t aip650e_seglist2[] =
     SEG2_A | SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_F | SEG2_G,  /**< 8 */
     SEG2_A | SEG2_B | SEG2_C | SEG2_D | SEG2_F | SEG2_G,           /**< 9 */
     SEG2_A | SEG2_F | SEG2_G | SEG2_E,                             /**< F */
-	SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_F,                    /**< U */
-	SEG2_A | SEG2_B | SEG2_E | SEG2_F | SEG2_G,                    /**< P */
-	SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_G,                    /**< d */
-	SEG2_C | SEG2_E | SEG2_G,                                      /**< n */
-	SEG2_A | SEG2_D | SEG2_E | SEG2_F | SEG2_G,                    /**< E */
-	SEG2_E | SEG2_G,                                               /**< r */
+    SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_F,                    /**< U */
+    SEG2_A | SEG2_B | SEG2_E | SEG2_F | SEG2_G,                    /**< P */
+    SEG2_B | SEG2_C | SEG2_D | SEG2_E | SEG2_G,                    /**< d */
+    SEG2_C | SEG2_E | SEG2_G,                                      /**< n */
+    SEG2_A | SEG2_D | SEG2_E | SEG2_F | SEG2_G,                    /**< E */
+    SEG2_E | SEG2_G                                                /**< r */
 };
 
 
@@ -113,12 +131,11 @@ static const uint8_t aip650e_seglist2[] =
 
 /*******************************************************************************
 //  Function   : app_display_dev
-//  Description: 执行 AiP650E 底层显示刷新及控制寄存器同步
+//  Description: 执行 AiP650E 底层显示刷新及控制状态同步
 //  Param      : None
 //  Return     : None
-//  Others     : 正常情况下仅更新发生变化的显示数据及控制参数；
-//               每隔 1000ms 强制重写系统控制字及全部显示 RAM，
-//               用于恢复芯片异常复位后可能丢失的显示配置
+//  Others     : 正常情况下仅更新发生变化的显示数据和控制参数；
+//               每隔 1000ms 强制重写控制字及全部显示 RAM
 //  Author     : Chen Liang 2026-10-22
 *******************************************************************************/
 static void app_display_dev(void)
@@ -129,25 +146,25 @@ static void app_display_dev(void)
     /* 更新发生变化的 DIG 显示数据。 */
     (void)aip650_write_segments(aip650e.show);
 
-    /* 控制参数变化时重新写入系统控制寄存器。 */
+    /* 同步显示控制参数。 */
     if (aip650_ctrl_data() != aip650e.ctrl.data)
     {
         (void)aip650_WriteControl(&aip650e.ctrl);
     }
 
-    /* 每隔 1000ms 强制刷新全部显示数据及控制寄存器。 */
+    /* 周期性强制刷新全部显示数据。 */
     if (timer_base_Count(&_time) >= APP_DISPLAY_REFRESH_TIME_MS)
     {
-        /* 重新写入显示模式、亮度及显示使能配置。 */
+        /* 重新写入显示控制寄存器。 */
         (void)aip650_WriteControl(&aip650e.ctrl);
 
-        /* 重新写入 DIG1~DIG4，避免芯片复位导致显示内容丢失。 */
+        /* 重新写入全部 COM 显示缓存。 */
         for (i = 0U; i < AIP650E_COM_COUNT; i++)
         {
             (void)aip650_write_digit(i, aip650e.show[i]);
         }
 
-        /* 复位周期强制刷新计时器。 */
+        /* 重置强制刷新计时器。 */
         timer_base_Rst(&_time);
     }
 }
@@ -155,105 +172,110 @@ static void app_display_dev(void)
 
 /*******************************************************************************
 //  Function   : app_display_convert
-//  Description: 将应用层显示状态转换为 AiP650E 显示 RAM 数据
+//  Description: 将应用层显示状态转换为 AiP650E 显示数据
 //  Param      : None
 //  Return     : None
-//  Others     : DIG1、DIG2 根据数字或字符索引查表生成段码；
-//               DIG3 根据雾化、风机、百分比及制冷状态组合图标数据；
-//               DIG4 用于控制百位数字 1 的独立显示笔段
+//  Others     : DIG1、DIG2 根据索引查表生成数字或字符段码；
+//               DIG3 生成雾化、百分比、风机及制冷图标数据；
+//               DIG4 控制数字 100 的百位显示
 //  Author     : Chen Liang 2026-10-21
 *******************************************************************************/
 static void app_display_convert(void)
 {
-    /* DIG1、DIG2 根据显示索引转换为对应的数码管段码。 */
+    /* 转换 DIG1 段码，非法索引关闭对应数码管。 */
     aip650e.show[0] =
         display.bit.showNum[1] >= sizeof(aip650e_seglist1)
         ? 0U
         : aip650e_seglist1[display.bit.showNum[1]];
 
+    /* 转换 DIG2 段码，非法索引关闭对应数码管。 */
     aip650e.show[1] =
         display.bit.showNum[2] >= sizeof(aip650e_seglist2)
         ? 0U
         : aip650e_seglist2[display.bit.showNum[2]];
 
-    /* 根据百位显示标志控制 DIG4 对应笔段。 */
-    aip650e.show[3] = display.bit.showNum[0] == 1U ? 0x03U : 0U;
+    /* 控制百位数字 1 对应的独立笔段。 */
+    aip650e.show[3] =
+        display.bit.showNum[0] == 1U ? 0x03U : 0U;
 
-    /* 清空 DIG3 图标缓存，重新组合功能状态。 */
+    /* 组合 DIG3 功能图标。 */
     aip650e.show[2] = 0U;
 
-    aip650e.show[2] |= ((display.bit.mist != 0U))           << 0;  /* 雾化图标 */
-    aip650e.show[2] |= ((display.bit.percentageIcon != 0U)) << 1;  /* 百分比图标 */
-    aip650e.show[2] |= ((display.bit.fanIcon != 0U))        << 2;  /* 风机图标 */
-    aip650e.show[2] |= (display.bit.cooling & 0x07U)        << 3;  /* 制冷状态 */
+    aip650e.show[2] |= ((display.bit.mist != 0U))           << 0;
+    aip650e.show[2] |= ((display.bit.percentageIcon != 0U)) << 1;
+    aip650e.show[2] |= ((display.bit.fanIcon != 0U))        << 2;
+    aip650e.show[2] |= (display.bit.cooling & 0x07U)        << 3;
 }
+
+
 
 
 /*******************************************************************************
 //  Function   : app_display_showNum
 //  Description: 设置应用层数字显示内容
 //  Param      : num       - 待显示数字，范围 0~100
-//               IsDisplay - true：显示数字；false：关闭数字显示
+//               IsDisplay - true：显示；false：关闭
 //  Return     : None
-//  Others     : 小于 10 时关闭十位，等于 100 时启用独立百位笔段；
-//               数字超出范围或关闭显示时，将各位设置为无效显示值
+//  Others     : 小于 10 时关闭十位；
+//               等于 100 时显示独立百位数字 1；
+//               数值无效或关闭显示时清除数字显示
 //  Author     : Chen Liang 2026-10-23
 *******************************************************************************/
 static void app_display_showNum(uint8_t num, bool IsDisplay)
 {
     if (IsDisplay && (num <= 100U))
     {
-        /* 百位仅支持显示数字 1。 */
+        /* 百位数字 1 显示控制。 */
         display.bit.showNum[0] = (num == 100U);
 
-        /* 十位不足两位数时关闭对应数码管。 */
+        /* 十位小于 10 时关闭显示。 */
         display.bit.showNum[1] = num >= 10U
                                ? (num / 10U) % 10U
                                : APP_DISPLAY_NUM_BLANK;
 
-        /* 个位始终显示。 */
+        /* 设置个位数字。 */
         display.bit.showNum[2] = num % 10U;
     }
     else
     {
-        /* 关闭全部数字显示。 */
+        /* 清除数字显示。 */
         display.bit.showNum[0] = 0U;
         display.bit.showNum[1] = APP_DISPLAY_NUM_BLANK;
         display.bit.showNum[2] = APP_DISPLAY_NUM_BLANK;
     }
 }
 
-
+#ifdef APP_PROJECT
 /*******************************************************************************
 //  Function   : app_display_fanmode
 //  Description: 设置风机档位显示内容
 //  Param      : fanmode - 当前风机档位
 //  Return     : None
-//  Others     : DIG1 显示字符 F，DIG2 显示档位数字；
-//               最终显示形式为 F0~F9，实际有效档位由应用层控制
+//  Others     : DIG1 显示 F，DIG2 显示档位数字；
+//               显示格式为 F0~F9
 //  Author     : Chen Liang 2026-10-27
 *******************************************************************************/
 static void app_display_fanmode(uint8_t fanmode)
 {
-    /* 关闭独立百位显示。 */
+    /* 关闭独立百位。 */
     display.bit.showNum[0] = 0U;
 
-    /* DIG1 显示字符 F，对应段码表索引 10。 */
+    /* DIG1 显示字符 F。 */
     display.bit.showNum[1] = 10U;
 
-    /* DIG2 显示当前风机档位。 */
+    /* DIG2 显示当前档位。 */
     display.bit.showNum[2] = fanmode % 10U;
 }
 
 
 /*******************************************************************************
 //  Function   : app_display_logic
-//  Description: 根据设备运行状态更新应用层显示内容及亮度
+//  Description: 根据 Application 运行状态更新显示内容及亮度
 //  Param      : None
 //  Return     : None
 //  Others     : 开机时显示风机档位及功能图标；
-//               风机或雾化按键长按时切换为电池 SOC 百分比显示；
-//               触发显示操作后提高亮度，无操作超过 10s 后降低亮度
+//               风机或雾化按键长按时显示 SOC 百分比；
+//               有显示操作时恢复亮度，10s 无操作后降低亮度
 //  Author     : Chen Liang 2026-10-27
 *******************************************************************************/
 static void app_display_logic(void)
@@ -262,36 +284,36 @@ static void app_display_logic(void)
 
     if (System.logic.power)
     {
-        /* 根据设备运行状态更新功能图标。 */
+        /* 更新风机及雾化功能图标。 */
         display.bit.percentageIcon = false;
-        display.bit.fanIcon        = (System.logic.fan_mode  != 0U);
+        display.bit.fanIcon        = (System.logic.fan_mode != 0U);
         display.bit.mist           = (System.logic.mist_duty != 0U);
 
-        /*
-         * 风机或雾化按键处于长按保持状态时，
-         * 显示当前电池 SOC 百分比。
-         */
-        if ((botton_getEvent(BUTTON_ITEM_FAN)  == BUTTON_EVENT_LONG_PRESS_HOLD)
-        ||  (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
+        /* 长按风机或雾化按键时显示当前 SOC。 */
+        if ((botton_getEvent(BUTTON_ITEM_FAN) == BUTTON_EVENT_LONG_PRESS_HOLD) ||
+            (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
         {
-            /* 将 SOC 四舍五入后转换为整数百分比显示。 */
-            app_display_showNum(bms_battery.soc_info.soc + 0.5, true);
+            /* 显示电池 SOC 百分比。 */
+            app_display_showNum(
+                bms_battery.soc_info.soc + 0.5,
+                true
+            );
 
-            /* 标记显示操作并开启百分比图标。 */
+            /* 进入 SOC 显示模式。 */
             System.logic.display_flg   = true;
             display.bit.percentageIcon = true;
-			display.bit.fanIcon        = false;
-			display.bit.mist           = false;
+            display.bit.fanIcon        = false;
+            display.bit.mist           = false;
         }
         else
         {
-            /* 默认显示当前风机档位，格式为 F1~F5。 */
+            /* 默认显示当前风机档位。 */
             app_display_fanmode(System.logic.fan_mode);
         }
     }
     else
     {
-        /* 设备关机时清除数字及功能图标。 */
+        /* 设备关闭时清除显示内容。 */
         display.bit.percentageIcon = false;
         display.bit.fanIcon        = false;
         display.bit.mist           = false;
@@ -299,11 +321,7 @@ static void app_display_logic(void)
         app_display_showNum(0U, false);
     }
 
-    /*
-     * 检测显示操作事件：
-     * 有操作时恢复亮度等级 2，并重置空闲计时器；
-     * 连续 10s 无显示操作时降低至亮度等级 1。
-     */
+    /* 有显示操作时恢复亮度并重置计时器。 */
     if (System.logic.display_flg)
     {
         timer_base_Rst(&_timer);
@@ -312,11 +330,85 @@ static void app_display_logic(void)
 
         aip650e.ctrl.bit.brightness = BRIGHTNESS_2_LEVEL;
     }
+    /* 无操作超过 10s 后降低显示亮度。 */
     else if (timer_base_Count(&_timer) > 10000U)
     {
         aip650e.ctrl.bit.brightness = BRIGHTNESS_1_LEVEL;
     }
 }
+
+#endif /* APP_PROJECT */
+
+
+#ifdef BOOT_PROJECT
+
+/*******************************************************************************
+//  Function   : boot_display_logic
+//  Description: 根据 OTA 升级状态更新 Bootloader 显示内容
+//  Param      : None
+//  Return     : None
+//  Others     : OTA 开始时持续显示 UP；
+//               OTA 编程中每隔 500ms 在 0% 和 UP 之间切换；
+//               关闭其他功能图标，仅保留升级状态相关显示；
+//               当前尚未定义 SUCCESS 等其他状态的显示内容
+//  Author     : Chen Liang 2026-11-02
+*******************************************************************************/
+static void boot_display_logic(void)
+{
+    static timer_base_t _timer = {0};
+
+    /* 关闭 Application 专用功能图标。 */
+    display.bit.percentageIcon = false;
+    display.bit.fanIcon        = false;
+    display.bit.mist           = false;
+    display.bit.cooling        = 0U;
+
+    /* 根据 Flash 保存的 OTA 状态更新显示内容。 */
+    switch (param_ota_state())
+    {
+        case OTC_STATUS_START:
+        {
+            /* OTA 开始：持续显示 UP。 */
+            display.bit.showNum[0] = 0U;
+            display.bit.showNum[1] = 11U;   /* U */
+            display.bit.showNum[2] = 12U;   /* P */
+            break;
+        }
+
+        case OTC_STATUS_PROGRAMMING:
+        {
+            /* 前 500ms：显示 0%。 */
+            if (timer_base_Count(&_timer) < APP_DISPLAY_BOOT_SWITCH_MS)
+            {
+                app_display_showNum(22,true);
+
+                display.bit.percentageIcon = true;
+            }
+            /* 后 500ms：显示 UP。 */
+            else if (timer_base_Count(&_timer) <
+                     (APP_DISPLAY_BOOT_SWITCH_MS * 2U))
+            {
+                display.bit.showNum[0] = 0U;
+                display.bit.showNum[1] = 11U;
+                display.bit.showNum[2] = 12U;
+            }
+            else
+            {
+                /* 一个显示周期结束，重新开始计时。 */
+                timer_base_Rst(&_timer);
+            }
+            break;
+        }
+
+        default:
+        {
+            /* 其他 OTA 状态暂不修改数字显示内容。 */
+            break;
+        }
+    }
+}
+
+#endif /* BOOT_PROJECT */
 
 
 /* Exported functions ------------------------------------------------------------------------------------------------*/
@@ -326,8 +418,8 @@ static void app_display_logic(void)
 //  Description: 初始化 AiP650E 显示应用模块
 //  Param      : None
 //  Return     : None
-//  Others     : 初始化底层两线通信及显示 RAM，
-//               写入默认显示模式、亮度及显示使能参数
+//  Others     : 初始化底层两线通信及显示 RAM；
+//               写入默认显示模式、亮度及显示使能配置
 //  Author     : Chen Liang 2026-10-21
 *******************************************************************************/
 void app_display_Init(void)
@@ -335,7 +427,7 @@ void app_display_Init(void)
     /* 初始化 AiP650E 底层驱动。 */
     aip650_init();
 
-    /* 写入默认显示控制字。 */
+    /* 写入默认显示控制参数。 */
     (void)aip650_WriteControl(&aip650e.ctrl);
 }
 
@@ -345,12 +437,25 @@ void app_display_Init(void)
 //  Description: 执行 AiP650E 显示应用周期任务
 //  Param      : None
 //  Return     : None
-//  Others     : 依次处理设备显示逻辑、段码转换及硬件寄存器刷新
-//  Author     : Chen Liang 2026-10-23
+//  Others     : 根据当前工程模式执行相应显示逻辑；
+//               完成段码转换并同步至显示硬件
+//  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
 void app_display_task(void)
 {
+#ifdef APP_PROJECT
+    /* Application 设备运行状态显示。 */
     app_display_logic();
+#endif
+
+#ifdef BOOT_PROJECT
+    /* Bootloader OTA 升级状态显示。 */
+    boot_display_logic();
+#endif
+
+    /* 将数字、字符及图标转换为段码。 */
     app_display_convert();
+
+    /* 更新 AiP650E 显示数据及控制寄存器。 */
     app_display_dev();
 }

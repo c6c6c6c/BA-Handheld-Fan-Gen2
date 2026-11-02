@@ -25,23 +25,23 @@
     "output-file": 
     [
         {
-            "name"              : "../../Project/Output/D940v2_firmware.bin",
+            "name"              : "../../Projects/Output/ba_fan_firmware.bin",
             "all-fill"          : true,
             "fill-char"         : "0xFF",
             "merge-file":
             [
                 {
                     "name"      : "boot",
-                    "file"      : "../../Project/Output/D940v2_boot.bin",
+                    "file"      : "../../Projects/Output/ba_fan_boot.bin",
                     "start-addr": "0x08000000",
                     "size"      : "0x4000",
                     "optional"  : false
                 },
                 {
                     "name"      : "app",
-                    "file"      : "../../Project/Output/D940v2_app.bin",
+                    "file"      : "../../Projects/Output/ba_fan_app.bin",
                     "start-addr": "last merge end",
-                    "size"      : "0xBA80",
+                    "size"      : "0xBE00",
                     "optional"  : false
                 }
             ],
@@ -56,15 +56,15 @@
             ]
         },
         {
-            "name"      : "../../Project/Output/D940v2_upgrade.bin",
+            "name"      : "../../Projects/Output/ba_fan_upgrade.bin",
             "handle"    : "header",
             "merge-file":
             [
                 {
                     "name"      : "app",
-                    "file"      : "../../Project/Output/D940v2_app.bin",
+                    "file"      : "../../Projects/Output/ba_fan_app.bin",
                     "start-addr": "0x08004000",
-                    "size"      : "0xBA80",
+                    "size"      : "0xBE00",
                     "optional"  : false
                 }
             ]

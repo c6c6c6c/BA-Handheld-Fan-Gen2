@@ -146,6 +146,7 @@ static void fan_protocol_request(uint8_t *data)
             case PROTO_OTA_COMPLETION_REQUEST:
             {
                 /* TODO: 校验完整固件并保存 OTA 升级完成状态。 */
+				param_ota_save(OTC_STATUS_SUCCESS);
                 break;
             }
 
@@ -434,10 +435,10 @@ void fan_protocol_1ms_task(void)
             protocol.response = PROTO_ERR;
         }
 
-        /* 根据处理结果组帧并发送应答。 */
-        fan_protocol_response();
-
         /* 复位 UART1 接收状态，准备接收下一帧。 */
         protocol.api->receive_rst();
     }
+	
+	/* 根据处理结果组帧并发送应答。 */
+	fan_protocol_response();
 }

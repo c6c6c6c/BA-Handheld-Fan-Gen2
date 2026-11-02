@@ -9,6 +9,7 @@ import sys
 import time
 import unicodedata
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Optional
 
 
@@ -19,10 +20,24 @@ COMMON_BAUDRATES = (115200, 9600, 19200, 38400, 57600, 230400, 460800)
 PROTO_INFO_REQUEST = 0x81
 PROTO_SYSTEM_REQUEST = 0x82
 PROTO_BATTERY_INFO_REQUEST = 0x83
+PROTO_ENTER_OTA_REQUEST = 0x86
+PROTO_OTA_UPDATE_REQUEST = 0x87
+PROTO_OTA_COMPLETION_REQUEST = 0x88
 PROTO_INFO_RESPONSE = 0x01
 PROTO_SYSTEM_RESPONSE = 0x02
 PROTO_BATTERY_INFO_RESPONSE = 0x03
+PROTO_ENTER_OTA_RESPONSE = 0x06
+PROTO_OTA_UPDATE_RESPONSE = 0x07
+PROTO_OTA_COMPLETION_RESPONSE = 0x08
 PROTO_ERR = 0xFF
+
+OTA_PAGE_SIZE = 128
+OTA_APP_BASE_ADDRESS = 0x08004000
+OTA_APP_MAX_SIZE = 0xBE00
+OTA_UPDATE_ACTION = "PROTO_OTA_UPDATE_REQUEST"
+DEFAULT_FIRMWARE = (
+    Path(__file__).resolve().parents[2] / "Projects" / "Output" / "ba_fan_app.bin"
+)
 
 
 class ProtocolError(Exception):
@@ -35,6 +50,18 @@ class Query:
     request: int
     response: int
     parser: Callable[[bytes], list[tuple[str, object]]]
+    response_optional: bool = False
+
+
+@dataclass
+class OtaSession:
+    path: Path
+    data: bytes
+    next_packet: int = 0
+
+    @property
+    def packet_count(self) -> int:
+        return (len(self.data) + OTA_PAGE_SIZE - 1) // OTA_PAGE_SIZE
 
 
 def terminal_color(text: object, code: str, enabled: bool) -> str:
@@ -180,11 +207,38 @@ def parse_battery_info(payload: bytes) -> list[tuple[str, object]]:
     ]
 
 
-QUERIES = (
-    Query("PROTO_INFO_RESPONSE", PROTO_INFO_REQUEST, PROTO_INFO_RESPONSE, parse_info),
-    Query("PROTO_SYSTEM_RESPONSE", PROTO_SYSTEM_REQUEST, PROTO_SYSTEM_RESPONSE, parse_system),
-    Query("PROTO_BATTERY_INFO_RESPONSE", PROTO_BATTERY_INFO_REQUEST,
-          PROTO_BATTERY_INFO_RESPONSE, parse_battery_info),
+def parse_empty_response(payload: bytes) -> list[tuple[str, object]]:
+    if payload:
+        raise ProtocolError(f"应答数据区应为空，实际收到 {len(payload)} 字节")
+    return []
+
+
+INFO_QUERY = Query(
+    "PROTO_INFO_RESPONSE", PROTO_INFO_REQUEST, PROTO_INFO_RESPONSE, parse_info
+)
+SYSTEM_QUERY = Query(
+    "PROTO_SYSTEM_RESPONSE", PROTO_SYSTEM_REQUEST, PROTO_SYSTEM_RESPONSE, parse_system
+)
+BATTERY_QUERY = Query(
+    "PROTO_BATTERY_INFO_RESPONSE", PROTO_BATTERY_INFO_REQUEST,
+    PROTO_BATTERY_INFO_RESPONSE, parse_battery_info,
+)
+ENTER_OTA_QUERY = Query(
+    "PROTO_ENTER_OTA_RESPONSE", PROTO_ENTER_OTA_REQUEST,
+    PROTO_ENTER_OTA_RESPONSE, parse_empty_response, True,
+)
+OTA_COMPLETION_QUERY = Query(
+    "PROTO_OTA_COMPLETION_RESPONSE", PROTO_OTA_COMPLETION_REQUEST,
+    PROTO_OTA_COMPLETION_RESPONSE, parse_empty_response,
+)
+
+MENU_ITEMS: tuple[Query | str, ...] = (
+    INFO_QUERY,
+    SYSTEM_QUERY,
+    BATTERY_QUERY,
+    ENTER_OTA_QUERY,
+    OTA_UPDATE_ACTION,
+    OTA_COMPLETION_QUERY,
 )
 
 
@@ -230,11 +284,16 @@ def select_baudrate() -> Optional[int]:
         print("输入无效，请输入编号或正整数波特率。")
 
 
-def select_query() -> Optional[Query]:
-    """交互选择本次要检测的单个协议帧，返回 None 表示退出。"""
+def select_action() -> Optional[Query | str]:
+    """交互选择要检测的协议帧，返回 None 表示退出。"""
     print("可检测的协议帧：")
-    for index, query in enumerate(QUERIES, 1):
-        print(f"  {index}. {query.name}")
+    for index, item in enumerate(MENU_ITEMS, 1):
+        name = item.name if isinstance(item, Query) else item
+        if item is ENTER_OTA_QUERY:
+            name = "PROTO_ENTER_OTA_REQUEST"
+        elif item is OTA_COMPLETION_QUERY:
+            name = "PROTO_OTA_COMPLETION_REQUEST"
+        print(f"  {index}. {name}")
     print("  0. 退出")
     while True:
         try:
@@ -242,14 +301,19 @@ def select_query() -> Optional[Query]:
         except (EOFError, KeyboardInterrupt):
             return None
         if not choice:
-            return QUERIES[0]
+            return MENU_ITEMS[0]
         if choice == "0" or choice.lower() in ("q", "quit", "exit"):
             return None
-        if choice.isdigit() and 1 <= int(choice) <= len(QUERIES):
-            return QUERIES[int(choice) - 1]
-        for query in QUERIES:
-            if choice.upper() == query.name:
-                return query
+        if choice.isdigit() and 1 <= int(choice) <= len(MENU_ITEMS):
+            return MENU_ITEMS[int(choice) - 1]
+        for item in MENU_ITEMS:
+            name = item.name if isinstance(item, Query) else item
+            if item is ENTER_OTA_QUERY:
+                name = "PROTO_ENTER_OTA_REQUEST"
+            elif item is OTA_COMPLETION_QUERY:
+                name = "PROTO_OTA_COMPLETION_REQUEST"
+            if choice.upper() == name:
+                return item
         print("输入无效，请输入帧编号或完整名称。")
 
 
@@ -259,6 +323,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-b", "--baudrate", type=int, help="波特率；省略时交互选择")
     parser.add_argument("--timeout", type=float, default=RESPONSE_TIMEOUT,
                         help="单帧回复超时（秒）")
+    parser.add_argument(
+        "--firmware", type=Path, default=DEFAULT_FIRMWARE,
+        help="OTA 烧录使用的原始 Application BIN 文件",
+    )
     parser.add_argument("--list", action="store_true", help="列出串口后退出")
     parser.add_argument("--no-color", action="store_true", help="禁用终端彩色输出")
     return parser.parse_args()
@@ -285,6 +353,11 @@ def run_query(port: object, query: Query, timeout: float, color_enabled: bool) -
     try:
         command, payload, raw_frame = read_frame(port, timeout)
     except TimeoutError:
+        if query.response_optional:
+            print(
+                f"未收到 {query.name}；应用程序可能已立即复位进入 Bootloader。"
+            )
+            return True
         print(f"超时：{timeout:g} 秒内未收到 {query.name}", file=sys.stderr)
         return False
     except ProtocolError as exc:
@@ -308,6 +381,9 @@ def run_query(port: object, query: Query, timeout: float, color_enabled: bool) -
         print(f"解析错误：{exc}", file=sys.stderr)
         return False
     print(terminal_color(f"{query.name} 解析结果：", "1;35", color_enabled))
+    if not fields:
+        print(f"  {terminal_color('应答数据区为空，命令执行成功', '32', color_enabled)}")
+        return True
     label_width = max(display_width(name) for name, _ in fields)
     for name, value in fields:
         label = pad_display(name, label_width)
@@ -316,6 +392,146 @@ def run_query(port: object, query: Query, timeout: float, color_enabled: bool) -
             f"{terminal_color(value, '32', color_enabled)}"
         )
     return True
+
+
+def load_ota_session(firmware: Path) -> Optional[OtaSession]:
+    path = firmware.expanduser().resolve()
+    if not path.is_file():
+        print(f"OTA 固件文件不存在：{path}", file=sys.stderr)
+        return None
+    if "upgrade" in path.stem.lower():
+        print(
+            "OTA 协议应发送原始 Application BIN，不能使用带升级头的 upgrade.bin。",
+            file=sys.stderr,
+        )
+        return None
+    data = path.read_bytes()
+    if not data:
+        print(f"OTA 固件文件为空：{path}", file=sys.stderr)
+        return None
+    if len(data) > OTA_APP_MAX_SIZE:
+        print(
+            f"OTA 固件过大：{len(data)} 字节，App 分区最大 {OTA_APP_MAX_SIZE} 字节。",
+            file=sys.stderr,
+        )
+        return None
+    return OtaSession(path, data)
+
+
+def send_ota_packet(
+    port: object,
+    session: OtaSession,
+    timeout: float,
+    color_enabled: bool,
+    show_request: bool,
+) -> bool:
+    packet_index = session.next_packet
+    start = packet_index * OTA_PAGE_SIZE
+    chunk = session.data[start:start + OTA_PAGE_SIZE]
+    payload = struct.pack("<H", len(chunk)) + chunk
+    frame = build_frame(PROTO_OTA_UPDATE_REQUEST, payload)
+    address = OTA_APP_BASE_ADDRESS + start
+
+    port.reset_input_buffer()
+    port.write(frame)
+    port.flush()
+    heading = (
+        f"PROTO_OTA_UPDATE_REQUEST {packet_index + 1}/{session.packet_count}, "
+        f"地址 0x{address:08X}, {len(chunk)} 字节"
+    )
+    print(f"\n{terminal_color('发送', '36', color_enabled)} {heading}")
+    if show_request:
+        print(f"  {terminal_color(frame.hex(' ').upper(), '90', color_enabled)}")
+
+    try:
+        command, response_payload, raw_frame = read_frame(port, timeout)
+    except TimeoutError:
+        print(f"超时：{timeout:g} 秒内未收到 PROTO_OTA_UPDATE_RESPONSE", file=sys.stderr)
+        return False
+    except ProtocolError as exc:
+        print(f"协议错误：{exc}", file=sys.stderr)
+        return False
+
+    print(
+        f"{terminal_color('收到', '33', color_enabled)}: "
+        f"{terminal_color(raw_frame.hex(' ').upper(), '90', color_enabled)}"
+    )
+    if command == PROTO_ERR:
+        print("设备返回 PROTO_ERR，当前帧未计入进度。", file=sys.stderr)
+        return False
+    if command != PROTO_OTA_UPDATE_RESPONSE:
+        print(
+            f"回复命令错误：收到 0x{command:02X}，预期 0x{PROTO_OTA_UPDATE_RESPONSE:02X}",
+            file=sys.stderr,
+        )
+        return False
+    if response_payload:
+        print(
+            f"回复数据长度错误：预期 0，收到 {len(response_payload)} 字节",
+            file=sys.stderr,
+        )
+        return False
+
+    session.next_packet += 1
+    return True
+
+
+def run_ota_update(
+    port: object,
+    session: OtaSession,
+    timeout: float,
+    color_enabled: bool,
+) -> None:
+    print(f"\nOTA 固件：{session.path}")
+    print(
+        f"大小：{len(session.data)} 字节，共 {session.packet_count} 帧，"
+        f"每帧最大 {OTA_PAGE_SIZE} 字节。"
+    )
+    while True:
+        if session.next_packet >= session.packet_count:
+            print(
+                terminal_color(
+                    "所有 OTA_UPDATE 数据帧已烧录，请返回主菜单发送 OTA_COMPLETION。",
+                    "1;32",
+                    color_enabled,
+                )
+            )
+            return
+
+        next_address = OTA_APP_BASE_ADDRESS + session.next_packet * OTA_PAGE_SIZE
+        print(
+            f"\n当前进度：{session.next_packet}/{session.packet_count}，"
+            f"下一帧地址 0x{next_address:08X}"
+        )
+        print("  [1] 下一帧")
+        print("  [2] 完整烧录之后所有剩余帧")
+        print("  [0] 退出")
+        try:
+            choice = input("请选择 [1]: ").strip() or "1"
+        except (EOFError, KeyboardInterrupt):
+            return
+
+        if choice == "0":
+            return
+        if choice == "1":
+            if not send_ota_packet(port, session, timeout, color_enabled, True):
+                print(
+                    "OTA 进度可能已不同步；请重新发送 ENTER_OTA 并从第 1 帧开始。",
+                    file=sys.stderr,
+                )
+                return
+            continue
+        if choice == "2":
+            while session.next_packet < session.packet_count:
+                if not send_ota_packet(port, session, timeout, color_enabled, False):
+                    print(
+                        "完整烧录已停止且进度可能已不同步；"
+                        "请重新发送 ENTER_OTA 并从第 1 帧开始。",
+                        file=sys.stderr,
+                    )
+                    return
+            continue
+        print("输入无效，请输入 0、1 或 2。")
 
 
 def main() -> int:
@@ -349,13 +565,26 @@ def main() -> int:
         with serial.Serial(port_name, baudrate, timeout=0.05,
                            write_timeout=1.0) as port:
             print(f"已打开 {port.port}，波特率 {port.baudrate}，回复超时 {args.timeout:g} 秒。")
+            ota_session: Optional[OtaSession] = None
             while True:
                 print()
-                query = select_query()
-                if query is None:
+                action = select_action()
+                if action is None:
                     print("已退出协议测试。")
                     return 0
+                if action == OTA_UPDATE_ACTION:
+                    if ota_session is None:
+                        ota_session = load_ota_session(args.firmware)
+                    if ota_session is not None:
+                        run_ota_update(port, ota_session, args.timeout, color_enabled)
+                    continue
+
+                query = action
                 passed = run_query(port, query, args.timeout, color_enabled)
+                if query is ENTER_OTA_QUERY and passed:
+                    ota_session = None
+                elif query is OTA_COMPLETION_QUERY and passed:
+                    ota_session = None
                 result = terminal_color(
                     "通过" if passed else "失败",
                     "1;32" if passed else "1;31",

@@ -112,6 +112,7 @@ typedef struct
 	protocol_cmd_t response;           /**< 当前接收到的协议命令 */
 } fan_protocol_t;
 
+extern fan_protocol_t protocol;
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 

@@ -30,7 +30,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "app_system.h"
+#include "app_boot.h"
 
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -52,12 +52,12 @@ int main(void)
   /* System clock configuration */
   APP_SystemClockConfig();
 
-  system_init();
+  boot_init();
 
   /* infinite loop */
   while (1)
   {
-	system_run();
+	boot_run();
   }
 }
 

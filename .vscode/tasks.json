@@ -14,7 +14,7 @@
                 "cwd": "${workspaceFolder}",
                 "statusbar": {
                     "label": "$(tools) 合并固件",
-                    "detail": "生成 D940v2_firmware.bin 和升级包"
+                    "detail": "生成 ba_fan_firmware.bin 和 ba_fan_upgrade.bin"
                 }
             },
             "group": "build",
@@ -29,20 +29,16 @@
         {
             "label": "J-Link: 擦除 Flash",
             "type": "process",
-            "command": "D:\\Keil_v5\\ARM\\Segger\\JLink.exe",
+            "command": "powershell.exe",
             "args": [
-                "-NoGui",
-                "1",
-                "-Device",
-                "PY32F030x8",
-                "-If",
-                "SWD",
-                "-Speed",
-                "10000",
-                "-AutoConnect",
-                "1",
-                "-CommanderScript",
-                "${workspaceFolder}\\Tools\\jlink\\erase_flash.jlink"
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
+                "-EraseOnly",
+                "-JLinkExe",
+                "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
             ],
             "options": {
                 "cwd": "${workspaceFolder}",
@@ -63,20 +59,16 @@
         {
             "label": "J-Link: 复位并运行",
             "type": "process",
-            "command": "D:\\Keil_v5\\ARM\\Segger\\JLink.exe",
+            "command": "powershell.exe",
             "args": [
-                "-NoGui",
-                "1",
-                "-Device",
-                "PY32F030x8",
-                "-If",
-                "SWD",
-                "-Speed",
-                "10000",
-                "-AutoConnect",
-                "1",
-                "-CommanderScript",
-                "${workspaceFolder}\\Tools\\jlink\\reset_run.jlink"
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
+                "-ResetOnly",
+                "-JLinkExe",
+                "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
             ],
             "options": {
                 "cwd": "${workspaceFolder}",
@@ -104,7 +96,8 @@
                 "Bypass",
                 "-File",
                 "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
-                "${workspaceFolder}\\Project\\Output\\D940v2_firmware.bin",
+                "${workspaceFolder}\\Projects\\Output\\ba_fan_firmware.bin",
+                "-EraseAll",
                 "-JLinkExe",
                 "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
             ],
@@ -112,7 +105,7 @@
                 "cwd": "${workspaceFolder}",
                 "statusbar": {
                     "label": "$(cloud-upload) 烧录固件",
-                    "detail": "整片擦除并烧录 D940v2_firmware.bin"
+                    "detail": "整片擦除并烧录 ba_fan_firmware.bin"
                 }
             },
             "group": {
@@ -137,10 +130,13 @@
                 "Bypass",
                 "-File",
                 "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
-                "${workspaceFolder}\\Project\\Output\\D940v2_app.bin",
+                "${workspaceFolder}\\Projects\\Output\\ba_fan_app.bin",
                 "-Address",
                 "0x08004000",
-                "-SkipErase",
+                "-RegionStart",
+                "0x08004000",
+                "-RegionEnd",
+                "0x0800FDFF",
                 "-JLinkExe",
                 "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
             ],
@@ -148,7 +144,7 @@
                 "cwd": "${workspaceFolder}",
                 "statusbar": {
                     "label": "$(chip) 烧录 App",
-                    "detail": "不整片擦除，仅烧录 D940v2_app.bin"
+                    "detail": "烧录 ba_fan_app.bin，保留 Boot 和参数区"
                 }
             },
             "problemMatcher": [],
@@ -169,18 +165,21 @@
                 "Bypass",
                 "-File",
                 "${workspaceFolder}\\Tools\\jlink\\jlink_flash.ps1",
-                "${workspaceFolder}\\Project\\Output\\D940v2_boot.bin",
+                "${workspaceFolder}\\Projects\\Output\\ba_fan_boot.bin",
                 "-Address",
                 "0x08000000",
-                "-EraseAll",
+                "-RegionStart",
+                "0x08000000",
+                "-RegionEnd",
+                "0x08003FFF",
                 "-JLinkExe",
                 "D:\\Keil_v5\\ARM\\Segger\\JLink.exe"
             ],
             "options": {
                 "cwd": "${workspaceFolder}",
                 "statusbar": {
-                    "label": "$(chip) 烧录 App",
-                    "detail": "不整片擦除，仅烧录 D940v2_boot.bin"
+                    "label": "$(chip) 烧录 Boot",
+                    "detail": "烧录 ba_fan_boot.bin，保留 App 和参数区"
                 }
             },
             "problemMatcher": [],
