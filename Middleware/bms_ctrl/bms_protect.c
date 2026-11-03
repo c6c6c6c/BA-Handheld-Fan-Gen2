@@ -249,9 +249,16 @@ void bms_protect_check(bms_battery_t *battery)
     real->bit.batteryLow  = bms_protect_batteryLow_check(battery->voltage_v);     /* 电池欠压。 */
     real->bit.batteryHigh = bms_protect_batteryHigh_check(battery->voltage_v);    /* 电池过压。 */
 
-    real->bit.usbLow      = bms_protect_usbLow_check(battery->usb_in_v);          /* USB 输入欠压。 */
-    real->bit.usbHigh     = bms_protect_usbHigh_check(battery->usb_in_v);         /* USB 输入过压。 */
-
+    if(usb_present)
+    {
+        real->bit.usbLow  = bms_protect_usbLow_check(battery->usb_in_v);          /* USB 输入欠压。 */
+        real->bit.usbHigh = bms_protect_usbHigh_check(battery->usb_in_v);         /* USB 输入过压。 */
+    }
+    else
+    {
+        real->bit.usbLow  = 0;
+        real->bit.usbHigh = 0;
+    }
     real->bit.tempHigh    = bms_protect_tempHigh_check(0);                        /* 主控板 NTC 过温。 */
     real->bit.currentHigh = bms_protect_currentHigh_check(battery->current_ma);   /* 电池充放电过流。 */
 

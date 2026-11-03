@@ -18,7 +18,7 @@
 #include "button.h"
 #include "fan.h"
 #include "bsp_tim16.h"
-
+#include "bms_config.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
@@ -133,16 +133,29 @@ void btn_power_event(void)
 	}
 	
     /* 根据电源按键电平状态更新设备电源标志。 */
-    if (botton_getCurrState(BUTTON_ITEM_ADC) == BUTTON_PRESS)
-    {
-        System.logic.power = 1;
-    }
-    else
+    if (botton_getCurrState(BUTTON_ITEM_POWER) == BUTTON_PRESS)
     {
         System.logic.power = 0;
     }
+    else
+    {
+        System.logic.power = 1;
+    }
 }
 
+/*******************************************************************************
+//  Function   : btn_power_event
+//  Description: 根据电源按键状态更新设备开关机标志
+//  Param      : None
+//  Return     : None
+//  Others     : ADC 电源按键按下时设置 power=1；
+//               按键释放时设置 power=0
+//  Author     : 陈亮 2026-06-06
+*******************************************************************************/
+void btn_usb_event(void)
+{
+    System.logic.usb_present = BMS_IO_USB_IS_PRESENT();
+}
 
 /*******************************************************************************
 //  Function   : app_logic_mist
@@ -277,6 +290,8 @@ void add_logic_1ms_task(void)
 
     /* 根据电源按键状态更新设备开关机标志。 */
     btn_power_event();
+
+    btn_usb_event();
 
     /* 执行设备状态管理及风扇、雾化输出控制。 */
     app_dev_logic();

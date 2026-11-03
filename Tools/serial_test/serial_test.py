@@ -428,7 +428,7 @@ def send_ota_packet(
     packet_index = session.next_packet
     start = packet_index * OTA_PAGE_SIZE
     chunk = session.data[start:start + OTA_PAGE_SIZE]
-    payload = struct.pack("<H", len(chunk)) + chunk
+    payload = struct.pack("<HH", packet_index, len(chunk)) + chunk
     frame = build_frame(PROTO_OTA_UPDATE_REQUEST, payload)
     address = OTA_APP_BASE_ADDRESS + start
 
@@ -437,7 +437,7 @@ def send_ota_packet(
     port.flush()
     heading = (
         f"PROTO_OTA_UPDATE_REQUEST {packet_index + 1}/{session.packet_count}, "
-        f"地址 0x{address:08X}, {len(chunk)} 字节"
+        f"序号 {packet_index}, 地址 0x{address:08X}, {len(chunk)} 字节"
     )
     print(f"\n{terminal_color('发送', '36', color_enabled)} {heading}")
     if show_request:

@@ -38,6 +38,7 @@ typedef struct
     fan_mode_enum_t   fan_mode;       /**< 当前风扇档位，0=关闭，1~5=运行档位 */
     mist_mode_enum_t  mist_mode;      /**< 雾化功能状态，true=开启，false=关闭 */
     bool              power;          /**< 当前设备电源状态，true=开机，false=关机 */
+    bool              usb_present;
 
     uint8_t          fan_dir;         /**< 风扇调档方向，0=加档，1=减档 */
     bool             lastpower;       /**< 上一次设备电源状态，用于检测开关机变化 */

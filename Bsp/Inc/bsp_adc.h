@@ -30,6 +30,12 @@
  */
 #define ADC_USE_DMA                            1
 
+/**
+ * @brief SW ADC 通道使能控制
+ */
+#if !defined(POWER_CTRL_ADC) && !defined(POWER_CTRL_GPIO)
+    #error "POWER_CTRL_ADC or POWER_CTRL_GPIO must be defined"
+#endif
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
 
@@ -43,7 +49,9 @@ typedef enum
 {
     ADC_CH_MOTOR = 0,                     /**< 电机电流反馈采样 */
     ADC_CH_WH,                            /**< WH 模拟信号采样 */
+#ifdef POWER_CTRL_ADC
     ADC_CH_SW,                            /**< 按键/开关模拟信号采样 */
+#endif
     ADC_CH_USB,                           /**< USB 输入电压采样 */
     ADC_CH_NTC,                           /**< NTC 温度检测采样 */
     ADC_CH_PGA2,                          /**< 内部 OPA2/PGA2 输出采样 */

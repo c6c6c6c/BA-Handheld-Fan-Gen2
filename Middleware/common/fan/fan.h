@@ -20,12 +20,14 @@
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
-/** PWM 占空比每次调整的步进值 */
-#define FAN_RAMP_STEP               2
 
-/** PWM 占空比渐变的时间间隔，单位 ms */
-#define FAN_RAMP_STEP_TIME          15
+#define FAN_RAMP_STEP               4    /** PWM 占空比每次调整的步进值 */
+#define FAN_RAMP_STEP_TIME          15   /** PWM 占空比渐变的时间间隔，单位 ms */
 
+#define FAN_START_PWM               350
+
+#define FAN_LAUNCH_PWM              400
+#define FAN_LAUNCH_TIME             800
 /*
  * 电池电压获取接口预留。
  * 后续可根据电池电压动态限制风扇输出功率。
@@ -60,11 +62,11 @@
 typedef enum
 {
     FAN_MODE_0 = 0,             /**< 0 档，关闭风扇 */
-    FAN_MODE_1,                 /**< 1 档 */
-    FAN_MODE_2,                 /**< 2 档 */
+    FAN_MODE_5,                 /**< 1 档 */
+    FAN_MODE_4,                 /**< 2 档 */
     FAN_MODE_3,                 /**< 3 档 */
-    FAN_MODE_4,                 /**< 4 档 */
-    FAN_MODE_5,                 /**< 5 档 */
+    FAN_MODE_2,                 /**< 4 档 */
+    FAN_MODE_1,                 /**< 5 档 */
 //  FAN_MODE_BOOST,             /**< 强力模式，暂未启用 */
     FAN_MODE_TYPE_NUM,          /**< 风扇档位枚举数量 */
 } fan_mode_enum_t;
@@ -77,7 +79,7 @@ typedef enum
  */
 typedef struct
 {
-	uint32_t Start_times;        /**< 当前实际 PWM 输出值 */
+	uint32_t start_times;        /**< 当前实际 PWM 输出值 */
     uint16_t realPwm;            /**< 当前实际 PWM 输出值 */
     uint32_t times;              /**< PWM 渐变计时值 */
 } fan_ramp_t;

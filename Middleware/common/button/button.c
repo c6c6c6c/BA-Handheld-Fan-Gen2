@@ -20,10 +20,16 @@ button_t buttonList[BUTTON_ITEM_NUM] = {0};
  
 /* Macro -------------------------------------------------------------------------------------------------------------*/ 
 /* 按键读取函数定义 */ 
-DEF_BTN_CTRL_FUNC(FAN, (LL_GPIO_ReadInputPort(FAN_SW_PORT)  & FAN_SW_PIN)) 
-DEF_BTN_CTRL_FUNC(MIST,(LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
-DEF_BTN_CTRL_FUNC(ADC, (get_sw_val() > 1500)) 
- 
+DEF_BTN_CTRL_FUNC(FAN,   (LL_GPIO_ReadInputPort(FAN_SW_PORT)  & FAN_SW_PIN)) 
+DEF_BTN_CTRL_FUNC(MIST,  (LL_GPIO_ReadInputPort(MIST_SW_PORT) & MIST_SW_PIN)) 
+
+#ifdef POWER_CTRL_ADC
+DEF_BTN_CTRL_FUNC(POWER, (get_sw_val() > 1500)) 
+#endif
+
+#ifdef POWER_CTRL_GPIO
+DEF_BTN_CTRL_FUNC(POWER, (LL_GPIO_ReadInputPort(POWER_SW_PORT) & POWER_SW_PIN)) 
+#endif
  /*******************************************************************************
 //  Function   : button_all_passCallback
 //  Description: 按键按下回调
@@ -157,9 +163,9 @@ button_event_t button_event_Update(button_item_t Item , uint16_t longPassTime)
 *******************************************************************************/ 
 void button_Init(void) 
 { 
-    button_register(BUTTON_ITEM_FAN,   GET_BTN_CTRL_FUNC(FAN)); 
-    button_register(BUTTON_ITEM_MIST,   GET_BTN_CTRL_FUNC(MIST)); 
-    button_register(BUTTON_ITEM_ADC,   GET_BTN_CTRL_FUNC(ADC)); 
+    button_register(BUTTON_ITEM_FAN,     GET_BTN_CTRL_FUNC(FAN)); 
+    button_register(BUTTON_ITEM_MIST,    GET_BTN_CTRL_FUNC(MIST)); 
+    button_register(BUTTON_ITEM_POWER,   GET_BTN_CTRL_FUNC(POWER)); 
 } 
 
 /******************************************************************************* 

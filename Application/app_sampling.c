@@ -61,7 +61,9 @@ void bsp_adc_ChannelConvCpltCallback(volatile uint32_t *Value, uint16_t Size)
     AvgFilter_PushFromIsr(&avgFilterList[FILTER_LIST_MIST],  Value[ADC_CH_WH]);
     AvgFilter_PushFromIsr(&avgFilterList[FILTER_LIST_NTC],   Value[ADC_CH_NTC]);
     AvgFilter_PushFromIsr(&avgFilterList[FILTER_LIST_MOTOR], Value[ADC_CH_MOTOR]);
+#ifdef POWER_CTRL_ADC
     AvgFilter_PushFromIsr(&avgFilterList[FILTER_LIST_SW],    Value[ADC_CH_SW]);
+#endif
 }
 
 

@@ -33,6 +33,7 @@
 #include "bsp_flash.h"
 
 #include "fan.h"
+#include "sleep.h" 
 #include "button.h"
 #include "timer_base.h"
 
@@ -218,7 +219,7 @@ void system_bsp_init(void)
     bsp_gpio_Init();
 
     /* 外部中断初始化，当前暂未启用。 */
-    // bsp_exti_Init();
+    bsp_exti_Init();
 
     /* 初始化 PGA2 模拟放大器。 */
     bsp_pga2_Init();
@@ -381,6 +382,8 @@ void system_run(void)
 
         /* 风扇通信协议接收及应答处理。 */
         fan_protocol_1ms_task();
+		
+		sleep_1ms_task();
     }
 
     /* 更新主循环执行间隔。 */

@@ -26,6 +26,7 @@
 #include "bsp_gpio.h"
 #include "bsp_uart1.h"
 #include "bsp_flash.h"
+#include "bsp_rcc.h"
 
 #include "timer_base.h"
 #include "uart1_port.h"
@@ -161,7 +162,8 @@ void boot_run(void)
         /* 达到等待时间后跳转 Application。 */
         if (timer_base_Count(&_timer_jump) >= BOOT_JUMP_DELAY_MS)
         {
-            JumpToApplication();
+            //JumpToApplication();
+			bsp_rcc_SystemReset();
         }
     }
     else

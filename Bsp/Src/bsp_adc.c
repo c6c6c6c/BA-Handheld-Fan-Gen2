@@ -101,8 +101,10 @@ static void bsp_adc_io_config(void)
     /* -------------------------------------------------------------------------------------------------------------- */
     /* SW ADC                                                                                                         */
     /* -------------------------------------------------------------------------------------------------------------- */
+#ifdef POWER_CTRL_ADC
     BSP_ADC_SW_GPIO_CLOCK_EN();
     LL_GPIO_SetPinMode(BSP_ADC_SW_GPIO_PORT,BSP_ADC_SW_GPIO_PIN,LL_GPIO_MODE_ANALOG);
+#endif
 
     /* -------------------------------------------------------------------------------------------------------------- */
     /* USB 输入电压检测 ADC                                                                                           */
@@ -157,15 +159,27 @@ static void bsp_adc_rank_config(void)
      * 此处 Rank 顺序必须与 adc_Channel_t 枚举顺序保持一致，
      * 否则 ADCxConvertedDatas[] 中的数据与实际信号会发生错位。
      */
+#ifdef POWER_CTRL_ADC
     LL_ADC_REG_SetSequencerLength(ADC1,LL_ADC_REG_SEQ_SCAN_ENABLE_7RANKS);
+#else
+    LL_ADC_REG_SetSequencerLength(ADC1,LL_ADC_REG_SEQ_SCAN_ENABLE_6RANKS);
+#endif
 
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_1,BSP_ADC_MOTOR_CHANNEL);
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_2,BSP_ADC_WH_CHANNEL);
+
+#ifdef POWER_CTRL_ADC
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_3,BSP_ADC_SW_CHANNEL);
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_4,BSP_ADC_USB_CHANNEL);
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_5,BSP_ADC_NTC_CHANNEL);
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_6,BSP_ADC_PGA2_CHANNEL);
     LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_7,BSP_ADC_VREFINT_CHANNEL);
+#else
+    LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_3,BSP_ADC_USB_CHANNEL);
+    LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_4,BSP_ADC_NTC_CHANNEL);
+    LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_5,BSP_ADC_PGA2_CHANNEL);
+    LL_ADC_REG_SetSequencerRanks(ADC1,LL_ADC_REG_RANK_6,BSP_ADC_VREFINT_CHANNEL);
+#endif
 
     /*
      * 所有 ADC 通道统一使用 640.5 个 ADC 时钟周期采样时间。
@@ -175,7 +189,9 @@ static void bsp_adc_rank_config(void)
      */
     LL_ADC_SetChannelSamplingTime(ADC1, BSP_ADC_MOTOR_CHANNEL,    LL_ADC_SAMPLINGTIME_640CYCLES_5);
     LL_ADC_SetChannelSamplingTime(ADC1, BSP_ADC_WH_CHANNEL,       LL_ADC_SAMPLINGTIME_640CYCLES_5);
+#ifdef POWER_CTRL_ADC
     LL_ADC_SetChannelSamplingTime(ADC1, BSP_ADC_SW_CHANNEL,       LL_ADC_SAMPLINGTIME_640CYCLES_5);
+#endif
     LL_ADC_SetChannelSamplingTime(ADC1, BSP_ADC_USB_CHANNEL,      LL_ADC_SAMPLINGTIME_640CYCLES_5);
     LL_ADC_SetChannelSamplingTime(ADC1, BSP_ADC_NTC_CHANNEL,      LL_ADC_SAMPLINGTIME_640CYCLES_5);
     LL_ADC_SetChannelSamplingTime(ADC1, BSP_ADC_PGA2_CHANNEL,     LL_ADC_SAMPLINGTIME_640CYCLES_5);

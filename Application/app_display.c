@@ -294,21 +294,24 @@ static void app_display_logic(void)
             (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
         {
             /* 显示电池 SOC 百分比。 */
-            app_display_showNum(
-                bms_battery.soc_info.soc + 0.5,
-                true
-            );
+            app_display_showNum(bms_battery.soc_info.soc + 0.5,true);
 
             /* 进入 SOC 显示模式。 */
             System.logic.display_flg   = true;
             display.bit.percentageIcon = true;
             display.bit.fanIcon        = false;
-            display.bit.mist           = false;
         }
         else
         {
             /* 默认显示当前风机档位。 */
-            app_display_fanmode(System.logic.fan_mode);
+            if(System.logic.fan_mode > FAN_MODE_0 && System.logic.fan_mode < FAN_MODE_TYPE_NUM)
+            {
+                app_display_fanmode(FAN_MODE_TYPE_NUM - System.logic.fan_mode);
+            }
+            else
+            {
+                app_display_fanmode(FAN_MODE_0);
+            }
         }
     }
     else
@@ -328,13 +331,42 @@ static void app_display_logic(void)
 
         System.logic.display_flg = false;
 
-        aip650e.ctrl.bit.brightness = BRIGHTNESS_2_LEVEL;
+        aip650e.ctrl.bit.brightness = BRIGHTNESS_4_LEVEL;
     }
     /* 无操作超过 10s 后降低显示亮度。 */
     else if (timer_base_Count(&_timer) > 10000U)
     {
         aip650e.ctrl.bit.brightness = BRIGHTNESS_1_LEVEL;
     }
+	
+	if(System.logic.power     == 0 
+	&& System.logic.fan_mode  == FAN_MODE_0
+	&& System.logic.mist_duty == 0
+	&& System.logic.usb_present
+	&& ((bms_battery.state == BAT_STATE_FULL) || (bms_battery.state == BAT_STATE_CHARGING)))
+	{
+		app_display_showNum(bms_battery.soc_info.soc + 0.5,true);
+		display.bit.percentageIcon = true;
+		
+		if(bms_battery.state == BAT_STATE_CHARGING)
+		{
+			if (timer_base_Count(&_timer) < 500U)
+			{
+				display.bit.percentageIcon = false;
+				app_display_showNum(0U, false);
+			}
+			else if (timer_base_Count(&_timer) > 1000U)
+			{
+				timer_base_Rst(&_timer);
+			}
+		}
+			
+		aip650e.ctrl.bit.brightness = BRIGHTNESS_1_LEVEL;
+		
+		System.logic.display_flg = true;
+	}
+	
+	
 }
 
 #endif /* APP_PROJECT */
@@ -406,6 +438,7 @@ static void boot_display_logic(void)
             break;
         }
     }
+	aip650e.ctrl.bit.brightness = BRIGHTNESS_3_LEVEL;
 }
 
 #endif /* BOOT_PROJECT */

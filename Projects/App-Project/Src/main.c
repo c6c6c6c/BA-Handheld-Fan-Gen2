@@ -45,6 +45,7 @@ static void APP_SystemClockConfig(void);
   */
 int main(void)
 {
+
   /* Enable SYSCFG and PWR clock */
   LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);

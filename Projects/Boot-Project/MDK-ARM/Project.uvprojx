@@ -503,6 +503,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_flash.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_rcc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_rcc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

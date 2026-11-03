@@ -58,7 +58,7 @@ fan_t fan;
  */
 uint16_t TABLE_FAN_PWM_DUTY_NORMAL[FAN_MODE_TYPE_NUM] =
 {
-    0, 350, 500, 650, 800, 950, //850,
+    0, 990, 940, 890, 840, 790, //850,
 };
 
 
@@ -131,9 +131,9 @@ void bsp_tim1_ch4_inputCapture_Callback(void)
 *******************************************************************************/
 void fan_pwm_ramp_rst(void)
 {
-    fan.ramp.realPwm = 0U;
-    fan.ramp.times   = 0U;
-	fan.ramp.Start_times = 180;
+    fan.ramp.realPwm     = 0U;
+    fan.ramp.times       = 0U;
+	fan.ramp.start_times = FAN_LAUNCH_TIME;
 }
 
 
@@ -148,21 +148,20 @@ void fan_pwm_ramp_rst(void)
 //               接近目标值时直接设置为目标值，避免越过目标
 //  Author     : Chen Liang 2026-10-23
 *******************************************************************************/
-#define FAN_START_PWM  980
 static void fan_pwm_ramp_ctrl(uint16_t tagrtPwm)
 {
     /* 首次启动时设置最低运行档位的 PWM。 */
-	
-	if(fan.ramp.Start_times > 0)
-	{
-		fan.ramp.realPwm = FAN_START_PWM;
-		fan.ramp.Start_times --;
-		if(fan.ramp.Start_times == 0)
-		{
-			fan.ramp.realPwm = TABLE_FAN_PWM_DUTY_NORMAL[1];
-			fan.ramp.times   = 0U;
-		}
-	}
+
+    if(fan.ramp.start_times > 0)
+    {
+        fan.ramp.realPwm = FAN_LAUNCH_PWM;
+        fan.ramp.start_times --;
+        if(fan.ramp.start_times == 0)
+        {
+            fan.ramp.realPwm = FAN_START_PWM;
+            fan.ramp.times   = 0U;
+        }
+    }
     else
     {
         /* 累计 PWM 渐变控制周期。 */

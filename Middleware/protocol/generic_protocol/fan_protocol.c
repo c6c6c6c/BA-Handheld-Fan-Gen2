@@ -130,12 +130,16 @@ static void fan_protocol_request(uint8_t *data)
             case PROTO_OTA_UPDATE_REQUEST:
             {
                 uint16_t pack_size;
+                uint16_t seq;
+                
+                /* 读取本次 OTA 固件数据包长度。 */
+                _CURSOR_READ_VAR(seq);
 
                 /* 读取本次 OTA 固件数据包长度。 */
                 _CURSOR_READ_VAR(pack_size);
-
+                
                 /* 烧录当前固件数据包。 */
-                if (!bootloader_burn(&data[2], pack_size))
+                if (!bootloader_burn(&data[4], pack_size))
                 {
                     /* Flash 烧录或校验失败，返回错误应答。 */
                     protocol.response = PROTO_ERR;
