@@ -281,6 +281,7 @@ static void app_display_fanmode(uint8_t fanmode)
 static void app_display_logic(void)
 {
     static timer_base_t _timer = {0};
+	static timer_base_t _timer_soc = {0};
 
     if (System.logic.power)
     {
@@ -348,16 +349,15 @@ static void app_display_logic(void)
 		app_display_showNum(bms_battery.soc_info.soc + 0.5,true);
 		display.bit.percentageIcon = true;
 		
-		if(bms_battery.state == BAT_STATE_CHARGING)
+		if(bms_battery.soc_info.soc + 0.5  < 100.0)
 		{
-			if (timer_base_Count(&_timer) < 500U)
+			if (timer_base_Count(&_timer_soc) < 500U)
 			{
-				display.bit.percentageIcon = false;
 				app_display_showNum(0U, false);
 			}
-			else if (timer_base_Count(&_timer) > 1000U)
+			else if (timer_base_Count(&_timer_soc) > 1000U)
 			{
-				timer_base_Rst(&_timer);
+				timer_base_Rst(&_timer_soc);
 			}
 		}
 			

@@ -30,78 +30,82 @@
 #include "timer_base.h"
 
 #include "fan_protocol.h"
- 
-/* Macro -------------------------------------------------------------------------------------------------------------*/ 
- 
-/* 系统正常休眠延时时间 */
-#define SYSTEM_SLEEP_DELAY_TIME         (2000U) 
+/* Macro -------------------------------------------------------------------------------------------------------------*/
 
-/* AHB 上仅关闭外设时钟，Flash/SRAM 时钟必须保持开启。 */
-#define SLEEP_AHB1_PERIPH_CLOCKS         (LL_AHB1_GRP1_PERIPH_DMA1 | LL_AHB1_GRP1_PERIPH_CRC)
- 
-/* Variables ---------------------------------------------------------------------------------------------------------*/ 
-sleep_t sleep_ctrl; 
- 
+/* 满足休眠条件后，延迟进入低功耗的时间，单位 ms。 */
+#define SYSTEM_SLEEP_DELAY_TIME    (2000U)
 
-/*******************************************************************************
-//  Function   : bms_connect_task
-//  Description: BMS通信连接维护任务
-//  Param      : None
-//  Return     : None
-//  Others     : BMS通信断开后按照固定时间间隔主动唤醒BMS
-//  Author     : 陈亮 2026-06-06
-*******************************************************************************/
-static bool sleep_enter(void)
+/* Variables ---------------------------------------------------------------------------------------------------------*/
+
+sleep_t sleep_ctrl;
+
+
+/**
+ * @brief 判断当前是否允许进入休眠
+ *
+ * @retval true  系统已关机，且未检测到 USB 接入
+ * @retval false 系统运行中，或已检测到 USB 接入
+ */
+static bool sleep_can_enter(void)
 {
-    if(System.logic.power == 0 && System.logic.usb_present == 0)
-    {
-        return true;
-    }
-
-    return false;
+	return (System.logic.usb_present == 0U);
+    return (System.logic.power == 0U) && (System.logic.usb_present == 0U);
 }
 
 
-/*******************************************************************************
-//  Function   : bms_connect_task
-//  Description: BMS通信连接维护任务
-//  Param      : None
-//  Return     : None
-//  Others     : BMS通信断开后按照固定时间间隔主动唤醒BMS
-//  Author     : 陈亮 2026-06-06
-*******************************************************************************/
-void sleep_1ms_task(void) 
-{ 
-    if (!sleep_enter())
+/**
+ * @brief 系统休眠管理任务，每 1 ms 调用一次
+ *
+ * @note 连续满足休眠条件达到指定时间后，关闭相关外设并进入低功耗。
+ *       唤醒返回后，重新初始化相关外设。
+ */
+void sleep_1ms_task(void)
+{
+    if (!sleep_can_enter())
     {
-        sleep_ctrl.count = 0;
+        sleep_ctrl.count = 0U;
         return;
     }
 
-    sleep_ctrl.count ++;
-
-    if(sleep_ctrl.count > SYSTEM_SLEEP_DELAY_TIME)
+    if (sleep_ctrl.count < SYSTEM_SLEEP_DELAY_TIME)
     {
-        gpio_sleep_open();
-        bsp_adc_Deinit();
-        bsp_pga2_Deinit();
-        bsp_tim1_Deinit();
-        bsp_tim3_Deinit();
-        bsp_tim16_Deinit();
-        fan_protocol_Deinit();
-
-        bsp_rcc_SystemStop();
-
-        bsp_gpio_Init();
-        bsp_pga2_Init();
-        bsp_adc_Init();
-        bsp_adc_Start();
-        bsp_tim3_Init();
-        bsp_tim3_Start();
-        bsp_tim1_Init();
-        bsp_tim16_Init();
-        fan_protocol_Init();
-
-        sleep_ctrl.count = 0;
+        ++sleep_ctrl.count;
     }
-} 
+
+    if (sleep_ctrl.count < SYSTEM_SLEEP_DELAY_TIME)
+    {
+        return;
+    }
+
+    sleep_ctrl.count = 0U;
+
+    /* 配置休眠期间的 GPIO 状态及唤醒引脚。 */
+    gpio_sleep_open();
+
+    /* 关闭采样、定时器及通信模块。 */
+    bsp_adc_Deinit();
+    bsp_pga2_Deinit();
+    bsp_tim1_Deinit();
+    bsp_tim3_Deinit();
+    bsp_tim16_Deinit();
+    fan_protocol_Deinit();
+
+    /*
+     * 进入低功耗，唤醒后继续执行。
+     * 外设恢复前，应确保系统时钟及时间基准已恢复。
+     */
+    bsp_rcc_SystemStop();
+
+    /* 恢复 GPIO 和采样模块。 */
+    bsp_gpio_Init();
+    bsp_pga2_Init();
+    bsp_adc_Init();
+    bsp_adc_Start();
+
+    /* 恢复定时器及通信模块。 */
+    bsp_tim3_Init();
+    bsp_tim3_Start();
+    bsp_tim1_Init();
+    bsp_tim16_Init();
+    fan_protocol_Init();
+}

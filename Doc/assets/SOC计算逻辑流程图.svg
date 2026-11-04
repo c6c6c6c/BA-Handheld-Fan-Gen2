@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1150" viewBox="0 0 1400 1150" role="img" aria-labelledby="title desc">
+  <title id="title">手持风扇 Gen2 SOC 计算逻辑流程图</title>
+  <desc id="desc">展示 ADC 采样、SOC 初始化、库仑积分、OCV 修正以及满充和放空端点校正的处理流程。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#516174"/>
+    </marker>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', sans-serif; fill: #172033; }
+      .subtitle { font: 14px 'Microsoft YaHei', sans-serif; fill: #65758b; }
+      .boxtext { font: 16px 'Microsoft YaHei', sans-serif; fill: #172033; text-anchor: middle; dominant-baseline: middle; }
+      .small { font: 14px 'Microsoft YaHei', sans-serif; fill: #172033; text-anchor: middle; dominant-baseline: middle; }
+      .label { font: 700 14px 'Microsoft YaHei', sans-serif; fill: #344054; }
+      .flow { fill: none; stroke: #516174; stroke-width: 2.2; marker-end: url(#arrow); }
+      .return { fill: none; stroke: #8a97a8; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .process { fill: #eef6ff; stroke: #2878c8; stroke-width: 2; }
+      .decision { fill: #fff7e8; stroke: #d48806; stroke-width: 2; }
+      .correction { fill: #eefbf3; stroke: #2f855a; stroke-width: 2; }
+      .endpoint { fill: #f5f0ff; stroke: #7559b6; stroke-width: 2; }
+      .note { fill: #fff8f2; stroke: #d97706; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="1150" fill="#ffffff"/>
+  <text x="700" y="40" class="title" text-anchor="middle">手持风扇 Gen2 SOC 计算逻辑流程图</text>
+  <text x="700" y="66" class="subtitle" text-anchor="middle">OCV 初始化 + 库仑积分 + 静置修正 + 满充/放空端点校正</text>
+
+  <!-- 主采样链 -->
+  <rect x="500" y="90" width="400" height="62" rx="10" class="process"/>
+  <text x="700" y="121" class="boxtext">ADC 累计 256 次采样</text>
+  <path d="M700 152 L700 178" class="flow"/>
+
+  <rect x="500" y="180" width="400" height="62" rx="10" class="process"/>
+  <text x="700" y="211" class="boxtext">换算电芯电压、电流和 USB 电压</text>
+  <path d="M700 242 L700 268" class="flow"/>
+
+  <rect x="500" y="270" width="400" height="62" rx="10" class="process"/>
+  <text x="700" y="301" class="boxtext">判断充电 / 放电 / 空闲 / 充满状态</text>
+  <path d="M700 332 L700 358" class="flow"/>
+
+  <!-- 初始化判定 -->
+  <polygon points="700,360 850,420 700,480 550,420" class="decision"/>
+  <text x="700" y="410" class="boxtext">SOC 是否已初始化？</text>
+  <text x="700" y="434" class="small">soc_Init</text>
+
+  <text x="872" y="407" class="label">否</text>
+  <path d="M550 420 L430 420" class="flow"/>
+  <polygon points="270,350 430,420 270,490 110,420" class="decision"/>
+  <text x="270" y="405" class="small">相邻样本变化量是否满足</text>
+  <text x="270" y="430" class="small">ΔV &lt; 20 mV，ΔI &lt; 30 mA？</text>
+
+  <text x="248" y="520" class="label">是，累计超过 10 次</text>
+  <path d="M270 490 L270 540" class="flow"/>
+  <rect x="95" y="542" width="350" height="64" rx="10" class="correction"/>
+  <text x="270" y="563" class="small">按 SOC-OCV 曲线线性插值</text>
+  <text x="270" y="586" class="small">得到初始 SOC</text>
+  <path d="M270 606 L270 632" class="flow"/>
+  <rect x="95" y="634" width="350" height="64" rx="10" class="process"/>
+  <text x="270" y="655" class="small">初始化剩余容量和 SOC 状态</text>
+  <text x="270" y="678" class="small">Qremain = Qdesign × SOC / 100</text>
+
+  <text x="78" y="397" class="label">否</text>
+  <path d="M110 420 L52 420 L52 121 L494 121" class="return"/>
+  <text x="66" y="275" class="subtitle">等待下一组采样</text>
+
+  <!-- 汇入库仑积分 -->
+  <text x="720" y="510" class="label">是</text>
+  <path d="M700 480 L700 720" class="flow"/>
+  <path d="M270 698 L270 720 L492 720" class="flow"/>
+  <rect x="495" y="690" width="410" height="64" rx="10" class="process"/>
+  <text x="700" y="711" class="small">按 I × Δt 进行库仑积分</text>
+  <text x="700" y="734" class="small">并将剩余容量限制在 0～设计容量</text>
+  <path d="M700 754 L700 780" class="flow"/>
+
+  <rect x="495" y="782" width="410" height="64" rx="10" class="process"/>
+  <text x="700" y="803" class="small">计算主 SOC 和静态 OCV-SOC</text>
+  <text x="700" y="826" class="small">SOC = Qremain / Qdesign × 100%</text>
+  <path d="M700 846 L700 870" class="flow"/>
+
+  <!-- 校正分支 -->
+  <polygon points="700,872 835,922 700,972 565,922" class="decision"/>
+  <text x="700" y="913" class="small">满足哪一种校正条件？</text>
+  <text x="700" y="937" class="small">优先级：满充 → 放空 → 静置</text>
+
+  <path d="M565 922 L200 922 L200 984" class="flow"/>
+  <path d="M620 953 L500 984" class="flow"/>
+  <path d="M780 953 L900 984" class="flow"/>
+  <path d="M835 922 L1200 922 L1200 984" class="flow"/>
+
+  <rect x="50" y="986" width="300" height="72" rx="10" class="endpoint"/>
+  <text x="200" y="1009" class="small">充满状态且 V ≥ 4.15 V</text>
+  <text x="200" y="1034" class="small">SOC = 100%</text>
+
+  <rect x="370" y="986" width="300" height="72" rx="10" class="endpoint"/>
+  <text x="520" y="1009" class="small">放空条件持续 10 s</text>
+  <text x="520" y="1034" class="small">SOC = 0%</text>
+
+  <rect x="730" y="986" width="340" height="72" rx="10" class="correction"/>
+  <text x="900" y="1009" class="small">静置条件持续 10 s</text>
+  <text x="900" y="1034" class="small">一阶低通融合 OCV-SOC</text>
+
+  <rect x="1090" y="986" width="260" height="72" rx="10" class="process"/>
+  <text x="1220" y="1009" class="small">无校正条件</text>
+  <text x="1220" y="1034" class="small">保持积分结果</text>
+
+  <!-- 输出与循环 -->
+  <path d="M200 1058 L200 1090 L515 1090" class="flow"/>
+  <path d="M520 1058 L520 1076" class="flow"/>
+  <path d="M900 1058 L900 1090 L885 1090" class="flow"/>
+  <path d="M1220 1058 L1220 1090 L885 1090" class="flow"/>
+  <rect x="515" y="1072" width="370" height="58" rx="10" class="process"/>
+  <text x="700" y="1092" class="small">同步剩余容量并更新 SOH</text>
+  <text x="700" y="1115" class="small">进入下一采样周期</text>
+
+  <!-- 设计提醒 -->
+  <rect x="980" y="350" width="350" height="155" rx="10" class="note"/>
+  <text x="1155" y="378" class="small" style="font-weight:700; fill:#9a3412">当前实现注意事项</text>
+  <text x="1000" y="410" class="subtitle">• 固定按 256 ms 积分，依赖 1 ms 原始采样周期</text>
+  <text x="1000" y="440" class="subtitle">• 放空判断存在电流方向条件冲突</text>
+  <text x="1000" y="470" class="subtitle">• 默认 OCV 曲线须按实际电芯重新标定</text>
+  <text x="1000" y="500" class="subtitle">• 稳定条件失败时当前代码未清零累计计数</text>
+</svg>

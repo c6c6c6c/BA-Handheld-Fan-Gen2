@@ -217,7 +217,7 @@ void gpio_sleep_open(void)
      * 保留电源按键外部电平检测能力，
      * 可配合 EXTI 配置实现低功耗唤醒。
      */
-    SET_GPIO_INPUT_MODE(POWER_SW_PORT, POWER_SW_PIN, LL_GPIO_PULL_NO);
+    SET_GPIO_INPUT_MODE(POWER_SW_PORT, POWER_SW_PIN, LL_GPIO_PULL_UP);
 #endif
 
 

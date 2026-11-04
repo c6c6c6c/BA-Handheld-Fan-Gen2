@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" role="img" aria-labelledby="title desc">
+  <title id="title">SOC-OCV 标定曲线</title>
+  <desc id="desc">根据 bms_soc.c 默认标定表绘制，横轴为 SOC 百分比，纵轴为单节电芯开路电压。</desc>
+  <rect width="900" height="520" fill="#ffffff"/>
+  <text x="450" y="27" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="20" font-weight="bold" fill="#172033">SOC-OCV 标定曲线（当前软件默认值）</text>
+
+  <g stroke="#d9dee8" stroke-width="1">
+    <line x1="80" y1="400" x2="780" y2="400"/><line x1="80" y1="344.6" x2="780" y2="344.6"/>
+    <line x1="80" y1="289.2" x2="780" y2="289.2"/><line x1="80" y1="233.8" x2="780" y2="233.8"/>
+    <line x1="80" y1="178.5" x2="780" y2="178.5"/><line x1="80" y1="123.1" x2="780" y2="123.1"/>
+    <line x1="80" y1="67.7" x2="780" y2="67.7"/><line x1="80" y1="40" x2="780" y2="40"/>
+    <line x1="80" y1="40" x2="80" y2="400"/><line x1="220" y1="40" x2="220" y2="400"/>
+    <line x1="360" y1="40" x2="360" y2="400"/><line x1="500" y1="40" x2="500" y2="400"/>
+    <line x1="640" y1="40" x2="640" y2="400"/><line x1="780" y1="40" x2="780" y2="400"/>
+  </g>
+
+  <g stroke="#38445a" stroke-width="1.5" fill="none">
+    <line x1="80" y1="40" x2="80" y2="400"/><line x1="80" y1="400" x2="780" y2="400"/>
+  </g>
+
+  <g font-family="Arial, Microsoft YaHei, sans-serif" font-size="12" fill="#38445a">
+    <text x="68" y="404" text-anchor="end">2.9</text><text x="68" y="349" text-anchor="end">3.1</text>
+    <text x="68" y="294" text-anchor="end">3.3</text><text x="68" y="238" text-anchor="end">3.5</text>
+    <text x="68" y="183" text-anchor="end">3.7</text><text x="68" y="128" text-anchor="end">3.9</text>
+    <text x="68" y="72" text-anchor="end">4.1</text><text x="68" y="44" text-anchor="end">4.2</text>
+    <text x="80" y="420" text-anchor="middle">0</text><text x="220" y="420" text-anchor="middle">20</text>
+    <text x="360" y="420" text-anchor="middle">40</text><text x="500" y="420" text-anchor="middle">60</text>
+    <text x="640" y="420" text-anchor="middle">80</text><text x="780" y="420" text-anchor="middle">100</text>
+    <text x="430" y="453" text-anchor="middle" font-size="14">SOC (%)</text>
+    <text x="20" y="220" text-anchor="middle" font-size="14" transform="rotate(-90 20 220)">OCV / 单节电芯开路电压 (V)</text>
+  </g>
+
+  <polyline fill="none" stroke="#1976d2" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"
+    points="80,394.5 115,316.9 150,282.3 185,271.2 220,257.4 255,246.3 290,233.8 325,217.2 360,203.4 395,189.5 430,178.5 465,161.8 500,148.0 535,128.6 570,109.2 605,105.1 640,85.7 675,76.0 710,71.8 745,67.7 780,46.9"/>
+  <g fill="#ffffff" stroke="#1976d2" stroke-width="2">
+    <circle cx="80" cy="394.5" r="4"/><circle cx="115" cy="316.9" r="4"/><circle cx="150" cy="282.3" r="4"/>
+    <circle cx="185" cy="271.2" r="4"/><circle cx="220" cy="257.4" r="4"/><circle cx="255" cy="246.3" r="4"/>
+    <circle cx="290" cy="233.8" r="4"/><circle cx="325" cy="217.2" r="4"/><circle cx="360" cy="203.4" r="4"/>
+    <circle cx="395" cy="189.5" r="4"/><circle cx="430" cy="178.5" r="4"/><circle cx="465" cy="161.8" r="4"/>
+    <circle cx="500" cy="148.0" r="4"/><circle cx="535" cy="128.6" r="4"/><circle cx="570" cy="109.2" r="4"/>
+    <circle cx="605" cy="105.1" r="4"/><circle cx="640" cy="85.7" r="4"/><circle cx="675" cy="76.0" r="4"/>
+    <circle cx="710" cy="71.8" r="4"/><circle cx="745" cy="67.7" r="4"/><circle cx="780" cy="46.9" r="4"/>
+  </g>
+
+  <g font-family="Microsoft YaHei, sans-serif" font-size="12">
+    <rect x="570" y="304" width="260" height="92" rx="6" fill="#f4f8fd" stroke="#b7c9df"/>
+    <text x="585" y="328" fill="#172033">数据源：Middleware/bms_ctrl/bms_soc.c</text>
+    <text x="585" y="350" fill="#172033">方法：相邻标定点之间线性插值</text>
+    <text x="585" y="372" fill="#b54708">注意：量产前须按实际电芯重新标定</text>
+  </g>
+</svg>

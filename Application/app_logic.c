@@ -135,11 +135,11 @@ void btn_power_event(void)
     /* 根据电源按键电平状态更新设备电源标志。 */
     if (botton_getCurrState(BUTTON_ITEM_POWER) == BUTTON_PRESS)
     {
-        System.logic.power = 0;
+        System.logic.power = 1;
     }
     else
     {
-        System.logic.power = 1;
+        System.logic.power = 0;
     }
 }
 
