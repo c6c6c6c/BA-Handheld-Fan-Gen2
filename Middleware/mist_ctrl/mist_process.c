@@ -314,9 +314,9 @@ void mist_process_monitor(mist_ctrl_t *ctrl, uint16_t ad, uint32_t seq)
         return;
     }
     ctrl->checkSeq = seq;
-    low            = (uint16_t)(((uint32_t)ctrl->stat.refAd * ctrl->cfg->driftLo)  / 100U);
-    high           = (uint16_t)(((uint32_t)ctrl->stat.refAd * ctrl->cfg->driftHi) / 100U);
-    rescanAd       = (uint16_t)(((uint32_t)ctrl->stat.refAd * ctrl->cfg->rescanPct)    / 100U);
+    low            = (uint16_t)(((uint32_t)ctrl->stat.refAd * ctrl->cfg->driftLo)   / 100U);
+    high           = (uint16_t)(((uint32_t)ctrl->stat.refAd * ctrl->cfg->driftHi)   / 100U);
+    rescanAd       = (uint16_t)(((uint32_t)ctrl->stat.refAd * ctrl->cfg->rescanPct) / 100U);
 
     if (ad < rescanAd)
     {

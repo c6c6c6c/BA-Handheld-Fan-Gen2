@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1420" viewBox="0 0 1600 1420" role="img" aria-labelledby="title desc">
+  <title id="title">MIST 雾化片追频逻辑流程图</title>
+  <desc id="desc">展示雾化片从粗扫、精扫、退峰锁频，到参考值建立、漂移监控、单步试探和错误重扫的完整追频状态机。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#526173"/>
+    </marker>
+    <style>
+      .title { font: 700 30px 'Microsoft YaHei', sans-serif; fill: #172033; }
+      .subtitle { font: 15px 'Microsoft YaHei', sans-serif; fill: #66758a; }
+      .box { fill: #eef6ff; stroke: #2676c5; stroke-width: 2.2; }
+      .scan { fill: #effaf4; stroke: #2f855a; stroke-width: 2.2; }
+      .decision { fill: #fff7e8; stroke: #d48806; stroke-width: 2.2; }
+      .monitor { fill: #f5f0ff; stroke: #7559b6; stroke-width: 2.2; }
+      .error { fill: #fff1f0; stroke: #c53b37; stroke-width: 2.2; }
+      .note { fill: #fffaf0; stroke: #d97706; stroke-width: 1.6; stroke-dasharray: 7 5; }
+      .flow { fill: none; stroke: #526173; stroke-width: 2.2; marker-end: url(#arrow); }
+      .loop { fill: none; stroke: #7b8797; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .text { font: 16px 'Microsoft YaHei', sans-serif; fill: #172033; text-anchor: middle; dominant-baseline: middle; }
+      .small { font: 14px 'Microsoft YaHei', sans-serif; fill: #172033; text-anchor: middle; dominant-baseline: middle; }
+      .label { font: 700 14px 'Microsoft YaHei', sans-serif; fill: #344054; }
+      .left { font: 14px 'Microsoft YaHei', sans-serif; fill: #5d2f0b; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1420" fill="#ffffff"/>
+  <text x="800" y="42" class="title" text-anchor="middle">MIST 雾化片追频逻辑流程图</text>
+  <text x="800" y="70" class="subtitle" text-anchor="middle">粗扫定位 → 精扫寻峰 → 退峰锁定 → 建立参考 → 漂移跟踪</text>
+
+  <!-- 启动和采样门控 -->
+  <rect x="565" y="95" width="470" height="66" rx="12" class="box"/>
+  <text x="800" y="118" class="small">连续雾化模式启动追频</text>
+  <text x="800" y="142" class="small">设置 152.5 kHz、占空比 200，进入 COARSE</text>
+  <path d="M800 161 L800 190" class="flow"/>
+
+  <polygon points="800,192 970,248 800,304 630,248" class="decision"/>
+  <text x="800" y="238" class="small">是否为新的 ADC 采样序号</text>
+  <text x="800" y="262" class="small">且切频后已等待 settleN？</text>
+  <text x="992" y="234" class="label">否</text>
+  <path d="M970 248 L1125 248 L1125 128 L1040 128" class="loop"/>
+  <text x="1138" y="188" class="subtitle">等待新采样</text>
+  <text x="820" y="328" class="label">是</text>
+  <path d="M800 304 L800 345" class="flow"/>
+
+  <!-- 粗扫 -->
+  <rect x="535" y="347" width="530" height="94" rx="12" class="scan"/>
+  <text x="800" y="369" class="small">COARSE：152.5 → 147.5 kHz，步进 500 Hz</text>
+  <text x="800" y="394" class="small">AD 低 4 位屏蔽后连续上升 2 次，确认谐振上升沿</text>
+  <text x="800" y="419" class="small">记录上升沿之后的最大 AD 及对应频率</text>
+  <path d="M800 441 L800 470" class="flow"/>
+
+  <polygon points="800,472 960,526 800,580 640,526" class="decision"/>
+  <text x="800" y="516" class="small">到达下限时是否找到</text>
+  <text x="800" y="540" class="small">有效上升沿和峰值？</text>
+  <text x="820" y="606" class="label">是</text>
+  <path d="M800 580 L800 620" class="flow"/>
+
+  <!-- 精扫 -->
+  <rect x="535" y="622" width="530" height="94" rx="12" class="scan"/>
+  <text x="800" y="644" class="small">FINE：以粗扫峰值为中心，±400 Hz</text>
+  <text x="800" y="669" class="small">从高频向低频按 50 Hz 完整扫描</text>
+  <text x="800" y="694" class="small">更新真实 peakAd、peakFreq 和 targetAd</text>
+  <path d="M800 716 L800 745" class="flow"/>
+
+  <rect x="535" y="747" width="530" height="94" rx="12" class="scan"/>
+  <text x="800" y="769" class="small">BACKOFF：回到 peakFreq 后向高频侧移动</text>
+  <text x="800" y="794" class="small">AD ≤ targetAd 或偏移达到 10×50 Hz 时锁频</text>
+  <text x="800" y="819" class="small">保存 lockFreq，进入 WAIT_REF</text>
+  <path d="M800 841 L800 870" class="flow"/>
+
+  <!-- 建立参考 -->
+  <rect x="535" y="872" width="530" height="94" rx="12" class="monitor"/>
+  <text x="800" y="894" class="small">WAIT_REF：每 driftN=3000 个原始样本检查一次</text>
+  <text x="800" y="919" class="small">AD 低于 targetAd×70% 时重新精扫</text>
+  <text x="800" y="944" class="small">累计 10 次有效 AD 的平均值作为 refAd</text>
+  <path d="M800 966 L800 995" class="flow"/>
+
+  <!-- 监控判定 -->
+  <polygon points="800,997 980,1057 800,1117 620,1057" class="decision"/>
+  <text x="800" y="1037" class="small">MONITOR：周期检查 AD</text>
+  <text x="800" y="1061" class="small">相对 refAd 位于哪个区间？</text>
+  <text x="800" y="1085" class="small">重扫线 70%，滞回带 95%～105%</text>
+
+  <!-- 监控四分支 -->
+  <path d="M620 1057 L325 1057 L325 1152" class="flow"/>
+  <text x="370" y="1042" class="label">AD &lt; 70%</text>
+  <rect x="145" y="1154" width="360" height="72" rx="12" class="scan"/>
+  <text x="325" y="1177" class="small">围绕最近峰值重新精扫</text>
+  <text x="325" y="1202" class="small">无有效峰值时改为重新粗扫</text>
+
+  <path d="M730 1104 L650 1152" class="flow"/>
+  <text x="615" y="1127" class="label">95%～105%</text>
+  <rect x="520" y="1154" width="300" height="72" rx="12" class="monitor"/>
+  <text x="670" y="1177" class="small">保持当前锁定频率</text>
+  <text x="670" y="1202" class="small">继续周期监控</text>
+
+  <path d="M870 1104 L950 1152" class="flow"/>
+  <text x="927" y="1127" class="label">超出滞回带</text>
+  <rect x="840" y="1154" width="360" height="72" rx="12" class="monitor"/>
+  <text x="1020" y="1177" class="small">TEST：按判定方向试探 50 Hz</text>
+  <text x="1020" y="1202" class="small">等待稳定后比较新旧误差</text>
+  <path d="M1020 1226 L1020 1255" class="flow"/>
+  <polygon points="1020,1257 1175,1307 1020,1357 865,1307" class="decision"/>
+  <text x="1020" y="1297" class="small">新 AD 是否更接近 refAd</text>
+  <text x="1020" y="1321" class="small">且未超过最大偏移？</text>
+  <path d="M865 1307 L670 1307 L670 1230" class="loop"/>
+  <text x="740" y="1290" class="label">否：回退旧频率</text>
+  <path d="M1175 1307 L1265 1307 L1265 1190 L1205 1190" class="loop"/>
+  <text x="1190" y="1290" class="label">是：保留新频率</text>
+
+  <!-- 错误分支 -->
+  <path d="M960 526 L1320 526 L1320 620" class="flow"/>
+  <text x="1120" y="508" class="label">否</text>
+  <rect x="1160" y="622" width="360" height="94" rx="12" class="error"/>
+  <text x="1340" y="644" class="small">ERROR：错误次数加 1</text>
+  <text x="1340" y="669" class="small">连续达到 3 次后置 fault=1</text>
+  <text x="1340" y="694" class="small">随后自动重新启动粗扫</text>
+  <path d="M1340 716 L1340 394 L1070 394" class="loop"/>
+
+  <!-- 重扫回路 -->
+  <path d="M325 1226 L325 669 L530 669" class="loop"/>
+  <path d="M670 1226 L670 1135 L800 1135 L800 1122" class="loop"/>
+
+  <!-- 停止和注意事项 -->
+  <rect x="80" y="95" width="360" height="120" rx="12" class="note"/>
+  <text x="260" y="120" class="small" style="font-weight:700; fill:#9a3412">运行门槛</text>
+  <text x="100" y="150" class="left">• 仅连续雾化模式运行追频</text>
+  <text x="100" y="177" class="left">• 其他模式立即进入 IDLE，并把占空比置 0</text>
+  <text x="100" y="204" class="left">• 重复采样序号及未稳定数据不参与判断</text>
+
+  <rect x="80" y="260" width="420" height="175" rx="12" class="note"/>
+  <text x="290" y="287" class="small" style="font-weight:700; fill:#9a3412">当前参数对应时间（ADC=1 kHz）</text>
+  <text x="100" y="318" class="left">• 每次切频稳定等待：400 ms</text>
+  <text x="100" y="347" class="left">• 漂移检查周期：3 s</text>
+  <text x="100" y="376" class="left">• 粗扫约 4.4 s，精扫约 6.8 s</text>
+  <text x="100" y="405" class="left">• 建立 10 点参考值约需 30 s</text>
+  <text x="100" y="428" class="left">实际时间随 ADC 原始采样率变化</text>
+</svg>

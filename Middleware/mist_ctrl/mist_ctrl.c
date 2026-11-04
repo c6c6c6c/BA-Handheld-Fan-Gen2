@@ -13,10 +13,10 @@
 /* 变量 --------------------------------------------------------------------------------------------------------------*/
 const mist_cfg_t g_mistCfg = // 追频算法只读常量参数表
 {
-	   .centerFreq = 108000UL,   // 雾化片标称中心频率，单位Hz
-	   .minFreq    = 101000UL,   // 扫频下限，单位Hz
-	   .maxFreq    = 115000UL,   // 扫频上限，单位Hz
-	   .coarseStep = 1000UL,     // 粗扫步进，单位Hz
+	   .centerFreq = 150000UL,   // 雾化片标称中心频率，单位Hz
+	   .minFreq    = 147500UL,   // 扫频下限，单位Hz
+	   .maxFreq    = 152500UL,   // 扫频上限，单位Hz
+	   .coarseStep = 500UL,      // 粗扫步进，单位Hz
 	   .fineStep   = 50UL,       // 精扫及漂移跟踪步进，单位Hz
 	   .settleN    = 400UL,      // 切换频率后等待稳定的ADC原始采样数量
 	   .driftN     = 3000UL,     // 漂移检查间隔，按ADC累计采样数计
@@ -29,7 +29,7 @@ const mist_cfg_t g_mistCfg = // 追频算法只读常量参数表
 	   .lockCnt    = 10U,        // 锁频后建立稳定参考AD所需的检查次数
 	   .backoffN   = 10U,        // 工作频率允许偏离谐振峰值的最大步数
 	   .faultCnt   = 3U,         // 连续进入错误状态后置故障位的次数
-	   .duty       = 50U         // 默认占空比，单位由PWM驱动约定
+	   .duty       = 200U        // 默认占空比，单位由PWM驱动约定
 };
 
 
@@ -125,6 +125,7 @@ void mist_ctrl_start(mist_ctrl_t *ctrl, uint32_t seq)
     ctrl->lastSeq       = seq;
     mist_process_set_freq(ctrl, ctrl->maxFreq, seq);
     /* 启动仅设置扫描频率，占空比由调用方控制。 */
+	ctrl->api.setDuty(ctrl->cfg->duty); // 停止时将占空比设为0
 }
 
 /*******************************************************************************

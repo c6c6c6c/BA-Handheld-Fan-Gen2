@@ -291,8 +291,8 @@ static void app_display_logic(void)
         display.bit.mist           = (System.logic.mist_duty != 0U);
 
         /* 长按风机或雾化按键时显示当前 SOC。 */
-        if ((botton_getEvent(BUTTON_ITEM_FAN) == BUTTON_EVENT_LONG_PRESS_HOLD) ||
-            (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
+        if ((botton_getEvent(BUTTON_ITEM_FAN) == BUTTON_EVENT_LONG_PRESS_HOLD) 
+		|| (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
         {
             /* 显示电池 SOC 百分比。 */
             app_display_showNum(bms_battery.soc_info.soc + 0.5,true);

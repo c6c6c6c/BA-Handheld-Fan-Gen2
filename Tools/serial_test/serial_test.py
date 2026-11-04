@@ -141,13 +141,14 @@ def unpack_payload(fmt: str, payload: bytes, response_name: str) -> tuple[object
 
 
 def parse_info(payload: bytes) -> list[tuple[str, object]]:
-    version, uid0, uid1, uid2, year, month, day = unpack_payload(
-        "<B3IHBB", payload, "PROTO_INFO_RESPONSE"
+    version, uid0, uid1, uid2, year, month, day, hour, minute, second = unpack_payload(
+        "<B3IH5B", payload, "PROTO_INFO_RESPONSE"
     )
     return [
         ("协议版本", f"0x{version:02X}"),
         ("MCU UID", f"{uid0:08X}-{uid1:08X}-{uid2:08X}"),
         ("固件编译日期", f"{year:04d}-{month:02d}-{day:02d}"),
+        ("固件编译时间", f"{hour:02d}:{minute:02d}:{second:02d}"),
     ]
 
 
@@ -424,6 +425,7 @@ def send_ota_packet(
     timeout: float,
     color_enabled: bool,
     show_request: bool,
+    replace_previous: bool = False,
 ) -> bool:
     packet_index = session.next_packet
     start = packet_index * OTA_PAGE_SIZE
@@ -439,7 +441,15 @@ def send_ota_packet(
         f"PROTO_OTA_UPDATE_REQUEST {packet_index + 1}/{session.packet_count}, "
         f"序号 {packet_index}, 地址 0x{address:08X}, {len(chunk)} 字节"
     )
-    print(f"\n{terminal_color('发送', '36', color_enabled)} {heading}")
+    in_place = (not show_request) and sys.stdout.isatty()
+    if replace_previous and in_place:
+        # 光标位于上一帧“收到”行的下一行，向上移动两行后覆盖原进度。
+        sys.stdout.write("\033[2A")
+
+    line_prefix = "\r\033[2K" if in_place else "\n"
+    print(
+        f"{line_prefix}{terminal_color('发送', '36', color_enabled)} {heading}"
+    )
     if show_request:
         print(f"  {terminal_color(frame.hex(' ').upper(), '90', color_enabled)}")
 
@@ -452,10 +462,12 @@ def send_ota_packet(
         print(f"协议错误：{exc}", file=sys.stderr)
         return False
 
+    receive_prefix = "\r\033[2K" if in_place else ""
     print(
-        f"{terminal_color('收到', '33', color_enabled)}: "
+        f"{receive_prefix}{terminal_color('收到', '33', color_enabled)}: "
         f"{terminal_color(raw_frame.hex(' ').upper(), '90', color_enabled)}"
     )
+    sys.stdout.flush()
     if command == PROTO_ERR:
         print("设备返回 PROTO_ERR，当前帧未计入进度。", file=sys.stderr)
         return False
@@ -522,14 +534,24 @@ def run_ota_update(
                 return
             continue
         if choice == "2":
+            progress_started = False
             while session.next_packet < session.packet_count:
-                if not send_ota_packet(port, session, timeout, color_enabled, False):
+                replace_previous = progress_started and sys.stdout.isatty()
+                if not send_ota_packet(
+                    port,
+                    session,
+                    timeout,
+                    color_enabled,
+                    False,
+                    replace_previous,
+                ):
                     print(
                         "完整烧录已停止且进度可能已不同步；"
                         "请重新发送 ENTER_OTA 并从第 1 帧开始。",
                         file=sys.stderr,
                     )
                     return
+                progress_started = True
             continue
         print("输入无效，请输入 0、1 或 2。")
 

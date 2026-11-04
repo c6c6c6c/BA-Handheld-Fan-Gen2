@@ -59,7 +59,7 @@ typedef struct
     uint8_t  lockCnt;     // 锁频参考值稳定检查次数
     uint8_t  backoffN;    // 最大频率回退步数
     uint8_t  faultCnt;    // 连续错误故障判定次数
-    uint8_t  duty;        // 默认 PWM 占空比，单位依驱动约定
+    uint16_t duty;        // 默认 PWM 占空比，单位依驱动约定
 } mist_cfg_t;
 
 

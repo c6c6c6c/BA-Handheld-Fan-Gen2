@@ -559,6 +559,11 @@
               <FilePath>..\..\..\Middleware\common\fan\fan.c</FilePath>
             </File>
             <File>
+              <FileName>sleep.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\sleep\sleep.c</FilePath>
+            </File>
+            <File>
               <FileName>filter.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\filter\filter.c</FilePath>
@@ -592,11 +597,6 @@
               <FileName>common_port.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
-            </File>
-            <File>
-              <FileName>sleep.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\common\sleep\sleep.c</FilePath>
             </File>
           </Files>
         </Group>

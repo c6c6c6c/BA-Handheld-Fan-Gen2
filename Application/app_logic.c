@@ -157,58 +157,6 @@ void btn_usb_event(void)
     System.logic.usb_present = BMS_IO_USB_IS_PRESENT();
 }
 
-/*******************************************************************************
-//  Function   : app_logic_mist
-//  Description: 根据雾化功能状态更新 TIM16 PWM 输出参数
-//  Param      : None
-//  Return     : None
-//  Others     : 当前逻辑中 mist_mode 为 true 时将占空比设置为 0；
-//               mist_mode 为 false 时设置频率为 150kHz、占空比参数为 200；
-//               仅在目标参数变化且底层配置成功后更新参数缓存
-//  Author     : 陈亮 2026-10-26
-*******************************************************************************/
-void app_logic_mist(void)
-{
-    /* 保存上一次成功配置的雾化片 PWM 参数。 */
-    static uint32_t old_freq = 0U;
-    static uint16_t old_duty = 0U;
-    static uint16_t Cnt = 0U;
-
-    /* 根据雾化功能状态确定 PWM 输出参数。 */
-    if (System.logic.mist_mode == MIST_MODE_CONTINUE)
-    {
-		System.logic.mist_freq = 150000U;
-        System.logic.mist_duty = 200U;
-		System.logic.mistTimes ++;
-    }
-    else if(System.logic.mist_mode == MIST_MODE_PULSATING)
-    {
-        System.logic.mist_freq = 150000U; 
-        System.logic.mist_duty = Cnt < 1000 ? 200U : 0U;
-		System.logic.mistTimes ++;
-        Cnt = Cnt < 2000 ? Cnt + 1 : 0;
-    }
-    else
-    {
-        System.logic.mist_duty = 0U;
-		System.logic.mistTimes = 0;
-    }
-
-    /*
-     * 目标 PWM 参数发生变化时重新配置定时器。
-     * 仅在配置成功后更新缓存，失败时保留旧参数以便下次重试。
-     */
-    if ((System.logic.mist_freq != old_freq)
-    ||  (System.logic.mist_duty != old_duty))
-    {
-        if (bsp_tim16_ch1_pwm_set(System.logic.mist_freq,System.logic.mist_duty) == SUCCESS)
-        {
-            old_freq = System.logic.mist_freq;
-            old_duty = System.logic.mist_duty;
-        }
-    }
-}
-
 
 /*******************************************************************************
 //  Function   : app_dev_logic
@@ -256,9 +204,6 @@ void app_dev_logic(void)
 
     /* 同步目标风扇运行档位。 */
     fan_set_speedmode(System.logic.fan_mode);
-
-    /* 根据雾化功能状态更新 TIM16 PWM。 */
-    app_logic_mist();
 
     /* 保存当前电源状态，供下一次检测状态变化。 */
     System.logic.lastpower = System.logic.power;
