@@ -149,7 +149,6 @@ static void fan_protocol_request(uint8_t *data)
 
             case PROTO_OTA_COMPLETION_REQUEST:
             {
-                /* TODO: 校验完整固件并保存 OTA 升级完成状态。 */
 				param_ota_save(OTC_STATUS_SUCCESS);
                 break;
             }
@@ -225,7 +224,7 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_VAR(System.compile_param.month);
                 _CURSOR_WRITE_VAR(System.compile_param.day);
 				
-				/* 固件编译时间。 */
+                /* 固件编译时间。 */
                 _CURSOR_WRITE_VAR(System.compile_param.hour);
                 _CURSOR_WRITE_VAR(System.compile_param.minute);
                 _CURSOR_WRITE_VAR(System.compile_param.second);

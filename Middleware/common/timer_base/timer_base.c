@@ -81,7 +81,7 @@ uint32_t timer_base_Count(timer_base_t *tim)
 		tim->Init     = 1;
 		return 0;
 	}
-	if(getSystemMs() > tim->CurrTime)
+	if(getSystemMs() >= tim->CurrTime)
 	{
 		return getSystemMs() - tim->CurrTime;
 	}

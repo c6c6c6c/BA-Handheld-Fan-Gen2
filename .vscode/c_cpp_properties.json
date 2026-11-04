@@ -11,49 +11,9 @@
                 "_UNICODE",
                 "PY32F032x8",
                 "PROJECT_APP",
-                "USE_FULL_LL_DRIVER"
-            ]
-        },
-        {
-            "name": "app",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "PY32F030x8",
-                "PROJECT_APP",
-                "USE_FULL_LL_DRIVER"
-            ]
-        },
-        {
-            "name": "boot",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "PY32F030x8",
-                "PROJECT_BOOT",
-                "USE_FULL_LL_DRIVER"
-            ]
-        },
-        {
-            "name": "test",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "PY32F030x8",
-                "PROJECT_TEST",
-                "USE_FULL_LL_DRIVER"
+                "USE_FULL_LL_DRIVER",
+                "APP_PROJECT",
+                "POWER_CTRL_GPIO"
             ]
         }
     ],

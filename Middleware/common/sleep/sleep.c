@@ -48,7 +48,7 @@ sleep_t sleep_ctrl;
  */
 static bool sleep_can_enter(void)
 {
-	return (System.logic.usb_present == 0U);
+	//return (System.logic.usb_present == 0U);
     return (System.logic.power == 0U) && (System.logic.usb_present == 0U);
 }
 

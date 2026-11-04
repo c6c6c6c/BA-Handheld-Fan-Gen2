@@ -37,7 +37,10 @@ bool common_port_Init(common_port_t *port,
     || (tx_buf  == 0) 
     || (tx_size == 0U))
     {
-        port->init = 0U;
+        if(port)
+        {
+            port->init = 0U;
+        }
         return false;
     }
 
@@ -316,7 +319,7 @@ void common_port_1msTask(common_port_t *port)
     if ((port->rx.Receiving != 0U) 
 	&&  (port->rx.State == COMMON_PORT_RX_IDLE))
     {
-        if (port->rx.TimerMs < 10)
+        if (port->rx.TimerMs < 5)
         {
             port->rx.TimerMs++;
         }

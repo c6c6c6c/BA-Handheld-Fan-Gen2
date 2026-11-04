@@ -412,9 +412,9 @@ static void boot_display_logic(void)
             /* 前 500ms：显示 0%。 */
             if (timer_base_Count(&_timer) < APP_DISPLAY_BOOT_SWITCH_MS)
             {
-                app_display_showNum(22,true);
+                app_display_showNum(0U, false);
 
-                display.bit.percentageIcon = true;
+                display.bit.percentageIcon = false;
             }
             /* 后 500ms：显示 UP。 */
             else if (timer_base_Count(&_timer) <

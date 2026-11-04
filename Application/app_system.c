@@ -397,9 +397,6 @@ void system_run(void)
         /* 更新 BMS 状态、SOC/SOH 及保护逻辑。 */
         app_bms_1ms_task();
 
-        /* 推进 UART1 通信接口状态机。 */
-        uart1_port_1msTask();
-
         /* 更新 AiP650E 显示内容及硬件状态。 */
         app_display_task();
 
