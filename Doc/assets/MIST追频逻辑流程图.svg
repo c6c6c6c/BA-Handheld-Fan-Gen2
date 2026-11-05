@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1420" viewBox="0 0 1600 1420" role="img" aria-labelledby="title desc">
   <title id="title">MIST 雾化片追频逻辑流程图</title>
-  <desc id="desc">展示雾化片从粗扫、精扫、退峰锁频，到参考值建立、漂移监控、单步试探和错误重扫的完整追频状态机。</desc>
+  <desc id="desc">展示雾化片从粗扫、连续失败后的中心频率兜底、精扫、退峰锁频，到参考值建立、漂移监控、单步试探和错误重扫的完整追频状态机。</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L9,3 z" fill="#526173"/>
@@ -25,12 +25,12 @@
 
   <rect width="1600" height="1420" fill="#ffffff"/>
   <text x="800" y="42" class="title" text-anchor="middle">MIST 雾化片追频逻辑流程图</text>
-  <text x="800" y="70" class="subtitle" text-anchor="middle">粗扫定位 → 精扫寻峰 → 退峰锁定 → 建立参考 → 漂移跟踪</text>
+  <text x="800" y="70" class="subtitle" text-anchor="middle">粗扫定位 / 中心频率兜底 → 精扫寻峰 → 退峰锁定 → 建立参考 → 漂移跟踪</text>
 
   <!-- 启动和采样门控 -->
   <rect x="565" y="95" width="470" height="66" rx="12" class="box"/>
   <text x="800" y="118" class="small">连续雾化模式启动追频</text>
-  <text x="800" y="142" class="small">设置 152.5 kHz、占空比 200，进入 COARSE</text>
+  <text x="800" y="142" class="small">设置 152.5 kHz、占空比 300，进入 COARSE</text>
   <path d="M800 161 L800 190" class="flow"/>
 
   <polygon points="800,192 970,248 800,304 630,248" class="decision"/>
@@ -57,7 +57,7 @@
 
   <!-- 精扫 -->
   <rect x="535" y="622" width="530" height="94" rx="12" class="scan"/>
-  <text x="800" y="644" class="small">FINE：以粗扫峰值为中心，±400 Hz</text>
+  <text x="800" y="644" class="small">FINE：以 peakFreq 为中心（粗扫峰值或中心频率），±400 Hz</text>
   <text x="800" y="669" class="small">从高频向低频按 50 Hz 完整扫描</text>
   <text x="800" y="694" class="small">更新真实 peakAd、peakFreq 和 targetAd</text>
   <path d="M800 716 L800 745" class="flow"/>
@@ -108,14 +108,29 @@
   <path d="M1175 1307 L1265 1307 L1265 1190 L1205 1190" class="loop"/>
   <text x="1190" y="1290" class="label">是：保留新频率</text>
 
-  <!-- 错误分支 -->
-  <path d="M960 526 L1320 526 L1320 620" class="flow"/>
-  <text x="1120" y="508" class="label">否</text>
-  <rect x="1160" y="622" width="360" height="94" rx="12" class="error"/>
-  <text x="1340" y="644" class="small">ERROR：错误次数加 1</text>
-  <text x="1340" y="669" class="small">连续达到 3 次后置 fault=1</text>
-  <text x="1340" y="694" class="small">随后自动重新启动粗扫</text>
-  <path d="M1340 716 L1340 394 L1070 394" class="loop"/>
+  <!-- 粗扫失败兜底及错误分支 -->
+  <path d="M960 526 L1095 526" class="flow"/>
+  <text x="1015" y="508" class="label">否：粗扫失败计数加 1</text>
+
+  <polygon points="1260,472 1415,526 1260,580 1105,526" class="decision"/>
+  <text x="1260" y="516" class="small">coarseFailCnt</text>
+  <text x="1260" y="540" class="small">是否达到 3 次？</text>
+
+  <text x="1280" y="606" class="label">是</text>
+  <path d="M1260 580 L1260 620" class="flow"/>
+  <rect x="1100" y="622" width="420" height="94" rx="12" class="scan"/>
+  <text x="1310" y="644" class="small">中心频率兜底</text>
+  <text x="1310" y="669" class="small">清零粗扫失败计数，peakFreq = 150 kHz</text>
+  <text x="1310" y="694" class="small">以中心频率为窗口中心进入 FINE</text>
+  <path d="M1100 669 L1070 669" class="flow"/>
+
+  <text x="1430" y="508" class="label">否</text>
+  <path d="M1415 526 L1550 526 L1550 794 L1525 794" class="flow"/>
+  <rect x="1160" y="747" width="360" height="94" rx="12" class="error"/>
+  <text x="1340" y="769" class="small">ERROR：errCnt 加 1</text>
+  <text x="1340" y="794" class="small">达到 faultCnt=3 后置 fault=1</text>
+  <text x="1340" y="819" class="small">随后自动重新启动粗扫</text>
+  <path d="M1340 841 L1545 841 L1545 394 L1070 394" class="loop"/>
 
   <!-- 重扫回路 -->
   <path d="M325 1226 L325 669 L530 669" class="loop"/>
@@ -132,7 +147,7 @@
   <text x="290" y="287" class="small" style="font-weight:700; fill:#9a3412">当前参数对应时间（ADC=1 kHz）</text>
   <text x="100" y="318" class="left">• 每次切频稳定等待：400 ms</text>
   <text x="100" y="347" class="left">• 漂移检查周期：3 s</text>
-  <text x="100" y="376" class="left">• 粗扫约 4.4 s，精扫约 6.8 s</text>
+  <text x="100" y="376" class="left">• 粗扫约 4.4 s/轮，3 轮兜底约 13.2 s</text>
   <text x="100" y="405" class="left">• 建立 10 点参考值约需 30 s</text>
   <text x="100" y="428" class="left">实际时间随 ADC 原始采样率变化</text>
 </svg>

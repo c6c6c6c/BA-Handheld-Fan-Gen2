@@ -58,6 +58,7 @@ typedef struct
     uint8_t  driftHi;     // 漂移跟踪滞回上限 %
     uint8_t  lockCnt;     // 锁频参考值稳定检查次数
     uint8_t  backoffN;    // 最大频率回退步数
+    uint8_t  coarseFailCnt; // 连续粗扫失败后使用中心频率的次数
     uint8_t  faultCnt;    // 连续错误故障判定次数
     uint16_t duty;        // 默认 PWM 占空比，单位依驱动约定
 } mist_cfg_t;
@@ -117,6 +118,7 @@ typedef struct
 
     uint8_t          riseCnt;    // AD 连续上升次数
     uint8_t          riseOk;     // 谐振上升沿检测标志
+    uint8_t          coarseFailCnt; // 当前连续粗扫失败次数
     uint8_t          refCnt;     // 参考 AD 累计次数
     int8_t           dir;        // 试探方向：-1 降频，1 升频
     uint8_t          ready;      // 初始化标志

@@ -122,23 +122,25 @@ void app_bms_Init(void)
 void app_bms_key_ctrl(void)
 {
     static timer_base_t _time = {0};
+	static uint8_t lastpower = 0;
 
     /* 系统休眠时请求 IP5326 进入待机，并跳过唤醒处理。 */
-    if (System.sleep_flg)
+    if (System.logic.power == 0)
     {
-        bms_key_Request(BMS_KEY_STANDBY);
+        //bms_key_Request(BMS_KEY_STANDBY);
         return;
     }
     else
     {
         /* 上次完成待机操作后，请求唤醒并复位计时器。 */
-        if (bms_key_GetStatus()->lastComplete == BMS_KEY_STANDBY)
+        if (lastpower == System.logic.power)
         {
             bms_key_Request(BMS_KEY_WAKEUP);
             timer_base_Rst(&_time);
         }
     }
-
+	
+	lastpower = System.logic.power;
     /*
      * 正常运行期间周期性请求唤醒。
      * 原电流方向判断暂时禁用，当前不限制充放电状态。

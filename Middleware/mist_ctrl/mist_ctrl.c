@@ -13,23 +13,24 @@
 /* 变量 --------------------------------------------------------------------------------------------------------------*/
 const mist_cfg_t g_mistCfg = // 追频算法只读常量参数表
 {
-	   .centerFreq = 150000UL,   // 雾化片标称中心频率，单位Hz
-	   .minFreq    = 147500UL,   // 扫频下限，单位Hz
-	   .maxFreq    = 152500UL,   // 扫频上限，单位Hz
-	   .coarseStep = 500UL,      // 粗扫步进，单位Hz
-	   .fineStep   = 50UL,       // 精扫及漂移跟踪步进，单位Hz
-	   .settleN    = 400UL,      // 切换频率后等待稳定的ADC原始采样数量
-	   .driftN     = 3000UL,     // 漂移检查间隔，按ADC累计采样数计
-	   .fineN      = 8U,         // 精扫半区间步数，范围为粗扫峰值正负8步
-	   .riseCnt    = 2U,         // 判定上升沿所需的AD连续上升次数
-	   .targetPct  = 100U,       // 锁频目标AD占谐振峰值AD的百分比
-	   .rescanPct  = 70U,        // 触发重新精扫的AD下限百分比
-	   .driftLo    = 95U,        // 漂移跟踪滞回区间下限百分比
-	   .driftHi    = 105U,       // 漂移跟踪滞回区间上限百分比
-	   .lockCnt    = 10U,        // 锁频后建立稳定参考AD所需的检查次数
-	   .backoffN   = 10U,        // 工作频率允许偏离谐振峰值的最大步数
-	   .faultCnt   = 3U,         // 连续进入错误状态后置故障位的次数
-	   .duty       = 200U        // 默认占空比，单位由PWM驱动约定
+	   .centerFreq    = 150000UL,   // 雾化片标称中心频率，单位Hz
+	   .minFreq       = 147500UL,   // 扫频下限，单位Hz
+	   .maxFreq       = 152500UL,   // 扫频上限，单位Hz
+	   .coarseStep    = 500UL,      // 粗扫步进，单位Hz
+	   .fineStep      = 50UL,       // 精扫及漂移跟踪步进，单位Hz
+	   .settleN       = 400UL,      // 切换频率后等待稳定的ADC原始采样数量
+	   .driftN        = 3000UL,     // 漂移检查间隔，按ADC累计采样数计
+	   .fineN         = 8U,         // 精扫半区间步数，范围为粗扫峰值正负8步
+	   .riseCnt       = 2U,         // 判定上升沿所需的AD连续上升次数
+	   .targetPct     = 100U,       // 锁频目标AD占谐振峰值AD的百分比
+	   .rescanPct     = 70U,        // 触发重新精扫的AD下限百分比
+	   .driftLo       = 95U,        // 漂移跟踪滞回区间下限百分比
+	   .driftHi       = 105U,       // 漂移跟踪滞回区间上限百分比
+	   .lockCnt       = 10U,        // 锁频后建立稳定参考AD所需的检查次数
+	   .backoffN      = 10U,        // 工作频率允许偏离谐振峰值的最大步数
+	   .coarseFailCnt = 3U,         // 连续粗扫失败3次后使用中心频率作为谐振频率
+	   .faultCnt      = 3U,         // 连续进入错误状态后置故障位的次数
+	   .duty          = 300U        // 默认占空比，单位由PWM驱动约定
 };
 
 
@@ -60,6 +61,7 @@ uint8_t mist_ctrl_init(mist_ctrl_t *ctrl, const mist_cfg_t *cfg, const mist_api_
     ||  (cfg->fineN      == 0U)
     ||  (cfg->riseCnt    == 0U)
     ||  (cfg->targetPct  == 0U)
+    ||  (cfg->coarseFailCnt == 0U)
     ||  (cfg->faultCnt   == 0U)
     ||  (cfg->minFreq    >= cfg->maxFreq)
     ||  (cfg->centerFreq <  cfg->minFreq)
@@ -94,6 +96,7 @@ uint8_t mist_ctrl_init(mist_ctrl_t *ctrl, const mist_cfg_t *cfg, const mist_api_
     ctrl->refSum         = 0U;
     ctrl->riseCnt        = 0U;
     ctrl->riseOk         = 0U;
+    ctrl->coarseFailCnt  = 0U;
     ctrl->refCnt         = 0U;
     ctrl->dir            = 0;
     ctrl->ready          = 1U;

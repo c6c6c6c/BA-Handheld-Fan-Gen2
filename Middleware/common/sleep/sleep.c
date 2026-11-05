@@ -33,7 +33,7 @@
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
 /* 满足休眠条件后，延迟进入低功耗的时间，单位 ms。 */
-#define SYSTEM_SLEEP_DELAY_TIME    (2000U)
+#define SYSTEM_SLEEP_DELAY_TIME    (3000U)
 
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
@@ -48,7 +48,7 @@ sleep_t sleep_ctrl;
  */
 static bool sleep_can_enter(void)
 {
-	//return (System.logic.usb_present == 0U);
+
     return (System.logic.power == 0U) && (System.logic.usb_present == 0U);
 }
 

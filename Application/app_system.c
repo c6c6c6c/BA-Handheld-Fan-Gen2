@@ -60,7 +60,7 @@ system_t System;
 bool vbat_ctrl = true;
 
 /** USB 输入通路调试控制标志，true 表示输出使能电平 */
-bool vin_ctrl = true;
+bool vin_ctrl = false;
 
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
@@ -446,3 +446,4 @@ void system_run(void)
         LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
     }
 }
+

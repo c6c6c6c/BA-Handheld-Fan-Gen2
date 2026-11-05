@@ -159,12 +159,17 @@ void bsp_uart1_Deinit(void)
     /* 模拟模式关闭数字输入缓冲，可降低反初始化后的静态功耗。 */
     GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-
-    GPIO_InitStruct.Pin = UART1_RX_PIN;
+    GPIO_InitStruct.Pin  = UART1_RX_PIN;
     LL_GPIO_Init(UART1_RX_PORT, &GPIO_InitStruct);
+	
 
-    GPIO_InitStruct.Pin = UART1_TX_PIN;
+	GPIO_InitStruct.Mode       = LL_GPIO_MODE_OUTPUT;
+    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+	GPIO_InitStruct.Speed      = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Pin        = UART1_TX_PIN;
     LL_GPIO_Init(UART1_TX_PORT, &GPIO_InitStruct);
+	
+	LL_GPIO_ResetOutputPin(UART1_TX_PORT, UART1_TX_PIN);
 }
 
 /*******************************************************************************

@@ -63,23 +63,24 @@ void bsp_gpio_Init(void)
      * DISPLAY_CLK：
      *
      * 1. 默认设置输出数据寄存器为高电平。
-     * 2. 配置为开漏输出模式。
+     * 2. 配置为推挽输出模式。
      * 3. 输出高电平时释放总线，由外部上拉提供高电平。
      * 4. 用于 AiP650E 显示驱动时钟信号。
      */
     LL_GPIO_SetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN);
-    SET_GPIO_OUTPUT_MODE(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_OUTPUT_OPENDRAIN);
+    SET_GPIO_OUTPUT_MODE(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_OUTPUT_PUSHPULL);
 
     /*
      * DISPLAY_DIO：
      *
      * 1. 默认设置输出数据寄存器为高电平。
-     * 2. 配置为开漏输出模式。
+     * 2. 配置为推挽输出模式。
      * 3. 输出低电平时主动拉低总线。
      * 4. 输出高电平时释放总线。
      * 5. 用于 AiP650E 显示驱动数据通信。
      */
     LL_GPIO_SetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN);
+	LL_GPIO_SetPinPull(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_PULL_UP); 
     SET_GPIO_OUTPUT_MODE(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_OUTPUT_OPENDRAIN);
 
 
@@ -114,7 +115,7 @@ void bsp_gpio_Init(void)
      * 初始化为推挽输出，默认输出高电平。
      * 根据当前硬件控制逻辑，高电平用于使能 VIN 输入通路。
      */
-    LL_GPIO_SetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
+    LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
     SET_GPIO_OUTPUT_MODE(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
 
     /*
@@ -240,9 +241,9 @@ void gpio_sleep_open(void)
      * 注意：
      * 实际引脚电平仍可能受外部上拉电阻及显示模块供电影响。
      */
-    SET_GPIO_INPUT_MODE(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN, LL_GPIO_PULL_NO);
-    SET_GPIO_INPUT_MODE(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_PULL_NO);
-
+	LL_GPIO_SetPinPull(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN, LL_GPIO_PULL_NO); 
+    LL_GPIO_ResetOutputPin(DISPLAY_CLK_PORT, DISPLAY_CLK_PIN);
+    LL_GPIO_ResetOutputPin(DISPLAY_DIO_PORT, DISPLAY_DIO_PIN);
 
     /* -------------------------------------------------------------------------------------------------------------- */
     /* BMS 低功耗状态配置                                                                                              */

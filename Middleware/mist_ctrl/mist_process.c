@@ -179,11 +179,26 @@ void mist_process_coarse(mist_ctrl_t *ctrl, uint16_t ad, uint32_t seq)
     {
         if ((ctrl->riseOk != 0U) && (ctrl->stat.peakAd != 0U))
         {
+            ctrl->coarseFailCnt = 0U;
             mist_process_begin_fine(ctrl, seq);
         }
         else
         {
-            ctrl->stat.state = MIST_STATE_ERROR;
+            if (ctrl->coarseFailCnt < ctrl->cfg->coarseFailCnt)
+            {
+                ctrl->coarseFailCnt++;
+            }
+
+            if (ctrl->coarseFailCnt >= ctrl->cfg->coarseFailCnt)
+            {
+                ctrl->coarseFailCnt  = 0U;
+                ctrl->stat.peakFreq = ctrl->cfg->centerFreq;
+                mist_process_begin_fine(ctrl, seq);
+            }
+            else
+            {
+                ctrl->stat.state = MIST_STATE_ERROR;
+            }
         }
         return;
     }
