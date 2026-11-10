@@ -16,6 +16,7 @@
 #include "app_system.h"
 #include "app_sampling.h"
 #include "app_bms.h"
+#include "app_protect.h"
 #include "app_display.h"
 #include "app_logic.h"
 #include "app_mist.h"
@@ -55,12 +56,6 @@ system_t System;
 
 
 /* Debug variables ---------------------------------------------------------------------------------------------------*/
-
-/** 电池通路调试控制标志，true 表示输出使能电平 */
-bool vbat_ctrl = true;
-
-/** USB 输入通路调试控制标志，true 表示输出使能电平 */
-bool vin_ctrl = false;
 
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
@@ -303,7 +298,7 @@ void system_data_init(void)
 //               调用 fan_pwm_ramp_rst() 重置 PWM 渐变控制
 //  Author     : Chen Liang 2026-10-30
 *******************************************************************************/
-void system_test(void)
+void system_usb_drop_check(void)
 {
     static double last_usb_v = 0.0;
     static bool boost_flg = false;
@@ -334,9 +329,9 @@ void system_test(void)
      * 风机高档运行期间，如果检测到 USB 电压突降，
      * 则重新初始化风机 PWM 渐变状态。
      */
-    if (boost_flg &&
-        System.logic.power &&
-        (System.logic.fan_mode >= FAN_MODE_3))
+    if (boost_flg 
+    &&  System.logic.power 
+	&& (System.logic.fan_mode >= FAN_MODE_3))
     {
         fan_pwm_ramp_rst();
     }
@@ -383,7 +378,7 @@ void system_run(void)
     app_sampling_task();
 
     /* 执行 USB 输入电压突降检测。 */
-    system_test();
+    system_usb_drop_check();
 
     /* 按 1ms 周期调度系统任务。 */
     if (timer_base_Timing(&_timer_logic, 1U))
@@ -401,7 +396,10 @@ void system_run(void)
         app_display_task();
 
         /* 执行系统应用层功能控制逻辑。 */
-        add_logic_1ms_task();
+        app_logic_1ms_task();
+		
+		/* 系统保护控制逻辑。 */
+		app_protect_task();
 
         /* 处理 UART1 协议接收、解析及应答。 */
         fan_protocol_1ms_task();
@@ -416,34 +414,7 @@ void system_run(void)
     /* 统计系统主循环相邻两次执行的时间间隔。 */
     system_loop_delay();
 
-    /*
-     * 更新电池通路使能信号：
-     *
-     * true  ：输出高电平，使能电池通路。
-     * false ：输出低电平，关闭电池通路。
-     */
-    if (vbat_ctrl)
-    {
-        LL_GPIO_SetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN);
-    }
-    else
-    {
-        LL_GPIO_ResetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN);
-    }
+    app_io_ctrl_task();
 
-    /*
-     * 更新 USB 输入通路使能信号：
-     *
-     * true  ：输出高电平，使能 USB/VIN 输入通路。
-     * false ：输出低电平，关闭 USB/VIN 输入通路。
-     */
-    if (vin_ctrl)
-    {
-        LL_GPIO_SetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
-    }
-    else
-    {
-        LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
-    }
 }
 

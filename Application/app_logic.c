@@ -144,15 +144,14 @@ void btn_power_event(void)
 }
 
 /*******************************************************************************
-//  Function   : btn_power_event
-//  Description: 根据电源按键状态更新设备开关机标志
+//  Function   : usb_in_event
+//  Description: None
 //  Param      : None
 //  Return     : None
-//  Others     : ADC 电源按键按下时设置 power=1；
-//               按键释放时设置 power=0
+//  Others     : None
 //  Author     : 陈亮 2026-06-06
 *******************************************************************************/
-void btn_usb_event(void)
+void usb_in_event(void)
 {
     System.logic.usb_present = BMS_IO_USB_IS_PRESENT();
 }
@@ -211,7 +210,7 @@ void app_dev_logic(void)
 
 
 /*******************************************************************************
-//  Function   : add_logic_1ms_task
+//  Function   : app_logic_1ms_task
 //  Description: 执行应用层设备 1ms 周期控制任务
 //  Param      : None
 //  Return     : None
@@ -219,7 +218,7 @@ void app_dev_logic(void)
 //               同步风扇运行档位及雾化片 PWM 输出参数
 //  Author     : 陈亮 2026-06-06
 *******************************************************************************/
-void add_logic_1ms_task(void)
+void app_logic_1ms_task(void)
 {
     /* 更新风扇按键事件，长按判定时间为 500ms。 */
     button_event_Update(BUTTON_ITEM_FAN, 2000);
@@ -236,7 +235,7 @@ void add_logic_1ms_task(void)
     /* 根据电源按键状态更新设备开关机标志。 */
     btn_power_event();
 
-    btn_usb_event();
+    usb_in_event();
 
     /* 执行设备状态管理及风扇、雾化输出控制。 */
     app_dev_logic();

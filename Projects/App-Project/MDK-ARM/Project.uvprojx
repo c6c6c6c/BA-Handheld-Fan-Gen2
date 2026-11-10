@@ -624,11 +624,6 @@
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_status.c</FilePath>
             </File>
             <File>
-              <FileName>bms_protect.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Middleware\bms_ctrl\bms_protect.c</FilePath>
-            </File>
-            <File>
               <FileName>bms_convert.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\bms_ctrl\bms_convert.c</FilePath>
@@ -707,6 +702,16 @@
               <FileName>app_sampling.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Application\app_sampling.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_protect.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Application\app_protect.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_io_ctrl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Application\app_io_ctrl.c</FilePath>
             </File>
           </Files>
         </Group>

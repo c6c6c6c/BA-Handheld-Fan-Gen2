@@ -69,8 +69,8 @@ do                                                               \
  *        正常工作时配置为上拉输入，
  *        用于检测风机按键状态。
  */
-#define FAN_SW_PORT                        GPIOA
-#define FAN_SW_PIN                         LL_GPIO_PIN_8
+#define FAN_SW_PORT                        GPIOB
+#define FAN_SW_PIN                         LL_GPIO_PIN_2
 
 /**
  * @brief 雾化按键 GPIO 定义
@@ -78,8 +78,8 @@ do                                                               \
  *        正常工作时配置为上拉输入，
  *        用于检测雾化按键状态。
  */
-#define MIST_SW_PORT                       GPIOB
-#define MIST_SW_PIN                        LL_GPIO_PIN_2
+#define MIST_SW_PORT                       GPIOA
+#define MIST_SW_PIN                        LL_GPIO_PIN_8    
 
 #ifdef POWER_CTRL_GPIO
 /**

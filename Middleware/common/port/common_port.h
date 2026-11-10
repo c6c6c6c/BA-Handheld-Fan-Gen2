@@ -53,14 +53,14 @@ typedef struct
     bool (*Init)  (uint8_t *rx_buf, uint16_t rx_size,uint8_t *tx_buf, uint16_t tx_size); //初始化物理端port
     void (*Deinit)(void);                                                                //反初始化物理端port
     //接收接口
-    common_port_rx_state_t (*receive_state) (void);                       //获取当前接收状态
-    void *                 (*receive_data)  (void);                       //获取接收数据缓冲区地址
-    uint16_t               (*receive_length)(void);                       //获取当前完整接收帧的数据长度
-	void                   (*receive_rst)(void);                          //获取当前完整接收帧的数据长度
-    //发送接口
-    void*                  (*transfer_data)();                            //获取发送缓冲区地址
-    bool                   (*start_transfer)(uint16_t length);            //启动发送指定长度数据
-    common_port_tx_state_t (*transfer_state)(void);                       //获取当前发送状态
+    common_port_rx_state_t (*receive_state) (void);                                      //获取当前接收状态
+    void *                 (*receive_data)  (void);                                      //获取接收数据缓冲区地址
+    uint16_t               (*receive_length)(void);                                      //获取当前完整接收帧的数据长度
+	void                   (*receive_rst)(void);                                         //获取当前完整接收帧的数据长度
+    //发送接口                                                                           
+    void*                  (*transfer_data)();                                           //获取发送缓冲区地址
+    bool                   (*start_transfer)(uint16_t length);                           //启动发送指定长度数据
+    common_port_tx_state_t (*transfer_state)(void);                                      //获取当前发送状态
 
 } common_port_api_t;
 
@@ -75,11 +75,11 @@ typedef struct
  *******************************************************************************/
 typedef struct
 {
-    uint8_t *Buffer;                    // 发送环形缓冲区首地址
-    uint16_t BufferSize;                // 发送环形缓冲区总容量，单位为字节
+    uint8_t *Buffer;                       // 发送环形缓冲区首地址
+    uint16_t BufferSize;                   // 发送环形缓冲区总容量，单位为字节
 
-    volatile uint16_t Count;              // 写入索引，指向下一次数据写入位置
-    volatile uint16_t Length;           // 读取索引，指向下一次数据发送位置
+    volatile uint16_t Count;               // 写入索引，指向下一次数据写入位置
+    volatile uint16_t Length;              // 读取索引，指向下一次数据发送位置
 
     volatile common_port_tx_state_t State; // 当前发送状态
 } common_port_tx_t;

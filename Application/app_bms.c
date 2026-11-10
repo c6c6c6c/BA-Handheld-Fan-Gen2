@@ -296,8 +296,8 @@ void app_bms_1ms_task(void)
         /* 更新电池充放电状态。 */
         app_bms_state_update();
 
-        /* 执行电池电压、电流、USB 及温度保护检查。 */
-        bms_protect_check(&bms_battery);
+        // /* 执行电池电压、电流、USB 及温度保护检查。 */
+        // bms_protect_check(&bms_battery);
 
         /* 执行 SOC 初始化或库仑积分及 SOH 更新。 */
         app_bms_soc_update();

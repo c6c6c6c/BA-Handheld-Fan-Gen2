@@ -16,12 +16,14 @@
 
 #include "main.h"
 #include "app_logic.h"
-
+#include "app_protect.h"
+#include "app_io_ctrl.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
-
 /** 系统看门狗使能配置，0=关闭，1=开启 */
 #define SYSTEM_WDG_EN         0
+
+/** 芯片唯一标识包含的 32 位字数量，共 96 位 */
 #define SYSTEM_UID_WORD_COUNT 3U
 
 
@@ -56,34 +58,27 @@ typedef struct
 
 
 
-typedef struct 
-{
-    uint16_t temp;
-    uint16_t level;
-    uint16_t err;
-    uint8_t  version;
-}dev_cool_t;
-
-
-
 /**
  * @brief 系统运行状态
- * @note  保存系统故障、开关机计时、主循环运行间隔、
- *        NTC 温度、休眠标志及应用层设备控制状态。
+ * @note  保存系统故障、主循环运行间隔、芯片唯一标识、编译信息、
+ *        NTC 温度、休眠标志、应用逻辑、IO 控制及保护故障状态。
  */
 typedef struct
 {
-    error_t         err;                              /**< 系统故障状态 */
-    uint32_t        systemLoopDelay;                  /**< 相邻两次系统主循环的时间间隔，单位 ms */
+    error_t         err;                             /**< 系统故障状态 */
+    uint32_t        systemLoopDelay;                 /**< 相邻两次系统主循环的时间间隔，单位 ms */
     uint32_t        unique_id[SYSTEM_UID_WORD_COUNT]; /**< 芯片 96 位唯一标识 */
-    compile_param_t compile_param;                    /**< 固件编译日期和时间 */
-    float           ntc_temp;                         /**< 当前 NTC 检测温度，单位 ℃ */
-    bool            sleep_flg;                        /**< 系统休眠标志，true=休眠，false=正常运行 */
-    app_logic_t     logic;                            /**< 应用层设备运行及控制逻辑状态 */
+    compile_param_t compile_param;                   /**< 固件编译日期和时间 */
+    float           ntc_temp;                        /**< 当前 NTC 检测温度，单位 ℃ */
+    bool            sleep_flg;                       /**< 系统休眠标志，true=休眠，false=正常运行 */
+    app_logic_t     logic;                           /**< 应用层设备运行及控制逻辑状态 */
 
-    dev_cool_t      coolDev;
+    dev_io_t        io_real;                         /**< 本周期 GPIO 输出控制状态，不表示引脚反馈 */
+    dev_io_t        io_logic;                        /**< 待更新的 IO 逻辑控制值，每周期复制到 io_real 后恢复默认值 */
+
+    protect_fault_t fault_real;                      /**< 实时保护故障状态 */
+    protect_fault_t fault_hold;                      /**< 保持的保护故障状态 */
 } system_t;
-
 
 /* External variables ------------------------------------------------------------------------------------------------*/
 

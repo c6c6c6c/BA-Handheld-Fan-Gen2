@@ -57,7 +57,7 @@ void bsp_pga2_Init(void)
 
     /* 配置 OPA2 为同相 PGA 模式，增益设置为 16 倍。 */
     LL_OPA_SetFunctionalMode(OPA2, LL_OPA_MODE_PGA);
-    LL_OPA_SetPGAGain(OPA2, LL_OPA_PGA_GAIN_16);
+    LL_OPA_SetPGAGain(OPA2, LL_OPA_PGA_GAIN_2);
 
     /*
      * 使能内部偏置并选择 VCC/2。

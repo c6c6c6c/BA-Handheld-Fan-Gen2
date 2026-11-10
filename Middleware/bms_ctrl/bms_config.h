@@ -71,23 +71,7 @@ typedef struct
 } battery_config_t;
 
 
-/**
- * @brief BMS 实时及保持故障位域
- * @note  只按成员名访问，不依赖编译器的位域排列顺序。
- */
-typedef union
-{
-    uint16_t data;
-    struct
-    {
-        uint16_t batteryLow   : 1;     /**< 电池欠压 */
-        uint16_t batteryHigh  : 1;     /**< 电池过压 */
-        uint16_t usbHigh      : 1;     /**< USB 输入过压 */
-        uint16_t usbLow       : 1;     /**< USB 输入欠压 */
-        uint16_t tempHigh     : 1;     /**< 温度过高 */
-        uint16_t currentHigh  : 1;     /**< 电流过大 */
-    }bit;
-} bms_protect_fault_t;
+
 
 /**
  * @brief 电池实时运行数据
@@ -106,22 +90,11 @@ typedef struct
 
     battery_soc_t           soc_info;                    /**< soc 参数 */
 
-    bms_protect_fault_t     fault_real;                 /**< 实时故障 */
-    bms_protect_fault_t     fault_hold;                 /**< 保持故障 */
-
 } bms_battery_t;
 
 
 
 /* IO Adapt ----------------------------------------------------------------------------------------------------------*/
-
-/** VIN 输入通路控制 */
-#define BMS_IO_VIN_ENABLE()         LL_GPIO_SetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN)
-#define BMS_IO_VIN_DISABLE()        LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN)
-
-/** VBAT 电池通路控制 */
-#define BMS_IO_VBAT_ENABLE()        LL_GPIO_SetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN)
-#define BMS_IO_VBAT_DISABLE()       LL_GPIO_ResetOutputPin(BMS_VBAT_EN_PORT, BMS_VBAT_EN_PIN)
 
 /** BMS CTL 电平控制 */
 #define BMS_IO_CTL_HIGH()           LL_GPIO_SetOutputPin(BMS_CTL_PORT, BMS_CTL_PIN)

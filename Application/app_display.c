@@ -195,15 +195,14 @@ static void app_display_convert(void)
         : aip650e_seglist2[display.bit.showNum[2]];
 
     /* 控制百位数字 1 对应的独立笔段。 */
-    aip650e.show[3] =
-        display.bit.showNum[0] == 1U ? 0x03U : 0U;
+    aip650e.show[3] = display.bit.showNum[0] == 1U ? 0x03U : 0U;
 
     /* 组合 DIG3 功能图标。 */
     aip650e.show[2] = 0U;
 
-    aip650e.show[2] |= ((display.bit.mist != 0U))           << 0;
-    aip650e.show[2] |= ((display.bit.percentageIcon != 0U)) << 1;
-    aip650e.show[2] |= ((display.bit.fanIcon != 0U))        << 2;
+    aip650e.show[2] |= ((display.bit.mist           != 0U)) << 0;
+    aip650e.show[2] |= ((display.bit.fanIcon        != 0U)) << 1;
+    aip650e.show[2] |= ((display.bit.percentageIcon != 0U)) << 2;
     aip650e.show[2] |= (display.bit.cooling & 0x07U)        << 3;
 }
 
@@ -223,10 +222,10 @@ static void app_display_convert(void)
 *******************************************************************************/
 static void app_display_showNum(uint8_t num, bool IsDisplay)
 {
-    if (IsDisplay && (num <= 100U))
+    if (IsDisplay && (num <= 199U))
     {
         /* 百位数字 1 显示控制。 */
-        display.bit.showNum[0] = (num == 100U);
+        display.bit.showNum[0] = (num >= 100U);
 
         /* 十位小于 10 时关闭显示。 */
         display.bit.showNum[1] = num >= 10U
@@ -443,7 +442,83 @@ static void boot_display_logic(void)
 
 #endif /* BOOT_PROJECT */
 
+/*******************************************************************************
+//  Function   : test_display_logic
+//  Description: 测试
+//  Param      : None
+//  Return     : None
+//  Others     : None
+//  Author     : Chen Liang 2026-11-02
+*******************************************************************************/
+#if 0
+static void test_display_logic(void)
+{
+    static timer_base_t _timer = {0};
+    static int Cnt = 0;
 
+    if(System.logic.power == 0)
+    {
+        display.bit.percentageIcon = false;
+        display.bit.fanIcon        = false;
+        display.bit.mist           = false;
+        display.bit.cooling        = false;
+        app_display_showNum(0U, false);
+        timer_base_Rst(&_timer);
+        Cnt = 0;
+    }
+    else
+    {
+        if(timer_base_Timing(&_timer, 200))
+        {
+            Cnt++;
+            display.bit.percentageIcon = false;
+            display.bit.fanIcon        = false;
+            display.bit.mist           = false;
+            display.bit.cooling        = false;
+            app_display_showNum(0U, false);
+            switch(Cnt)
+            {
+                case 0:case 1:case 2:
+                break;
+                case 3:case 4:case 5:case 6:case 7:case 8:case 9:case 10:case 11:case 12:
+                    app_display_showNum((Cnt - 3) * 11, true);
+                break;
+                case 13:
+                    app_display_showNum(100, true); 
+                break;
+                case 14:
+                    display.bit.fanIcon = true;
+                break;
+                case 15:
+                    display.bit.mist = true;
+                break;
+                case 16:
+                    display.bit.percentageIcon = true;
+                break;
+                case 17:
+                    display.bit.cooling = 1;
+                break;
+                case 18:
+                    display.bit.cooling = 2;
+                break;
+                case 19:
+                    display.bit.cooling = 4;
+                break;      
+                default:
+                    Cnt = 0;
+                break;         
+            }
+
+        }
+    }
+	
+	app_display_showNum(188,true);
+	display.bit.cooling = 7;
+	display.bit.percentageIcon = true;
+	display.bit.mist = true;
+	display.bit.fanIcon = true;
+}
+#endif
 /* Exported functions ------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
@@ -485,7 +560,6 @@ void app_display_task(void)
     /* Bootloader OTA 升级状态显示。 */
     boot_display_logic();
 #endif
-
     /* 将数字、字符及图标转换为段码。 */
     app_display_convert();
 

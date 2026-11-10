@@ -41,8 +41,21 @@
 /* Variables ---------------------------------------------------------------------------------------------------------*/
 
 /** 风扇通信协议实例，保存 UART 收发缓冲区及当前请求、应答命令 */
-fan_protocol_t protocol = {0};
+fan_protocol_t   protocol      = {0};
+protocol_data_t  protocol_data = {0};
 
+
+
+/*******************************************************************************
+//  Function   : bsp_adc_ChannelConvCpltCallback
+//  Description: ADC 一组通道转换完成回调函数
+//  Param      : Value - ADC 转换结果缓存首地址
+//               Size  - ADC 转换数据数量
+//  Return     : None
+//  Others     : Weak 函数，应用层可重新实现该函数以处理 ADC 数据
+//  Author     : Chen Liang 2026-08-18
+*******************************************************************************/
+__weak void fan_protocol_ConnectExitCallback(){}
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
 
@@ -65,7 +78,7 @@ static void fan_protocol_request(uint8_t *data)
     _START_CURSOR_READ(data, len)
 
         /* 清除请求命令最高位，生成默认应答命令。 */
-        protocol.response = (protocol_cmd_t)((uint8_t)protocol.request & 0x7FU);
+        protocol.response  = (protocol_cmd_t)((uint8_t)protocol.request & 0x7FU);
 
         /* 根据请求命令执行对应的业务处理。 */
         switch ((uint8_t)protocol.request)
@@ -73,10 +86,15 @@ static void fan_protocol_request(uint8_t *data)
 #ifdef APP_PROJECT
 
             case PROTO_INFO_REQUEST:
-            case PROTO_SYSTEM_REQUEST:
             case PROTO_BATTERY_INFO_REQUEST:
             {
                 /* 查询命令不修改设备状态，直接生成对应应答。 */
+                break;
+            }
+
+            case PROTO_SYSTEM_REQUEST:
+            {
+                _CURSOR_READ_BYTE(protocol_data.ctrl.prohibit_charging);
                 break;
             }
 
@@ -95,16 +113,16 @@ static void fan_protocol_request(uint8_t *data)
             case PROTO_COOL_REQUEST:
             {
                 /* 读取制冷设备目标温度。 */
-                _CURSOR_READ_VAR(System.coolDev.temp);
+                _CURSOR_READ_VAR(protocol_data.cool_model.temp);
 
                 /* 读取制冷设备运行档位。 */
-                _CURSOR_READ_VAR(System.coolDev.level);
+                _CURSOR_READ_VAR(protocol_data.cool_model.err);
 
                 /* 读取制冷设备故障信息。 */
-                _CURSOR_READ_VAR(System.coolDev.err);
+                _CURSOR_READ_VAR(protocol_data.cool_model.state);
 
                 /* 读取制冷设备软件版本。 */
-                _CURSOR_READ_VAR(System.coolDev.version);
+                _CURSOR_READ_VAR(protocol_data.cool_model.version);
                 break;
             }
 
@@ -162,7 +180,6 @@ static void fan_protocol_request(uint8_t *data)
                 break;
             }
         }
-
     /* 结束协议请求数据区读取游标。 */
     _STOP_CURSOR_READ();
 }
@@ -252,8 +269,8 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_VAR(bms_battery.soc_info.discharge_mah_total);
 
                 /* 电池实时故障及锁存故障。 */
-                _CURSOR_WRITE_VAR(bms_battery.fault_real.data);
-                _CURSOR_WRITE_VAR(bms_battery.fault_hold.data);
+                _CURSOR_WRITE_VAR(System.fault_real.data);
+                _CURSOR_WRITE_VAR(System.fault_hold.data);
 
                 /* 系统电源及运行模式。 */
                 _CURSOR_WRITE_BYTE(System.logic.power);
@@ -406,6 +423,7 @@ void fan_protocol_1ms_task(void)
     /* 检查通信接口是否已经初始化。 */
     if (protocol.api == 0)
     {
+        protocol.IsConnect = false;
         return;
     }
 
@@ -436,6 +454,12 @@ void fan_protocol_1ms_task(void)
 
             /* 解析协议请求及其数据区。 */
             fan_protocol_request(&rx_data[PROTO_DATA_INDEX]);
+
+            if(protocol.response != PROTO_ERR)
+            {
+                protocol.IsConnect        = true;
+                protocol.ConnectExitTimer = PROTO_CONNECT_EXIT_TIME;
+            }
         }
         else
         {
@@ -449,4 +473,15 @@ void fan_protocol_1ms_task(void)
 	
 	/* 根据处理结果组帧并发送应答。 */
 	fan_protocol_response();
+
+    if(protocol.IsConnect && protocol.ConnectExitTimer)
+    {
+        protocol.ConnectExitTimer --;
+        protocol.IsConnect = (protocol.ConnectExitTimer != 0);
+
+        if(!protocol.IsConnect)
+        {
+            fan_protocol_ConnectExitCallback();
+        }
+    }
 }

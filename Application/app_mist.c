@@ -186,7 +186,7 @@ void app_mist_1ms_task(void)
              * 对应约 1s 输出、约 1s 停止的工作方式。
              */
             System.logic.mist_freq = 150000U;
-            System.logic.mist_duty = Cnt < 1000 ? 200U : 0U;
+            System.logic.mist_duty = Cnt < 1000 ? 500U : 0U;
 
 
             /* 更新脉冲雾化周期计数器。 */

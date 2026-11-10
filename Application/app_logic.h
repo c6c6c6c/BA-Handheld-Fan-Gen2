@@ -58,7 +58,7 @@ typedef struct
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
-//  Function   : add_logic_1ms_task
+//  Function   : app_logic_1ms_task
 //  Description: 执行应用层设备 1ms 周期控制任务
 //  Param      : None
 //  Return     : None
@@ -67,7 +67,7 @@ typedef struct
 //               同步风扇目标档位及雾化片 PWM 输出参数
 //  Author     : 陈亮 2026-06-06
 *******************************************************************************/
-void add_logic_1ms_task(void);
+void app_logic_1ms_task(void);
 
 
 #endif /* _APP_LOGIC_H_ */

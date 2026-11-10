@@ -48,6 +48,8 @@
 #define PROTO_MAX_FRAME_LEN         (PROTO_MAX_DATA_LEN + FAN_PROTOCOL_MIN_FRAME_LEN)
 
 
+#define PROTO_CONNECT_EXIT_TIME     5000
+
 /* Protocol command macros -------------------------------------------------------------------------------------------*/
 
 /**
@@ -110,10 +112,35 @@ typedef struct
 
     protocol_cmd_t request;            /**< 当前接收到的协议命令 */
 	protocol_cmd_t response;           /**< 当前接收到的协议命令 */
+
+    bool           IsConnect;
+    uint32_t       ConnectExitTimer;
 } fan_protocol_t;
 
-extern fan_protocol_t protocol;
 
+/**
+ * @brief 风扇通信协议数据结构体
+ * @note  保存 UART 收发缓冲区、底层通信接口及当前协议数据。
+ */
+typedef struct
+{
+    struct 
+    {
+        uint8_t prohibit_charging;
+    }ctrl;
+
+    struct
+    { 
+		uint16_t temp;
+		uint16_t err;
+		uint8_t  state;
+		uint8_t  version;
+    }cool_model;
+    
+} protocol_data_t;
+
+extern fan_protocol_t  protocol;
+extern protocol_data_t protocol_data;
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
