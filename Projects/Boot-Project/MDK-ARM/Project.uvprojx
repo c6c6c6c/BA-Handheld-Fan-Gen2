@@ -538,6 +538,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Middleware\common\port\common_port.c</FilePath>
             </File>
+            <File>
+              <FileName>flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middleware\common\bootloader\flash.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -202,6 +202,7 @@ double bms_battery_voltage(uint32_t vrefAdc)
 *******************************************************************************/
 double current_k = 0.946564;
 double current_b = 12.225;
+int offect = 2;
 double bms_battery_current(uint32_t pgaAdc, double vbat)
 {
     /* ADC/PGA 尚未有效、输出饱和或电池电压无效时不进行换算。 */
@@ -212,8 +213,8 @@ double bms_battery_current(uint32_t pgaAdc, double vbat)
         return 0.0;
     }
 
-	
-	return ((double)pgaAdc - 2048.0) * current_k + current_b;
+	pgaAdc += offect;
+	//return ((double)pgaAdc - 2048.0) * current_k + current_b;
     /*
      * V_PGA   = ADC_PGA / ADC_FULL_SCALE × VCCA
      * V_ZERO  = ZERO_RATIO × VCCA
@@ -221,8 +222,8 @@ double bms_battery_current(uint32_t pgaAdc, double vbat)
      * I_mA    = V_SHUNT / R_SHUNT × 1000
      * 合并固定系数后：I_mA = (ADC_PGA - ZERO_ADC) × VCCA × MA_PER_CODE_V
      */
-//    return ((double)pgaAdc - BMS_BATTERY_CURRENT_ZERO_ADC) *
-//           vbat * BMS_BATTERY_CURRENT_MA_PER_CODE_V;
+    return ((double)pgaAdc - BMS_BATTERY_CURRENT_ZERO_ADC) *
+           vbat * BMS_BATTERY_CURRENT_MA_PER_CODE_V;
 }
 
 

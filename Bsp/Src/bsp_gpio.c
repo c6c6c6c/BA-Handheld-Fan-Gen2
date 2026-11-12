@@ -115,7 +115,11 @@ void bsp_gpio_Init(void)
      * 初始化为推挽输出，默认输出高电平。
      * 根据当前硬件控制逻辑，高电平用于使能 VIN 输入通路。
      */
-    LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
+    #if APP_PROJECT
+        LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
+    #else
+        LL_GPIO_SetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
+    #endif
     SET_GPIO_OUTPUT_MODE(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
 
     /*

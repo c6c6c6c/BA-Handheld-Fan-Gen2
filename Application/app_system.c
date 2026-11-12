@@ -41,6 +41,8 @@
 
 #include "uart1_port.h"
 #include "fan_protocol.h"
+#include "bootloader.h"
+#include "crc.h"
 
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
@@ -116,92 +118,92 @@ static void Unique_ID_read(void)
 //               结果保存至 System.compile_param
 //  Author     : Chen Liang 2026-10-30
 *******************************************************************************/
-static void compile_prarm_read(void)
-{
-    const char compile_date[] = __DATE__;
-    const char compile_time[] = __TIME__;
-    uint8_t month = 0U;
+//static void compile_prarm_read(void)
+//{
+//    const char compile_date[] = __DATE__;
+//    const char compile_time[] = __TIME__;
+//    uint8_t month = 0U;
 
-    /* 根据 __DATE__ 中的英文月份缩写确定月份。 */
-    switch (compile_date[0])
-    {
-        case 'J':
-            if (compile_date[1] == 'a')
-            {
-                /* Jan：一月。 */
-                month = 1U;
-            }
-            else
-            {
-                /* Jun：六月；Jul：七月。 */
-                month = (compile_date[2] == 'n') ? 6U : 7U;
-            }
-            break;
+//    /* 根据 __DATE__ 中的英文月份缩写确定月份。 */
+//    switch (compile_date[0])
+//    {
+//        case 'J':
+//            if (compile_date[1] == 'a')
+//            {
+//                /* Jan：一月。 */
+//                month = 1U;
+//            }
+//            else
+//            {
+//                /* Jun：六月；Jul：七月。 */
+//                month = (compile_date[2] == 'n') ? 6U : 7U;
+//            }
+//            break;
 
-        case 'F':
-            month = 2U;
-            break;
+//        case 'F':
+//            month = 2U;
+//            break;
 
-        case 'M':
-            /* Mar：三月；May：五月。 */
-            month = (compile_date[2] == 'r') ? 3U : 5U;
-            break;
+//        case 'M':
+//            /* Mar：三月；May：五月。 */
+//            month = (compile_date[2] == 'r') ? 3U : 5U;
+//            break;
 
-        case 'A':
-            /* Apr：四月；Aug：八月。 */
-            month = (compile_date[1] == 'p') ? 4U : 8U;
-            break;
+//        case 'A':
+//            /* Apr：四月；Aug：八月。 */
+//            month = (compile_date[1] == 'p') ? 4U : 8U;
+//            break;
 
-        case 'S':
-            month = 9U;
-            break;
+//        case 'S':
+//            month = 9U;
+//            break;
 
-        case 'O':
-            month = 10U;
-            break;
+//        case 'O':
+//            month = 10U;
+//            break;
 
-        case 'N':
-            month = 11U;
-            break;
+//        case 'N':
+//            month = 11U;
+//            break;
 
-        case 'D':
-            month = 12U;
-            break;
+//        case 'D':
+//            month = 12U;
+//            break;
 
-        default:
-            /* 无法识别月份时保存为 0。 */
-            month = 0U;
-            break;
-    }
+//        default:
+//            /* 无法识别月份时保存为 0。 */
+//            month = 0U;
+//            break;
+//    }
 
-    /* 解析编译年份 yyyy。 */
-    System.compile_param.year = (uint16_t)(
-          (uint16_t)(compile_date[7]  - '0') * 1000U
-        + (uint16_t)(compile_date[8]  - '0') * 100U
-        + (uint16_t)(compile_date[9]  - '0') * 10U
-        + (uint16_t)(compile_date[10] - '0')
-    );
+//    /* 解析编译年份 yyyy。 */
+//    System.compile_param.year = (uint16_t)(
+//          (uint16_t)(compile_date[7]  - '0') * 1000U
+//        + (uint16_t)(compile_date[8]  - '0') * 100U
+//        + (uint16_t)(compile_date[9]  - '0') * 10U
+//        + (uint16_t)(compile_date[10] - '0')
+//    );
 
-    /* 保存编译月份。 */
-    System.compile_param.month = month;
+//    /* 保存编译月份。 */
+//    System.compile_param.month = month;
 
-    /*
-     * 解析编译日期。
-     *
-     * __DATE__ 对个位日期使用前导空格，
-     * 例如 "Nov  4 2026"。
-     */
-    System.compile_param.day = (uint8_t)(((compile_date[4] == ' ') ? 0U : (uint8_t)(compile_date[4] - '0') * 10U) + (uint8_t)(compile_date[5] - '0'));
+//    /*
+//     * 解析编译日期。
+//     *
+//     * __DATE__ 对个位日期使用前导空格，
+//     * 例如 "Nov  4 2026"。
+//     */
+//    System.compile_param.day = (uint8_t)(((compile_date[4] == ' ') ? 0U : (uint8_t)(compile_date[4] - '0') * 10U) + (uint8_t)(compile_date[5] - '0'));
 
-    /* 解析编译小时 hh。 */
-    System.compile_param.hour   = (uint8_t)((uint8_t)(compile_time[0] - '0') * 10U + (uint8_t)(compile_time[1] - '0'));
+//    /* 解析编译小时 hh。 */
+//    System.compile_param.hour   = (uint8_t)((uint8_t)(compile_time[0] - '0') * 10U + (uint8_t)(compile_time[1] - '0'));
 
-    /* 解析编译分钟 mm。 */
-    System.compile_param.minute = (uint8_t)((uint8_t)(compile_time[3] - '0') * 10U + (uint8_t)(compile_time[4] - '0'));
+//    /* 解析编译分钟 mm。 */
+//    System.compile_param.minute = (uint8_t)((uint8_t)(compile_time[3] - '0') * 10U + (uint8_t)(compile_time[4] - '0'));
 
-    /* 解析编译秒数 ss。 */
-    System.compile_param.second = (uint8_t)((uint8_t)(compile_time[6] - '0') * 10U + (uint8_t)(compile_time[7] - '0'));
-}
+//    /* 解析编译秒数 ss。 */
+//    System.compile_param.second = (uint8_t)((uint8_t)(compile_time[6] - '0') * 10U + (uint8_t)(compile_time[7] - '0'));
+//}
 
 
 /* Exported functions ------------------------------------------------------------------------------------------------*/
@@ -257,12 +259,6 @@ void system_bsp_init(void)
 *******************************************************************************/
 void system_data_init(void)
 {
-    /* 读取芯片 UID。 */
-    Unique_ID_read();
-
-    /* 解析固件编译日期及时间。 */
-    compile_prarm_read();
-
     /* 初始化风机控制模块。 */
     fan_Init();
 
@@ -350,11 +346,24 @@ void system_usb_drop_check(void)
 *******************************************************************************/
 void system_init(void)
 {
+
+    /* 读取芯片 UID。 */
+    Unique_ID_read();
+
+    /* 解析固件编译日期及时间。 */
+    //compile_prarm_read();
+
     /* 初始化板级硬件驱动。 */
     system_bsp_init();
 
     /* 初始化系统应用层功能模块。 */
     system_data_init();
+	
+	/* 计算 Application Flash 区域软件校验码。 */
+    System.app_flash_crc  = CRC32_IEEE_Calculate((const uint8_t *)APP_BASE_ADDRESS,APP_MAX_SIZE);
+
+    /* 计算 Bootloader Flash 区域软件校验码。 */
+    System.boot_flash_crc = CRC32_IEEE_Calculate((const uint8_t *)MCU_BASE_ADDRESS,APP_FLASH_OFFSET);
 }
 
 

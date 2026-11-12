@@ -405,11 +405,16 @@ def build_regions(
 
 
 def get_image_range(regions, byte_writing, flash_addr, flash_size, fill_to_total_size):
+    """Pad full-flash images to flash end, other images to their partition end."""
     if fill_to_total_size and min(region["start_addr"] for region in regions) == flash_addr:
         return flash_addr, flash_size
 
     start_addr = min(region["start_addr"] for region in regions)
-    end_addr = max(region["start_addr"] + len(region["data"]) for region in regions)
+    end_addr = max(
+        region["start_addr"]
+        + (region["size"] if fill_to_total_size else len(region["data"]))
+        for region in regions
+    )
 
     for item in byte_writing:
         start_addr = min(start_addr, item["addr"])

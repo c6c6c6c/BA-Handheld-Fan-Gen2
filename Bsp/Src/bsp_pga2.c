@@ -14,7 +14,6 @@
 #include "bsp_pga2.h"
 
 
-
 /* Private function --------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
@@ -42,10 +41,11 @@ static void bsp_pga2_io_config(void)
 //  Param      : None
 //  Return     : None
 //  Others     : PB3、PA15 分别作为 PGA2 正、负输入；OPA2 配置为 PGA 模式，
-//               增益设置为 16 倍，偏置电压设置为 VCC/2；关闭外部输出后，
+//               增益设置为 4 倍，偏置电压设置为 VCC/2；关闭外部输出后，
 //               OPA2 输出通过内部通路映射至 ADC 的 LL_ADC_CHANNEL_OPA2
 //  Author     : Chen Liang 2026-10-10
 *******************************************************************************/
+
 void bsp_pga2_Init(void)
 {
     bsp_pga2_io_config();
@@ -55,9 +55,9 @@ void bsp_pga2_Init(void)
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_OPA1);
     LL_OPA_Disable(OPA2);
 
-    /* 配置 OPA2 为同相 PGA 模式，增益设置为 16 倍。 */
+    /* 配置 OPA2 为同相 PGA 模式，增益设置为 15 倍。 */
     LL_OPA_SetFunctionalMode(OPA2, LL_OPA_MODE_PGA);
-    LL_OPA_SetPGAGain(OPA2, LL_OPA_PGA_GAIN_2);
+    LL_OPA_SetPGAGain(OPA2, LL_OPA_PGA_GAIN_MINUS_63);
 
     /*
      * 使能内部偏置并选择 VCC/2。

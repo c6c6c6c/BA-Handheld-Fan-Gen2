@@ -1,0 +1,26 @@
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
+Build target 'Project'
+After Build - User command #1: fromelf --bincombined --output="..\..\Output\ba_fan_app.bin" ".\Output\ba_fan_app.axf"
+After Build - User command #2: py -u "..\..\..\Tools\merge_bin\merge_bin.py" "..\..\..\Tools\merge_bin\merge_bin_config.json"
+[INFO] merge_bin.py start
++=====================================================================================+
+Output: ba_fan_firmware.bin [Success]
+Merged Files:
+  Type         Capacity     Used Size    Usage      Exists   Location
+  Boot         0x4000       0x252C       58.08%     Yes      F:\MrChen\ProjectManage\05_BA_handheld_Fan_Gen2\02_GitCode\BA_handheld_Fan_Gen2\Projects\Output\ba_fan_boot.bin
+  App          0xBE00       0x8564       70.21%     Yes      F:\MrChen\ProjectManage\05_BA_handheld_Fan_Gen2\02_GitCode\BA_handheld_Fan_Gen2\Projects\Output\ba_fan_app.bin
+Byte Patching:
+  Name         Address      Value        Status
+  ota_state    0x0800FF80   0x02         Success
+Total Size: 0x10000
++=====================================================================================+
+Output: ba_fan_upgrade.bin [Success]
+Merged Files:
+  Type         Capacity     Used Size    Usage      Exists   Location
+  App          0xBE00       0x8564       70.21%     Yes      F:\MrChen\ProjectManage\05_BA_handheld_Fan_Gen2\02_GitCode\BA_handheld_Fan_Gen2\Projects\Output\ba_fan_app.bin
+Byte Patching:
+  Name         Address      Value        Status
+Total Size: 0x85E4
++=====================================================================================+
+".\Output\ba_fan_app.axf" - 0 Error(s), 0 Warning(s).
+Build Time Elapsed:  00:00:08

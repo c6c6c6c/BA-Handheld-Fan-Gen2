@@ -24,7 +24,7 @@
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 
 #include "main.h"
-
+#include "param.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
@@ -60,11 +60,11 @@
  */
 typedef struct
 {
-    uint32_t addr;               /**< 当前 Flash 烧录地址 */
-    uint32_t size;               /**< 已成功烧录的固件有效数据总长度，单位 Byte */
+    __IO uint32_t addr;               /**< 当前 Flash 烧录地址 */
+    __IO uint32_t size;               /**< 已成功烧录的固件有效数据总长度，单位 Byte */
 
-    uint16_t count;              /**< 已成功烧录的 Flash 数据包数量 */
-    uint16_t pack_size;          /**< 最近一次烧录的数据包长度，单位 Byte */
+    __IO uint16_t count;              /**< 已成功烧录的 Flash 数据包数量 */
+    __IO uint16_t pack_size;          /**< 最近一次烧录的数据包长度，单位 Byte */
 
     /**
      * @brief Flash 页数据缓存
@@ -74,8 +74,8 @@ typedef struct
      */
     union
     {
-        uint8_t  byte[FLASH_PAGE_SIZE];         /**< Flash 页字节缓存 */
-        uint32_t word[BOOT_FLASH_PAGE_WORDS];   /**< Flash 页 32 位字缓存 */
+        __IO uint8_t  byte[FLASH_PAGE_SIZE];         /**< Flash 页字节缓存 */
+        __IO uint32_t word[BOOT_FLASH_PAGE_WORDS];   /**< Flash 页 32 位字缓存 */
     } buffer;
 
 } boot_update_t;
@@ -126,7 +126,17 @@ void bootloader_Init(void);
 //               校验成功后自动更新烧录地址、固件长度及包计数
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
-bool bootloader_burn(const uint8_t *buffer, uint8_t length);
+bool bootloader_burn(uint8_t *buffer, uint8_t length);
 
-
+/*******************************************************************************
+//  Function   : bootloader_finish
+//  Description: 完成 OTA 升级并清理 Application 未使用区域
+//  Param      : None
+//  Return     : true  - 尾部区域擦除并校验成功
+//               false - 尚未写入固件或擦除校验失败
+//  Others     : 从下一待写页开始擦除至 APP_END_ADDRESS；
+//               成功后保存 OTA 完成状态及实际固件长度
+//  Author     : Chen Liang 2026-11-11
+*******************************************************************************/
+bool bootloader_finish(void);
 #endif /* BOOTLOADER_H */

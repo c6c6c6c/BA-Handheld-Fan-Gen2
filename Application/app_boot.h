@@ -24,7 +24,8 @@
  */
 typedef struct
 {
-	uint8_t a;
+    uint32_t        app_flash_crc;                    /**< app 软件 flash crc校验码 */
+    uint32_t        boot_flash_crc;                   /**< boot 软件 flash crc校验码 */
 } boot_t;
 
 

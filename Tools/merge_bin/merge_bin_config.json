@@ -58,6 +58,8 @@
         {
             "name"      : "../../Projects/Output/ba_fan_upgrade.bin",
             "handle"    : "header",
+            "all-fill"  : true,
+            "fill-char" : "0xFF",
             "merge-file":
             [
                 {

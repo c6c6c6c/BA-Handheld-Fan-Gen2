@@ -16,17 +16,8 @@
 
 #include "main.h"
 #include "fan.h"
-
+#include "app_mist.h"
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
-
-typedef enum
-{
-    MIST_MODE_CLOSE = 0,
-    MIST_MODE_CONTINUE,
-    MIST_MODE_PULSATING,
-    MIST_MODE_NUM
-}mist_mode_enum_t;
-
 
 /**
  * @brief 应用层设备运行状态

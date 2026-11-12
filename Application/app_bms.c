@@ -236,31 +236,6 @@ void app_bms_soc_update(void)
 }
 
 
-/* Debug variables ---------------------------------------------------------------------------------------------------*/
-
-/** BMS Flash 保存测试触发标志 */
-bool Is_bms_save = false;
-
-
-/*******************************************************************************
-//  Function   : app_bms_test
-//  Description: 执行 BMS Flash 保存测试
-//  Param      : None
-//  Return     : None
-//  Others     : 当 Is_bms_save 为 true 时，清除触发标志并保存 SOC 数据；
-//               用于调试 Flash 持久化功能
-//  Author     : Chen Liang 2026-10-27
-*******************************************************************************/
-void app_bms_test(void)
-{
-    if (Is_bms_save)
-    {
-        Is_bms_save = false;
-        app_bms_Save();
-    }
-}
-
-
 /*******************************************************************************
 //  Function   : app_bms_1ms_task
 //  Description: 执行 BMS 应用层 1ms 周期任务
@@ -284,6 +259,8 @@ void app_bms_1ms_task(void)
     /* ADC 累计采样完成后执行 BMS 数据处理。 */
     if (sample_accum_get(adcValue))
     {
+		
+		
         /* 根据 ADC 数据换算电池电压。 */
         bms_battery.voltage_v  = bms_battery_voltage(adcValue[BMS_ADC_VOLTAGE]);
 
@@ -302,9 +279,6 @@ void app_bms_1ms_task(void)
         /* 执行 SOC 初始化或库仑积分及 SOH 更新。 */
         app_bms_soc_update();
     }
-
-    /* 处理 Flash 数据保存测试。 */
-    app_bms_test();
 
     /* 根据系统休眠状态执行 IP5326 KEY 控制。 */
     app_bms_key_ctrl();

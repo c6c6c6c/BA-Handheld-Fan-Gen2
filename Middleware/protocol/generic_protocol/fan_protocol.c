@@ -55,7 +55,10 @@ protocol_data_t  protocol_data = {0};
 //  Others     : Weak 函数，应用层可重新实现该函数以处理 ADC 数据
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-__weak void fan_protocol_ConnectExitCallback(){}
+__weak void fan_protocol_ConnectExitCallback()
+{
+	protocol_data.ctrl.prohibit_charging = false;
+}
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
 
@@ -132,11 +135,14 @@ static void fan_protocol_request(uint8_t *data)
             {
 #ifdef BOOT_PROJECT
                 /* 初始化 Bootloader 固件升级状态及烧录地址。 */
-                bootloader_Init();
+                bootloader_Init();		
 #endif
 #ifdef APP_PROJECT
                 /* 保存 OTA 升级开始状态。 */
                 param_ota_save(OTC_STATUS_START);
+				
+				app_bms_Save();
+				
                 /* Application 工程通过系统复位进入升级流程。 */
                 bsp_rcc_SystemReset();
 #endif
@@ -149,7 +155,6 @@ static void fan_protocol_request(uint8_t *data)
             {
                 uint16_t pack_size;
                 uint16_t seq;
-                
                 /* 读取本次 OTA 固件数据包长度。 */
                 _CURSOR_READ_VAR(seq);
 
@@ -167,7 +172,10 @@ static void fan_protocol_request(uint8_t *data)
 
             case PROTO_OTA_COMPLETION_REQUEST:
             {
-				param_ota_save(OTC_STATUS_SUCCESS);
+                if(bootloader_finish() == false)
+                {
+                    protocol.response = PROTO_ERR;
+                }
                 break;
             }
 
@@ -225,7 +233,9 @@ static void fan_protocol_response(void)
         /* 根据应答命令填写协议数据区。 */
         switch ((uint8_t)protocol.response)
         {
+#ifdef BOOT_PROJECT
 
+#endif
 #ifdef APP_PROJECT
 
             case PROTO_INFO_RESPONSE:
@@ -245,7 +255,10 @@ static void fan_protocol_response(void)
                 _CURSOR_WRITE_VAR(System.compile_param.hour);
                 _CURSOR_WRITE_VAR(System.compile_param.minute);
                 _CURSOR_WRITE_VAR(System.compile_param.second);
-
+				
+				/* 固件校验码。 */
+                _CURSOR_WRITE_VAR(System.app_flash_crc);
+                _CURSOR_WRITE_VAR(System.boot_flash_crc);
                 break;
             }
 

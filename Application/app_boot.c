@@ -33,7 +33,7 @@
 #include "fan_protocol.h"
 #include "bootloader.h"
 #include "param.h"
-
+#include "crc.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
 
@@ -102,6 +102,7 @@ void boot_init(void)
     /* OTA 已成功时，尝试跳转 Application。 */
     if (param_ota_state() == OTC_STATUS_SUCCESS)
     {
+        bsp_flash_Lock();
         JumpToApplication();
     }
     else
@@ -121,7 +122,6 @@ void boot_init(void)
     system_data_init();
 }
 
-
 /*******************************************************************************
 //  Function   : boot_run
 //  Description: 执行 Bootloader 主循环及周期任务调度
@@ -137,7 +137,7 @@ void boot_run(void)
     static timer_base_t _timer_logic = {0};
     static timer_base_t _timer_jump  = {0};
     static bool jump_pending = false;
-
+	bsp_flash_Lock();
     /* 执行 Bootloader 1ms 周期任务。 */
     if (timer_base_Timing(&_timer_logic, 1U))
     {
@@ -151,7 +151,6 @@ void boot_run(void)
     /* 检查 OTA 是否已经完成。 */
     if (param_ota_state() == OTC_STATUS_SUCCESS)
     {
-		bsp_flash_Lock();
         /* 首次检测到升级成功时启动跳转延时。 */
         if (jump_pending == false)
         {
@@ -162,13 +161,11 @@ void boot_run(void)
         /* 达到等待时间后跳转 Application。 */
         if (timer_base_Count(&_timer_jump) >= BOOT_JUMP_DELAY_MS)
         {
-            //JumpToApplication();
 			bsp_rcc_SystemReset();
         }
     }
     else
     {
-		bsp_flash_Unlock();
         /* OTA 未完成，不允许跳转 Application。 */
         jump_pending = false;
     }

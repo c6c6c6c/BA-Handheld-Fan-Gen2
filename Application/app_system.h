@@ -65,19 +65,24 @@ typedef struct
  */
 typedef struct
 {
-    error_t         err;                             /**< 系统故障状态 */
-    uint32_t        systemLoopDelay;                 /**< 相邻两次系统主循环的时间间隔，单位 ms */
+    uint32_t        app_flash_crc;                    /**< app 软件 flash crc校验码 */
+    uint32_t        boot_flash_crc;                   /**< boot 软件 flash crc校验码 */
+    uint32_t        systemLoopDelay;                  /**< 相邻两次系统主循环的时间间隔，单位 ms */
     uint32_t        unique_id[SYSTEM_UID_WORD_COUNT]; /**< 芯片 96 位唯一标识 */
-    compile_param_t compile_param;                   /**< 固件编译日期和时间 */
-    float           ntc_temp;                        /**< 当前 NTC 检测温度，单位 ℃ */
-    bool            sleep_flg;                       /**< 系统休眠标志，true=休眠，false=正常运行 */
-    app_logic_t     logic;                           /**< 应用层设备运行及控制逻辑状态 */
 
-    dev_io_t        io_real;                         /**< 本周期 GPIO 输出控制状态，不表示引脚反馈 */
-    dev_io_t        io_logic;                        /**< 待更新的 IO 逻辑控制值，每周期复制到 io_real 后恢复默认值 */
+    float           ntc_temp;                         /**< 当前 NTC 检测温度，单位 ℃ */
+    bool            sleep_flg;                        /**< 系统休眠标志，true=休眠，false=正常运行 */
+    app_logic_t     logic;                            /**< 应用层设备运行及控制逻辑状态 */
 
-    protect_fault_t fault_real;                      /**< 实时保护故障状态 */
-    protect_fault_t fault_hold;                      /**< 保持的保护故障状态 */
+    dev_io_t        io_real;                          /**< 本周期 GPIO 输出控制状态，不表示引脚反馈 */
+    dev_io_t        io_logic;                         /**< 待更新的 IO 逻辑控制值，每周期复制到 io_real 后恢复默认值 */
+ 
+    error_t         err;                              /**< 系统故障状态 */
+ 
+    protect_fault_t fault_real;                       /**< 实时保护故障状态 */
+    protect_fault_t fault_hold;                       /**< 保持的保护故障状态 */
+ 
+    compile_param_t compile_param;                    /**< 固件编译日期和时间 */
 } system_t;
 
 /* External variables ------------------------------------------------------------------------------------------------*/

@@ -20,12 +20,16 @@ COMMON_BAUDRATES = (115200, 9600, 19200, 38400, 57600, 230400, 460800)
 PROTO_INFO_REQUEST = 0x81
 PROTO_SYSTEM_REQUEST = 0x82
 PROTO_BATTERY_INFO_REQUEST = 0x83
+PROTO_FACTORY_RESET_REQUEST = 0x84
+PROTO_COOL_REQUEST = 0x85
 PROTO_ENTER_OTA_REQUEST = 0x86
 PROTO_OTA_UPDATE_REQUEST = 0x87
 PROTO_OTA_COMPLETION_REQUEST = 0x88
 PROTO_INFO_RESPONSE = 0x01
 PROTO_SYSTEM_RESPONSE = 0x02
 PROTO_BATTERY_INFO_RESPONSE = 0x03
+PROTO_FACTORY_RESET_RESPONSE = 0x04
+PROTO_COOL_RESPONSE = 0x05
 PROTO_ENTER_OTA_RESPONSE = 0x06
 PROTO_OTA_UPDATE_RESPONSE = 0x07
 PROTO_OTA_COMPLETION_RESPONSE = 0x08
@@ -34,6 +38,7 @@ PROTO_ERR = 0xFF
 OTA_PAGE_SIZE = 128
 OTA_APP_BASE_ADDRESS = 0x08004000
 OTA_APP_MAX_SIZE = 0xBE00
+OTA_COMPLETION_TIMEOUT = 10.0
 OTA_UPDATE_ACTION = "PROTO_OTA_UPDATE_REQUEST"
 DEFAULT_FIRMWARE = (
     Path(__file__).resolve().parents[2] / "Projects" / "Output" / "ba_fan_app.bin"
@@ -51,6 +56,8 @@ class Query:
     response: int
     parser: Callable[[bytes], list[tuple[str, object]]]
     response_optional: bool = False
+    payload_builder: Optional[Callable[[], bytes]] = None
+    minimum_timeout: float = 0.0
 
 
 @dataclass
@@ -141,14 +148,17 @@ def unpack_payload(fmt: str, payload: bytes, response_name: str) -> tuple[object
 
 
 def parse_info(payload: bytes) -> list[tuple[str, object]]:
-    version, uid0, uid1, uid2, year, month, day, hour, minute, second = unpack_payload(
-        "<B3IH5B", payload, "PROTO_INFO_RESPONSE"
-    )
+    (
+        version, uid0, uid1, uid2, year, month, day, hour, minute, second,
+        app_flash_crc, boot_flash_crc,
+    ) = unpack_payload("<B3IH5BII", payload, "PROTO_INFO_RESPONSE")
     return [
         ("协议版本", f"0x{version:02X}"),
         ("MCU UID", f"{uid0:08X}-{uid1:08X}-{uid2:08X}"),
         ("固件编译日期", f"{year:04d}-{month:02d}-{day:02d}"),
         ("固件编译时间", f"{hour:02d}:{minute:02d}:{second:02d}"),
+        ("APP Flash CRC32", f"0x{app_flash_crc:08X}"),
+        ("Boot Flash CRC32", f"0x{boot_flash_crc:08X}"),
     ]
 
 
@@ -214,15 +224,62 @@ def parse_empty_response(payload: bytes) -> list[tuple[str, object]]:
     return []
 
 
+def prompt_int(prompt: str, minimum: int, maximum: int, default: int) -> int:
+    """交互读取十进制或 0x 前缀整数。"""
+    while True:
+        try:
+            text = input(f"{prompt} [{default}]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            return default
+        if not text:
+            return default
+        try:
+            value = int(text, 0)
+        except ValueError:
+            print("输入无效，请输入十进制或 0x 前缀整数。")
+            continue
+        if minimum <= value <= maximum:
+            return value
+        print(f"输入超出范围：{minimum}~{maximum}。")
+
+
+def build_system_payload() -> bytes:
+    prohibit_charging = prompt_int("禁止充电（0=允许，1=禁止）", 0, 1, 0)
+    return struct.pack("<B", prohibit_charging)
+
+
+def build_factory_reset_payload() -> bytes:
+    value = prompt_int("恢复出厂控制值", 0, 0xFF, 1)
+    return struct.pack("<B", value)
+
+
+def build_cool_payload() -> bytes:
+    temp = prompt_int("制冷目标温度", 0, 0xFFFF, 0)
+    error = prompt_int("制冷故障信息", 0, 0xFFFF, 0)
+    state = prompt_int("制冷运行状态", 0, 0xFF, 0)
+    version = prompt_int("制冷软件版本", 0, 0xFF, 0)
+    return struct.pack("<HHBB", temp, error, state, version)
+
+
 INFO_QUERY = Query(
     "PROTO_INFO_RESPONSE", PROTO_INFO_REQUEST, PROTO_INFO_RESPONSE, parse_info
 )
 SYSTEM_QUERY = Query(
-    "PROTO_SYSTEM_RESPONSE", PROTO_SYSTEM_REQUEST, PROTO_SYSTEM_RESPONSE, parse_system
+    "PROTO_SYSTEM_RESPONSE", PROTO_SYSTEM_REQUEST, PROTO_SYSTEM_RESPONSE, parse_system,
+    payload_builder=build_system_payload,
 )
 BATTERY_QUERY = Query(
     "PROTO_BATTERY_INFO_RESPONSE", PROTO_BATTERY_INFO_REQUEST,
     PROTO_BATTERY_INFO_RESPONSE, parse_battery_info,
+)
+FACTORY_RESET_QUERY = Query(
+    "PROTO_FACTORY_RESET_RESPONSE", PROTO_FACTORY_RESET_REQUEST,
+    PROTO_FACTORY_RESET_RESPONSE, parse_empty_response,
+    payload_builder=build_factory_reset_payload,
+)
+COOL_QUERY = Query(
+    "PROTO_COOL_RESPONSE", PROTO_COOL_REQUEST, PROTO_COOL_RESPONSE,
+    parse_empty_response, payload_builder=build_cool_payload,
 )
 ENTER_OTA_QUERY = Query(
     "PROTO_ENTER_OTA_RESPONSE", PROTO_ENTER_OTA_REQUEST,
@@ -231,12 +288,15 @@ ENTER_OTA_QUERY = Query(
 OTA_COMPLETION_QUERY = Query(
     "PROTO_OTA_COMPLETION_RESPONSE", PROTO_OTA_COMPLETION_REQUEST,
     PROTO_OTA_COMPLETION_RESPONSE, parse_empty_response,
+    minimum_timeout=OTA_COMPLETION_TIMEOUT,
 )
 
 MENU_ITEMS: tuple[Query | str, ...] = (
     INFO_QUERY,
     SYSTEM_QUERY,
     BATTERY_QUERY,
+    FACTORY_RESET_QUERY,
+    COOL_QUERY,
     ENTER_OTA_QUERY,
     OTA_UPDATE_ACTION,
     OTA_COMPLETION_QUERY,
@@ -289,11 +349,10 @@ def select_action() -> Optional[Query | str]:
     """交互选择要检测的协议帧，返回 None 表示退出。"""
     print("可检测的协议帧：")
     for index, item in enumerate(MENU_ITEMS, 1):
-        name = item.name if isinstance(item, Query) else item
-        if item is ENTER_OTA_QUERY:
-            name = "PROTO_ENTER_OTA_REQUEST"
-        elif item is OTA_COMPLETION_QUERY:
-            name = "PROTO_OTA_COMPLETION_REQUEST"
+        name = (
+            item.name.replace("RESPONSE", "REQUEST")
+            if isinstance(item, Query) else item
+        )
         print(f"  {index}. {name}")
     print("  0. 退出")
     while True:
@@ -308,11 +367,10 @@ def select_action() -> Optional[Query | str]:
         if choice.isdigit() and 1 <= int(choice) <= len(MENU_ITEMS):
             return MENU_ITEMS[int(choice) - 1]
         for item in MENU_ITEMS:
-            name = item.name if isinstance(item, Query) else item
-            if item is ENTER_OTA_QUERY:
-                name = "PROTO_ENTER_OTA_REQUEST"
-            elif item is OTA_COMPLETION_QUERY:
-                name = "PROTO_OTA_COMPLETION_REQUEST"
+            name = (
+                item.name.replace("RESPONSE", "REQUEST")
+                if isinstance(item, Query) else item
+            )
             if choice.upper() == name:
                 return item
         print("输入无效，请输入帧编号或完整名称。")
@@ -342,7 +400,9 @@ def print_ports(ports: list[object]) -> None:
 
 
 def run_query(port: object, query: Query, timeout: float, color_enabled: bool) -> bool:
-    request = build_frame(query.request)
+    request_payload = query.payload_builder() if query.payload_builder else b""
+    request = build_frame(query.request, request_payload)
+    response_timeout = max(timeout, query.minimum_timeout)
     port.reset_input_buffer()
     port.write(request)
     port.flush()
@@ -352,14 +412,14 @@ def run_query(port: object, query: Query, timeout: float, color_enabled: bool) -
         f"{request_name}: {terminal_color(request.hex(' ').upper(), '90', color_enabled)}"
     )
     try:
-        command, payload, raw_frame = read_frame(port, timeout)
+        command, payload, raw_frame = read_frame(port, response_timeout)
     except TimeoutError:
         if query.response_optional:
             print(
                 f"未收到 {query.name}；应用程序可能已立即复位进入 Bootloader。"
             )
             return True
-        print(f"超时：{timeout:g} 秒内未收到 {query.name}", file=sys.stderr)
+        print(f"超时：{response_timeout:g} 秒内未收到 {query.name}", file=sys.stderr)
         return False
     except ProtocolError as exc:
         print(f"协议错误：{exc}", file=sys.stderr)

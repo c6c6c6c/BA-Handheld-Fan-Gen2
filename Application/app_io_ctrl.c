@@ -14,6 +14,7 @@
 
 #include "app_io_ctrl.h"
 #include "app_system.h"
+#include "fan_protocol.h"
 
 /* Private functions -------------------------------------------------------------------------------------------------*/
 
@@ -32,6 +33,13 @@ static void app_io_update(void)
     /* 保存本周期需要输出的控制状态。 */
     System.io_real.bit.vbat_ctrl = System.io_logic.bit.vbat_ctrl;
     System.io_real.bit.vin_ctrl  = System.io_logic.bit.vin_ctrl;
+	
+	//协议支持禁止充电
+	if(protocol.IsConnect && protocol_data.ctrl.prohibit_charging)
+	{
+		System.io_real.bit.vin_ctrl = true;
+	}
+
 
     /* 恢复下一周期的默认逻辑控制值。 */
     System.io_logic.bit.vin_ctrl  = false;

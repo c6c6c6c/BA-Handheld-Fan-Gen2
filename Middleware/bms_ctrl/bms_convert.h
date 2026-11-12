@@ -50,13 +50,13 @@
 #define BMS_BATTERY_PGA_ZERO_RATIO               0.5f
 
 /** PGA2 电流采样放大倍数 */
-#define BMS_BATTERY_PGA_GAIN                     16.0f
+#define BMS_BATTERY_PGA_GAIN                     63.0f
 
 /** 电流采样分流电阻，单位 Ω */
-#define BMS_BATTERY_SHUNT_OHM                    0.002f
+#define BMS_BATTERY_SHUNT_OHM                    0.003f
 
 /** 电流方向修正系数，正值定义为放电 */
-#define BMS_BATTERY_CURRENT_SIGN                 1.0f
+#define BMS_BATTERY_CURRENT_SIGN                 -1.0f
 
 /** 电流单位换算：1 A = 1000 mA */
 #define BMS_BATTERY_CURRENT_MA_PER_A             1000.0

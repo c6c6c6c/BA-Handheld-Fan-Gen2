@@ -108,4 +108,16 @@ bool bsp_flash_PageVerify(uint32_t addr, uint32_t *buffer, uint32_t length);
 *******************************************************************************/
 void bsp_flash_PageProgramming(uint32_t addr, uint32_t *buffer);
 
+/*******************************************************************************
+//  Function   : bsp_flash_FlashBlank
+//  Description: 比较 Flash 数据与缓冲区内容
+//  Param      : addr - 待校验起始地址，应按 4 字节对齐
+//               buffer - 参考数据缓冲区，至少包含 length 个 uint32_t
+//               length - 校验长度，单位为 uint32_t 个数，不是字节数
+//  Return     : true - 全部一致；false - 存在差异
+//  Others     : 遇到首个不一致即返回 false；length 为 0 时返回 true
+//  Author     : Chen Liang 2026-10-12
+*******************************************************************************/
+bool bsp_flash_FlashBlank(uint32_t addr);
+
 #endif /* _BSP_FLASH_H_ */

@@ -57,7 +57,7 @@ int main(void)
   /* infinite loop */
   while (1)
   {
-	system_run();
+    system_run();
   }
 }
 
@@ -68,37 +68,52 @@ int main(void)
   */
 static void APP_SystemClockConfig(void)
 {
-    /* 升频前配置 Flash 等待周期：72 MHz 对应 2 个等待周期。 */
-    if (LL_SetFlashLatency(72000000U) != SUCCESS)
-    {
-        APP_ErrorHandler();
-        return;
-    }
+  /* Enable and initialize HSI */
+  LL_RCC_HSI_Enable();
+  LL_RCC_HSI_SetCalibFreq(LL_RCC_HSICALIBRATION_8MHz);
+  while(LL_RCC_HSI_IsReady() != 1)
+  {
+  }
+  /* Configure HSISYS as system clock */
+  LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSISYS);
+  while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSISYS)
+  {
+  }
+  /* PLL multiplication factor of 9 using HSI (8MHz) */
+  LL_RCC_PLL_Disable();
+  while(LL_RCC_PLL_IsReady() != 0)
+  {
+  }
+  LL_RCC_PLL_SetMainSource(LL_RCC_PLLSOURCE_HSI);
+  LL_RCC_PLL_SetMulFactor(LL_RCC_PLL_MUL9);
 
-    /* 开启 HSI，等待振荡器就绪。 */
-    LL_RCC_HSI_Enable();
-    while (LL_RCC_HSI_IsReady() != 1U)
-    {
-    }
+  LL_RCC_PLL_Enable();
+  while(LL_RCC_PLL_IsReady() != 1)
+  {
+  }
+  
+  /* Set flash latency */
+  LL_FLASH_SetLatency(LL_FLASH_LATENCY_2);
+  while(LL_FLASH_GetLatency() != LL_FLASH_LATENCY_2)
+  {
+  }
+  
+  /* Configure AHB prescaler */
+  LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
 
-    /* HSI、AHB、APB 均不分频。 */
-    LL_RCC_SetHSIDiv(LL_RCC_HSI_DIV_1);
-    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+  /* Configure PLL as system clock and initialize */
+  LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL);
+  while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_PLL)
+  {
+  }
 
-    /* 使用芯片出厂校准值，将 HSI 实际频率设置为 72 MHz。 */
-    LL_RCC_HSI_SetCalibFreq(LL_RCC_HSICALIBRATION_72MHz);
+  /* Configure APB1 prescaler and initialize */
+  LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+  LL_Init1msTick(72000000);
 
-    /* 选择 HSISYS 作为系统时钟源。 */
-    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSISYS);
-    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSISYS)
-    {
-    }
-
-    /* 根据硬件寄存器更新软件频率，再配置 1 ms 系统节拍。 */
-    SystemCoreClockUpdate();
-    LL_Init1msTick(SystemCoreClock);
-    LL_SYSTICK_EnableIT();
+  /* Update the SystemCoreClock global variable(which can be updated also through SystemCoreClockUpdate function) */
+  LL_SetSystemCoreClock(72000000);
+  LL_SYSTICK_EnableIT();
 }
 
 /**

@@ -58,30 +58,29 @@ void bsp_flash_Lock(void)
 *******************************************************************************/
 void bsp_flash_PageErase(uint32_t addr)
 {
-    /* 等待此前 Flash 操作结束后再启动页擦除。 */
+    /* Wait Busy0=0 */
     while(LL_FLASH_IsActiveFlag_BUSY(FLASH)==1);
 
-    /* 清除操作完成标志 EOP。 */
+    /* Clear EOP */
     LL_FLASH_ClearFlag_EOP(FLASH);
 
-    /* 开启页擦除模式。 */
+    /* Enable Page Erase */
     LL_FLASH_EnablePageErase(FLASH);
 
-    /* 设置擦除地址，触发指定页面的擦除操作。 */
+    /* Set Erase Address */
     LL_FLASH_SetEraseAddress(FLASH,addr);
 
-    /* 阻塞等待 Flash 忙状态结束。 */
+    /* Wait Busy0=0 */
     while(LL_FLASH_IsActiveFlag_BUSY(FLASH)==1);
 
-    /* 阻塞等待操作完成标志 EOP 置位。 */
+    /* Wait EOP=1 */
     while(LL_FLASH_IsActiveFlag_EOP(FLASH)==0);
 
-    /* 清除操作完成标志 EOP。 */
+    /* Clear EOP */
     LL_FLASH_ClearFlag_EOP(FLASH);
 
-    /* 关闭页擦除模式。 */
+    /* Disable Page Erase */
     LL_FLASH_DisablePageErase(FLASH);
-
 }
 
 /*******************************************************************************
@@ -96,29 +95,29 @@ void bsp_flash_PageErase(uint32_t addr)
 *******************************************************************************/
 void bsp_flash_PageProgramming(uint32_t addr, uint32_t *buffer)
 {
-    /* 阻塞等待 Flash 忙状态结束。 */
+    /* Wait Busy=0 */
     while(LL_FLASH_IsActiveFlag_BUSY(FLASH)==1);
 
-    /* 开启页编程模式。 */
-    LL_FLASH_EnablePageProgram(FLASH);
-
-    /* 库函数写入一页数据，内部临时屏蔽中断并恢复原 PRIMASK。 */
-    LL_FLASH_PageProgram(FLASH, addr, buffer);
-
-    /* 阻塞等待 Flash 忙状态结束。 */
-    while(LL_FLASH_IsActiveFlag_BUSY(FLASH)==1);
-
-    /* 阻塞等待操作完成标志 EOP 置位。 */
-    while(LL_FLASH_IsActiveFlag_EOP(FLASH)==0);
-
-    /* 清除操作完成标志 EOP。 */
+    /* Clear EOP */
     LL_FLASH_ClearFlag_EOP(FLASH);
 
-    /* 关闭页编程模式。 */
-    LL_FLASH_DisablePageProgram(FLASH);
+    /* Enable Program */
+    LL_FLASH_EnablePageProgram(FLASH);
 
-    /* 当前实现无条件使能全局中断，调用方需注意原有中断状态。 */
-    __enable_irq();
+    /* Page Program */
+    LL_FLASH_PageProgram(FLASH,addr,buffer);
+    
+    /* Wait Busy0=0 */
+    while(LL_FLASH_IsActiveFlag_BUSY(FLASH)==1);
+    
+    /* Wait EOP=1 */
+    while(LL_FLASH_IsActiveFlag_EOP(FLASH)==0);
+    
+    /* Clear EOP */
+    LL_FLASH_ClearFlag_EOP(FLASH);
+   
+    /* Disable Program */
+    LL_FLASH_DisablePageProgram(FLASH);
 }
 
 /*******************************************************************************
@@ -137,6 +136,30 @@ void bsp_flash_PageRead(uint32_t addr, uint32_t *buffer)
     {
         *buffer++ = *(__IO uint32_t *)(addr + (4U * i));
     }
+}
+
+/*******************************************************************************
+//  Function   : bsp_flash_FlashBlank
+//  Description: 比较 Flash 数据与缓冲区内容
+//  Param      : addr - 待校验起始地址，应按 4 字节对齐
+//               buffer - 参考数据缓冲区，至少包含 length 个 uint32_t
+//               length - 校验长度，单位为 uint32_t 个数，不是字节数
+//  Return     : true - 全部一致；false - 存在差异
+//  Others     : 遇到首个不一致即返回 false；length 为 0 时返回 true
+//  Author     : Chen Liang 2026-10-12
+*******************************************************************************/
+bool bsp_flash_FlashBlank(uint32_t addr)
+{
+    uint32_t word_index;
+
+    for (word_index = 0U; word_index < (FLASH_PAGE_SIZE / sizeof(uint32_t)); word_index++)
+    {
+        if (*(volatile const uint32_t *)(addr + word_index * sizeof(uint32_t)) != 0xFFFFFFFFUL)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 /*******************************************************************************
