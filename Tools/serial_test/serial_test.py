@@ -149,14 +149,11 @@ def unpack_payload(fmt: str, payload: bytes, response_name: str) -> tuple[object
 
 def parse_info(payload: bytes) -> list[tuple[str, object]]:
     (
-        version, uid0, uid1, uid2, year, month, day, hour, minute, second,
-        app_flash_crc, boot_flash_crc,
-    ) = unpack_payload("<B3IH5BII", payload, "PROTO_INFO_RESPONSE")
+        version, uid0, uid1, uid2, app_flash_crc, boot_flash_crc,
+    ) = unpack_payload("<B5I", payload, "PROTO_INFO_RESPONSE")
     return [
         ("协议版本", f"0x{version:02X}"),
         ("MCU UID", f"{uid0:08X}-{uid1:08X}-{uid2:08X}"),
-        ("固件编译日期", f"{year:04d}-{month:02d}-{day:02d}"),
-        ("固件编译时间", f"{hour:02d}:{minute:02d}:{second:02d}"),
         ("APP Flash CRC32", f"0x{app_flash_crc:08X}"),
         ("Boot Flash CRC32", f"0x{boot_flash_crc:08X}"),
     ]

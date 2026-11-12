@@ -74,8 +74,8 @@ typedef struct
      */
     union
     {
-        __IO uint8_t  byte[FLASH_PAGE_SIZE];         /**< Flash 页字节缓存 */
-        __IO uint32_t word[BOOT_FLASH_PAGE_WORDS];   /**< Flash 页 32 位字缓存 */
+         uint8_t  byte[FLASH_PAGE_SIZE];         /**< Flash 页字节缓存 */
+         uint32_t word[BOOT_FLASH_PAGE_WORDS];   /**< Flash 页 32 位字缓存 */
     } buffer;
 
 } boot_update_t;
@@ -126,7 +126,7 @@ void bootloader_Init(void);
 //               校验成功后自动更新烧录地址、固件长度及包计数
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
-bool bootloader_burn(uint8_t *buffer, uint8_t length);
+bool bootloader_burn(const uint8_t *buffer, uint8_t length);
 
 /*******************************************************************************
 //  Function   : bootloader_finish

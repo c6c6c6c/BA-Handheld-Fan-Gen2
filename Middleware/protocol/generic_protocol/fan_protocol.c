@@ -245,18 +245,8 @@ static void fan_protocol_response(void)
 
                 /* MCU 唯一设备标识。 */
                 _CURSOR_WRITE_VAR(System.unique_id);
-
-                /* 固件编译日期。 */
-                _CURSOR_WRITE_VAR(System.compile_param.year);
-                _CURSOR_WRITE_VAR(System.compile_param.month);
-                _CURSOR_WRITE_VAR(System.compile_param.day);
-				
-                /* 固件编译时间。 */
-                _CURSOR_WRITE_VAR(System.compile_param.hour);
-                _CURSOR_WRITE_VAR(System.compile_param.minute);
-                _CURSOR_WRITE_VAR(System.compile_param.second);
-				
-				/* 固件校验码。 */
+                
+                /* 固件校验码。 */
                 _CURSOR_WRITE_VAR(System.app_flash_crc);
                 _CURSOR_WRITE_VAR(System.boot_flash_crc);
                 break;

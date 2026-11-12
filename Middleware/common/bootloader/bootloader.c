@@ -23,7 +23,6 @@
 
 #include "bsp_flash.h"
 #include "param.h"
-#include "flash.h"
 
 #include <string.h>
 
@@ -94,7 +93,6 @@ void bootloader_Init(void)
     param_ota_save(OTC_STATUS_PROGRAMMING);
 }
 
-
 /*******************************************************************************
 //  Function   : bootloader_burn
 //  Description: 将接收到的 OTA 固件数据烧录至 Application Flash
@@ -110,16 +108,15 @@ void bootloader_Init(void)
 //               失败时不更新固件烧录进度
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
-#if 0
-bool bootloader_burn(const uint8_t buffer, uint8_t length)
+bool bootloader_burn(const uint8_t *buffer, uint8_t length)
 {
 	uint8_t Cnt = 3;
     /* 检查数据缓冲区、数据长度及 Flash 烧录地址。 */
-    if ((buffer == NULL) ||
-        (length == 0U) ||
-        (length > FLASH_PAGE_SIZE) ||
-        (boot_cmd.addr < APP_BASE_ADDRESS) ||
-        (boot_cmd.addr > (APP_END_ADDRESS - FLASH_PAGE_SIZE)))
+    if ((buffer == NULL) 
+    ||  (length == 0U)   
+	||  (length > FLASH_PAGE_SIZE) 
+	||  (boot_cmd.addr < APP_BASE_ADDRESS) 
+	||  (boot_cmd.addr > (APP_END_ADDRESS - FLASH_PAGE_SIZE)))
     {
         return false;
     }
@@ -181,44 +178,7 @@ bool bootloader_burn(const uint8_t buffer, uint8_t length)
 
     return true;
 }
-#endif
 
-bool bootloader_burn(uint8_t *buffer, uint8_t length)
-{
-	if (FLASH_SR_BSY == READ_BIT(FLASH->SR, FLASH_SR_BSY))
-    {
-      return false;
-    }
-    //向 FLASH_KEYR 寄存器依次写 KEY1 和 KEY2，解除 FLASH_CR 寄存器的保护
-    if (FLASH_CR_LOCK == READ_BIT(FLASH->CR, FLASH_CR_LOCK))
-    {
-      WRITE_REG(FLASH->KEYR, FLASH_KEY1);
-      WRITE_REG(FLASH->KEYR, FLASH_KEY2);
-    }
-	
-	if(PageErase(boot_cmd.addr) != RET_SUCCESS_ACK)
-	{
-		return false;
-	}
-	
-	for(int i = length ; i < 128 ; i++)
-	{
-		buffer[i] = 0xff;
-	}
-	
-	if(WriteFlash(boot_cmd.addr, buffer, 128 - 1) != RET_SUCCESS_ACK)
-	{
-		return false;
-	}
-	
-	SET_BIT(FLASH->CR, FLASH_CR_LOCK);//FLASH_Lock
-	
-    boot_cmd.addr     += FLASH_PAGE_SIZE;/* 移动至下一个 Flash 烧录页地址。 */
-    boot_cmd.size     += length;         /* 累计实际烧录的固件数据长度。    */
-    boot_cmd.pack_size = length;         /* 保存最近一次烧录的数据包长度。  */
-    boot_cmd.count++;                    /* 累计成功烧录的数据包数量。      */
-	return true;
-}
 /*******************************************************************************
 //  Function   : bootloader_finish
 //  Description: 完成 OTA 升级并清理 Application 未使用区域
@@ -242,25 +202,17 @@ bool bootloader_finish(void)
 
    for (address = boot_cmd.addr; address < APP_END_ADDRESS; address += FLASH_PAGE_SIZE)
    { 
-        if (FLASH_SR_BSY == READ_BIT(FLASH->SR, FLASH_SR_BSY))
-		{
-		  return false;
-		}
-		//向 FLASH_KEYR 寄存器依次写 KEY1 和 KEY2，解除 FLASH_CR 寄存器的保护
-		if (FLASH_CR_LOCK == READ_BIT(FLASH->CR, FLASH_CR_LOCK))
-		{
-		  WRITE_REG(FLASH->KEYR, FLASH_KEY1);
-		  WRITE_REG(FLASH->KEYR, FLASH_KEY2);
-		}
-		
-		if(PageErase(address) != RET_SUCCESS_ACK)
-		{
-			return false;
-		}
-		
-		SET_BIT(FLASH->CR, FLASH_CR_LOCK);//FLASH_Lock
+        /* 解锁 Flash。 */
+        bsp_flash_Unlock();
+
+        /* 将当前页缓存写入 Flash。 */
+        bsp_flash_PageProgramming(boot_cmd.addr, (void *)boot_cmd.buffer.word);
+
+        /* 锁定 Flash，防止意外修改。 */
+        bsp_flash_Lock();
    }
 
     param_ota_save(OTC_STATUS_SUCCESS);
     return true;
 }
+

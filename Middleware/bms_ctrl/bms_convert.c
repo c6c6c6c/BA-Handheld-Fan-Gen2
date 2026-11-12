@@ -200,9 +200,7 @@ double bms_battery_voltage(uint32_t vrefAdc)
 //  Others     : PGA2 放大分流电阻 R18 两端压差，零电流输出为 VCCA 的固定比例
 //  Author     : Chen Liang 2026-10-15
 *******************************************************************************/
-double current_k = 0.946564;
-double current_b = 12.225;
-int offect = 2;
+int offect = -80;
 double bms_battery_current(uint32_t pgaAdc, double vbat)
 {
     /* ADC/PGA 尚未有效、输出饱和或电池电压无效时不进行换算。 */
