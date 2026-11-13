@@ -15,7 +15,7 @@
 #define _APP_MIST_H_
 
 #include "main.h"
-
+#include "mist_ctrl.h"
 
 typedef enum
 {
@@ -25,6 +25,8 @@ typedef enum
     MIST_MODE_NUM
 }mist_mode_enum_t;
 
+
+extern mist_ctrl_t mist_ctrl;
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************

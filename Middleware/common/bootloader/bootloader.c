@@ -199,14 +199,14 @@ bool bootloader_finish(void)
    {
        return false;
    }
-
+   
    for (address = boot_cmd.addr; address < APP_END_ADDRESS; address += FLASH_PAGE_SIZE)
    { 
         /* 解锁 Flash。 */
         bsp_flash_Unlock();
 
         /* 将当前页缓存写入 Flash。 */
-        bsp_flash_PageProgramming(boot_cmd.addr, (void *)boot_cmd.buffer.word);
+	    bsp_flash_PageErase(address);
 
         /* 锁定 Flash，防止意外修改。 */
         bsp_flash_Lock();

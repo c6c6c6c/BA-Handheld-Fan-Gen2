@@ -17,7 +17,7 @@
 #include "app_system.h"
 #include "app_sampling.h"
 
-#include "mist_ctrl.h"
+
 #include "bsp_tim16.h"
 
 

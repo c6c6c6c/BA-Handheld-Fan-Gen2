@@ -8,6 +8,7 @@ import struct
 import sys
 import time
 import unicodedata
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
@@ -25,6 +26,8 @@ PROTO_COOL_REQUEST = 0x85
 PROTO_ENTER_OTA_REQUEST = 0x86
 PROTO_OTA_UPDATE_REQUEST = 0x87
 PROTO_OTA_COMPLETION_REQUEST = 0x88
+PROTO_CHAT_REQUEST = 0x89
+PROTO_DEBUG_MIST_REQUEST = 0x8A
 PROTO_INFO_RESPONSE = 0x01
 PROTO_SYSTEM_RESPONSE = 0x02
 PROTO_BATTERY_INFO_RESPONSE = 0x03
@@ -33,15 +36,20 @@ PROTO_COOL_RESPONSE = 0x05
 PROTO_ENTER_OTA_RESPONSE = 0x06
 PROTO_OTA_UPDATE_RESPONSE = 0x07
 PROTO_OTA_COMPLETION_RESPONSE = 0x08
+PROTO_CHAT_RESPONSE = 0x09
+PROTO_DEBUG_MIST_RESPONSE = 0x0A
 PROTO_ERR = 0xFF
 
 OTA_PAGE_SIZE = 128
 OTA_APP_BASE_ADDRESS = 0x08004000
 OTA_APP_MAX_SIZE = 0xBE00
+OTA_HEADER_SIZE = 128
+OTA_HEADER_TYPE = 0x55490000
 OTA_COMPLETION_TIMEOUT = 10.0
 OTA_UPDATE_ACTION = "PROTO_OTA_UPDATE_REQUEST"
 DEFAULT_FIRMWARE = (
-    Path(__file__).resolve().parents[2] / "Projects" / "Output" / "ba_fan_app.bin"
+    Path(__file__).resolve().parents[2]
+    / "Projects" / "Output" / "ba_fan_upgrade.bin"
 )
 
 
@@ -64,6 +72,8 @@ class Query:
 class OtaSession:
     path: Path
     data: bytes
+    package_size: int
+    image_crc32: int
     next_packet: int = 0
 
     @property
@@ -161,14 +171,14 @@ def parse_info(payload: bytes) -> list[tuple[str, object]]:
 
 def parse_system(payload: bytes) -> list[tuple[str, object]]:
     values = unpack_payload(
-        "<BdddIffffIIHHBBBIHIIIB", payload, "PROTO_SYSTEM_RESPONSE"
+        "<BdddIffffIIHHBBBIHIIIBB", payload, "PROTO_SYSTEM_RESPONSE"
     )
     (
         state, usb_in_v, voltage_v, current_ma, cycle_count,
         soc, static_soc, soh, remaining_capacity_mah,
         charge_mah_total, discharge_mah_total, fault_real, fault_hold,
         power, fan_mode, mist_mode, mist_freq, mist_duty,
-        on_time, off_time, mist_time, button,
+        on_time, off_time, mist_time, button, io_real,
     ) = values
     state_names = {0: "空闲", 1: "充电", 2: "放电", 3: "满电", 4: "故障"}
     return [
@@ -194,6 +204,7 @@ def parse_system(payload: bytes) -> list[tuple[str, object]]:
         ("关机时间", f"{off_time} ms"),
         ("雾化运行时间", f"{mist_time} ms"),
         ("按键状态", f"0x{button:02X}"),
+        ("IO 实际状态", f"0x{io_real:02X}"),
     ]
 
 
@@ -212,6 +223,50 @@ def parse_battery_info(payload: bytes) -> list[tuple[str, object]]:
         ("充电效率", f"{charge_efficiency:.4f}"),
         ("放电效率", f"{discharge_efficiency:.4f}"),
         ("OCV 静置时间", f"{rest_time} ms"),
+    ]
+
+
+def parse_chat(payload: bytes) -> list[tuple[str, object]]:
+    values = unpack_payload("<IIIdddff", payload, "PROTO_CHAT_RESPONSE")
+    (
+        system_ms, mist_adc, motor_adc, usb_in_v, voltage_v, current_ma,
+        soc, static_soc,
+    ) = values
+    return [
+        ("系统时间", f"{system_ms} ms"),
+        ("雾化 ADC", mist_adc),
+        ("电机 ADC", motor_adc),
+        ("USB 输入电压", f"{usb_in_v:.3f} V"),
+        ("电池电压", f"{voltage_v:.3f} V"),
+        ("电池电流", f"{current_ma:.3f} mA"),
+        ("SOC", f"{soc:.2f} %"),
+        ("静态 SOC", f"{static_soc:.2f} %"),
+    ]
+
+
+def parse_debug_mist(payload: bytes) -> list[tuple[str, object]]:
+    values = unpack_payload("<BIHIIHHHBBBB", payload, "PROTO_DEBUG_MIST_RESPONSE")
+    (
+        state, mist_freq, mist_duty, peak_freq, lock_freq, peak_ad,
+        target_ad, ref_ad, locked, rescan_count, fault, error_count,
+    ) = values
+    state_names = {
+        0: "空闲", 1: "粗扫", 2: "精扫", 3: "退峰",
+        4: "等待参考值", 5: "漂移监控", 6: "漂移试探", 7: "错误",
+    }
+    return [
+        ("追频状态", f"{state} ({state_names.get(state, '未知')})"),
+        ("当前 PWM 频率", f"{mist_freq} Hz"),
+        ("当前 PWM 占空比", mist_duty),
+        ("峰值频率", f"{peak_freq} Hz"),
+        ("锁定频率", f"{lock_freq} Hz"),
+        ("峰值 ADC", peak_ad),
+        ("目标 ADC", target_ad),
+        ("参考 ADC", ref_ad),
+        ("锁定标志", locked),
+        ("重新扫描次数", rescan_count),
+        ("故障标志", fault),
+        ("连续错误次数", error_count),
     ]
 
 
@@ -287,6 +342,13 @@ OTA_COMPLETION_QUERY = Query(
     PROTO_OTA_COMPLETION_RESPONSE, parse_empty_response,
     minimum_timeout=OTA_COMPLETION_TIMEOUT,
 )
+CHAT_QUERY = Query(
+    "PROTO_CHAT_RESPONSE", PROTO_CHAT_REQUEST, PROTO_CHAT_RESPONSE, parse_chat,
+)
+DEBUG_MIST_QUERY = Query(
+    "PROTO_DEBUG_MIST_RESPONSE", PROTO_DEBUG_MIST_REQUEST,
+    PROTO_DEBUG_MIST_RESPONSE, parse_debug_mist,
+)
 
 MENU_ITEMS: tuple[Query | str, ...] = (
     INFO_QUERY,
@@ -297,6 +359,8 @@ MENU_ITEMS: tuple[Query | str, ...] = (
     ENTER_OTA_QUERY,
     OTA_UPDATE_ACTION,
     OTA_COMPLETION_QUERY,
+    CHAT_QUERY,
+    DEBUG_MIST_QUERY,
 )
 
 
@@ -381,7 +445,7 @@ def parse_args() -> argparse.Namespace:
                         help="单帧回复超时（秒）")
     parser.add_argument(
         "--firmware", type=Path, default=DEFAULT_FIRMWARE,
-        help="OTA 烧录使用的原始 Application BIN 文件",
+        help="OTA 烧录使用的 ba_fan_upgrade.bin 升级包",
     )
     parser.add_argument("--list", action="store_true", help="列出串口后退出")
     parser.add_argument("--no-color", action="store_true", help="禁用终端彩色输出")
@@ -457,23 +521,49 @@ def load_ota_session(firmware: Path) -> Optional[OtaSession]:
     if not path.is_file():
         print(f"OTA 固件文件不存在：{path}", file=sys.stderr)
         return None
-    if "upgrade" in path.stem.lower():
+
+    package = path.read_bytes()
+    if len(package) <= OTA_HEADER_SIZE:
         print(
-            "OTA 协议应发送原始 Application BIN，不能使用带升级头的 upgrade.bin。",
+            f"OTA 升级包长度错误：{len(package)} 字节，必须包含 "
+            f"{OTA_HEADER_SIZE} 字节升级头和 Application 数据。",
             file=sys.stderr,
         )
         return None
-    data = path.read_bytes()
-    if not data:
-        print(f"OTA 固件文件为空：{path}", file=sys.stderr)
+
+    package_type, stored_crc32 = struct.unpack_from("<II", package, 0)
+    if package_type != OTA_HEADER_TYPE:
+        print(
+            f"OTA 升级包类型错误：收到 0x{package_type:08X}，"
+            f"预期 0x{OTA_HEADER_TYPE:08X}。",
+            file=sys.stderr,
+        )
         return None
+
+    # The 128-byte upgrade header is used only for package validation. The
+    # Bootloader receives Application bytes starting at 0x08004000.
+    data = package[OTA_HEADER_SIZE:]
     if len(data) > OTA_APP_MAX_SIZE:
         print(
-            f"OTA 固件过大：{len(data)} 字节，App 分区最大 {OTA_APP_MAX_SIZE} 字节。",
+            f"OTA Application 数据过大：{len(data)} 字节，"
+            f"App 分区最大 {OTA_APP_MAX_SIZE} 字节。",
             file=sys.stderr,
         )
         return None
-    return OtaSession(path, data)
+
+    # Header CRC always covers the complete 0xBE00-byte APP partition. A
+    # compact package omits the erased tail, so restore it as 0xFF for CRC.
+    crc_data = data.ljust(OTA_APP_MAX_SIZE, b"\xFF")
+    calculated_crc32 = zlib.crc32(crc_data) & 0xFFFFFFFF
+    if calculated_crc32 != stored_crc32:
+        print(
+            f"OTA 升级包 CRC32 错误：头内 0x{stored_crc32:08X}，"
+            f"计算结果 0x{calculated_crc32:08X}。",
+            file=sys.stderr,
+        )
+        return None
+
+    return OtaSession(path, data, len(package), calculated_crc32)
 
 
 def send_ota_packet(
@@ -551,9 +641,13 @@ def run_ota_update(
     timeout: float,
     color_enabled: bool,
 ) -> None:
-    print(f"\nOTA 固件：{session.path}")
+    print(f"\nOTA 升级包：{session.path}")
     print(
-        f"大小：{len(session.data)} 字节，共 {session.packet_count} 帧，"
+        f"升级包大小：{session.package_size} 字节，升级头：{OTA_HEADER_SIZE} 字节，"
+        f"APP CRC32：0x{session.image_crc32:08X}"
+    )
+    print(
+        f"APP 发送大小：{len(session.data)} 字节，共 {session.packet_count} 帧，"
         f"每帧最大 {OTA_PAGE_SIZE} 字节。"
     )
     while True:

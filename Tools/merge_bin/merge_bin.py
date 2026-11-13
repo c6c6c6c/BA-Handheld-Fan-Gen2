@@ -276,7 +276,7 @@ def crc32_ieee(data):
     return zlib.crc32(data) & 0xFFFFFFFF
 
 
-def build_header(header):
+def build_header(header, image):
     data = bytearray(header["size"])
     offset = 0
     function_fields = []
@@ -300,17 +300,73 @@ def build_header(header):
         offset += size
 
     for field_offset, item in function_fields:
-        if item.get("function") != "crc32" or item.get("calculate") != "head_without_crc32":
+        if item.get("function") != "crc32":
             raise ValueError(f"Unsupported header function: {item.get('function')}")
 
         size = item["size"]
-        crc_data = data[:field_offset] + data[field_offset + size:]
+        calculate = item.get("calculate")
+        if calculate == "head_without_crc32":
+            crc_data = data[:field_offset] + data[field_offset + size:]
+        elif calculate == "image_without_header":
+            crc_data = image
+        else:
+            raise ValueError(f"Unsupported header CRC32 calculation: {calculate}")
+
         value = crc32_ieee(crc_data)
         if value >= (1 << (size * 8)):
             raise ValueError(f"header.data.{item['name']} CRC32 does not fit in {size} byte(s)")
         data[field_offset:field_offset + size] = value.to_bytes(size, header["byteorder"])
 
     return bytes(data)
+
+
+def header_uses_image_crc(header):
+    """Return whether a header CRC32 field covers the image without the header."""
+    if header is None:
+        return False
+
+    return any(
+        item.get("source") == "function"
+        and item.get("function") == "crc32"
+        and item.get("calculate") == "image_without_header"
+        for item in header["fields"]
+    )
+
+
+def render_image(regions, byte_writing, image_base, image_size, fill_char):
+    """Render configured regions and byte patches into one image buffer."""
+    image = bytearray([fill_char] * image_size)
+    patch_status = {}
+    patched_addresses = {}
+
+    for region in regions:
+        offset = region["start_addr"] - image_base
+        data = region["data"]
+        image[offset:offset + len(data)] = data
+
+    for item_index, item in enumerate(byte_writing):
+        patch_data = encode_patch_data(item)
+        offset = item["addr"] - image_base
+        end_offset = offset + len(patch_data)
+
+        if offset < 0 or end_offset > len(image):
+            raise ValueError(
+                f"{item['name']} range exceeds image: "
+                f"0x{item['addr']:08X}+0x{item['size']:X}"
+            )
+
+        for byte_index, value in enumerate(patch_data):
+            addr = item["addr"] + byte_index
+
+            if addr in patched_addresses:
+                patch_status[(item_index, byte_index)] = "Duplicate Addr"
+                continue
+
+            image[offset + byte_index] = value
+            patched_addresses[addr] = item["name"]
+            patch_status[(item_index, byte_index)] = "Success"
+
+    return image, patch_status
 
 
 def check_range(name, start_addr, size, flash_addr, flash_size):
@@ -525,39 +581,36 @@ def merge_output(
         fill_to_total_size,
     )
 
-    image = bytearray([fill_idle_char] * image_size)
-    patch_status = {}
-    patched_addresses = {}
+    image, patch_status = render_image(
+        regions,
+        byte_writing,
+        image_base,
+        image_size,
+        fill_idle_char,
+    )
 
-    for region in regions:
-        offset = region["start_addr"] - image_base
-        data = region["data"]
-        image[offset:offset + len(data)] = data
-
-    for item_index, item in enumerate(byte_writing):
-        patch_data = encode_patch_data(item)
-        offset = item["addr"] - image_base
-        end_offset = offset + len(patch_data)
-
-        if offset < 0 or end_offset > len(image):
-            raise ValueError(
-                f"{item['name']} range exceeds image: "
-                f"0x{item['addr']:08X}+0x{item['size']:X}"
-            )
-
-        for byte_index, value in enumerate(patch_data):
-            addr = item["addr"] + byte_index
-
-            if addr in patched_addresses:
-                patch_status[(item_index, byte_index)] = "Duplicate Addr"
-                continue
-
-            image[offset + byte_index] = value
-            patched_addresses[addr] = item["name"]
-            patch_status[(item_index, byte_index)] = "Success"
+    # Output padding and CRC padding are independent. The output image follows
+    # all-fill, while image_without_header CRC always covers each configured
+    # partition's full size and fills a short file tail with 0xFF.
+    crc_image = image
+    if header_uses_image_crc(header):
+        crc_image_base, crc_image_size = get_image_range(
+            regions,
+            byte_writing,
+            flash_addr,
+            flash_size,
+            True,
+        )
+        crc_image, _ = render_image(
+            regions,
+            byte_writing,
+            crc_image_base,
+            crc_image_size,
+            0xFF,
+        )
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    header_data = build_header(header) if header is not None else b""
+    header_data = build_header(header, crc_image) if header is not None else b""
     output_file.write_bytes(header_data + image)
 
     print_output_summary(

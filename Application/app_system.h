@@ -71,7 +71,6 @@ typedef struct
     uint32_t        unique_id[SYSTEM_UID_WORD_COUNT]; /**< 芯片 96 位唯一标识 */
 
     float           ntc_temp;                         /**< 当前 NTC 检测温度，单位 ℃ */
-    bool            sleep_flg;                        /**< 系统休眠标志，true=休眠，false=正常运行 */
     app_logic_t     logic;                            /**< 应用层设备运行及控制逻辑状态 */
 
     dev_io_t        io_real;                          /**< 本周期 GPIO 输出控制状态，不表示引脚反馈 */

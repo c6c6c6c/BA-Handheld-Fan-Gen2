@@ -18,7 +18,7 @@
                 "size"      : 4,
                 "source"    : "function",
                 "function"  : "crc32",
-                "calculate" : "head_without_crc32"
+                "calculate" : "image_without_header"
             }
         }
     },
@@ -58,8 +58,6 @@
         {
             "name"      : "../../Projects/Output/ba_fan_upgrade.bin",
             "handle"    : "header",
-            "all-fill"  : true,
-            "fill-char" : "0xFF",
             "merge-file":
             [
                 {
