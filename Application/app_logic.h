@@ -40,11 +40,25 @@ typedef struct
     uint32_t         onTimes;         /**< 设备连续开机时间，单位 ms */
     uint32_t         offTimes;        /**< 设备连续关机时间，单位 ms */
     uint32_t         mistTimes;       /**< 雾化功能运行累计时间，单位 ms */
-
+    uint32_t         fanTimes;        /**< 风机功能运行累计时间，单位 ms */
 
     bool     display_flg;   //显示
 } app_logic_t;
 
+
+/**
+ * @brief 电机波形滑动窗口积分器
+ */
+#define MOTOR_DIFF_WINDOW_MAX  10U
+typedef struct
+{
+    uint32_t lastSeq;                         /**< 上次采样序号 */
+    uint32_t lastVal;                         /**< 上次 ADC 值 */
+    int      sum;                             /**< 窗口累计下降值 */
+    short    window[MOTOR_DIFF_WINDOW_MAX];   /**< 窗口大小 */
+    uint8_t  index;                           /**< 当前写入位置 */
+    uint8_t  count;                           /**< 已累计采样数 */
+} motor_diff_t;
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
@@ -60,5 +74,15 @@ typedef struct
 *******************************************************************************/
 void app_logic_1ms_task(void);
 
+/*******************************************************************************
+//  Function   : app_logic_1ms_task
+//  Description: 执行应用层设备 1ms 周期控制任务
+//  Param      : None
+//  Return     : None
+//  Others     : 更新风扇及雾化按键事件，处理设备电源状态；
+//               同步风扇运行档位及雾化片 PWM 输出参数
+//  Author     : 陈亮 2026-06-06
+*******************************************************************************/
+void app_logic_fan(void);
 
 #endif /* _APP_LOGIC_H_ */

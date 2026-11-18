@@ -45,6 +45,7 @@ typedef union
     {
         uint8_t vbat_ctrl : 1;           /**< 电池通路使能控制 */
         uint8_t vin_ctrl  : 1;           /**< USB/VIN 输入通路使能控制 */
+		uint8_t usb_in    : 1;           /**< USB/VIN 输入通路使能控制 */
         uint8_t res       : 6;           /**< 保留位 */
     } bit;
 } dev_io_t;

@@ -114,7 +114,18 @@ void app_sampling_task(void)
                                      &System.ntc_temp);
 
         /* NTC 换算失败时置位系统 NTC 故障标志。 */
-        System.err.ntc_err = (status != NTC_STATUS_OK);
+		if(NTC_STATUS_OPEN_CIRCUIT == status)
+		{
+			System.err.bit.ntc_err = 1;
+		}
+		else if(NTC_STATUS_SHORT_CIRCUIT == status)
+		{
+			System.err.bit.ntc_err = 2;
+		}
+		else
+		{
+			System.err.bit.ntc_err = 0;
+		}
     }
 }
 

@@ -34,12 +34,19 @@
  * @note  每个故障标志占用 1 位：
  *        0 表示正常，1 表示异常。
  */
-typedef struct
+typedef union
 {
-    uint8_t bms_err  : 1;           /**< BMS 电池管理故障标志 */
-    uint8_t comm_err : 1;           /**< 通信故障标志 */
-    uint8_t ntc_err  : 1;           /**< NTC 温度检测故障标志 */
-    uint8_t res      : 5;           /**< 保留位 */
+    uint16_t data;
+    struct
+    {
+        uint16_t bms_err       : 1;           /**< BMS 电池管理故障标志 */
+        uint16_t comm_err      : 1;           /**< 通信故障标志 */
+        uint16_t ntc_err       : 2;           /**< NTC 温度检测故障标志 */
+		uint16_t fan_step_err  : 1;           /**< 风机启动故障标志 */
+        uint16_t fan_err       : 1;           /**< 风机故障标志 */
+        uint16_t mist_err      : 1;           /**< 喷雾故障标志 */
+        uint16_t res           : 9;          /**< 保留位 */
+    }bit;
 } error_t;
 
 
@@ -80,6 +87,8 @@ typedef struct
  
     protect_fault_t fault_real;                       /**< 实时保护故障状态 */
     protect_fault_t fault_hold;                       /**< 保持的保护故障状态 */
+	
+	int             fan_curr_diff;
  
     compile_param_t compile_param;                    /**< 固件编译日期和时间 */
 } system_t;

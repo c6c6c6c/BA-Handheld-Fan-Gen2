@@ -30,7 +30,7 @@ const mist_cfg_t g_mistCfg = // 追频算法只读常量参数表
 	   .backoffN      = 10U,        // 工作频率允许偏离谐振峰值的最大步数
 	   .coarseFailCnt = 3U,         // 连续粗扫失败3次后使用中心频率作为谐振频率
 	   .faultCnt      = 3U,         // 连续进入错误状态后置故障位的次数
-	   .duty          = 500U        // 默认占空比，单位由PWM驱动约定
+	   .duty          = 300U        // 默认占空比，单位由PWM驱动约定
 };
 
 

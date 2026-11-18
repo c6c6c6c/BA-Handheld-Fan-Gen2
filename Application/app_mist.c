@@ -1,4 +1,3 @@
-
 /**
  ***********************************************************************************************************************
  * @file    app_mist.c
@@ -186,7 +185,7 @@ void app_mist_1ms_task(void)
              * 对应约 1s 输出、约 1s 停止的工作方式。
              */
             System.logic.mist_freq = 150000U;
-            System.logic.mist_duty = Cnt < 1000 ? 500U : 0U;
+            System.logic.mist_duty = Cnt < 1000 ? 300U : 0U;
 
 
             /* 更新脉冲雾化周期计数器。 */
@@ -223,23 +222,8 @@ void app_mist_1ms_task(void)
              * 3. 不修改当前保存的 PWM 频率。
              */
             System.logic.mist_duty = 0U;
-            System.logic.mistTimes = 0;
             break;
         }
-    }
-
-    /*
-     * 雾化有效输出时间累计。
-     *
-     * 当目标 PWM 占空比不为 0 时，
-     * 每执行一次周期任务累计一次雾化时间。
-     *
-     * 注意：该统计与脉冲模式分支中的时间累计
-     * 同时存在，脉冲开启阶段会累计两次。
-     */
-    if (System.logic.mist_duty != 0)
-    {
-        System.logic.mistTimes++;
     }
 
     /*

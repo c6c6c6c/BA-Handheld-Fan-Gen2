@@ -158,27 +158,57 @@ def unpack_payload(fmt: str, payload: bytes, response_name: str) -> tuple[object
 
 
 def parse_info(payload: bytes) -> list[tuple[str, object]]:
+    if len(payload) < 27:
+        raise ProtocolError(
+            f"PROTO_INFO_RESPONSE 数据长度错误: 收到 {len(payload)} 字节，"
+            "至少需要 27 字节的固定字段和字符串长度字段"
+        )
     (
-        version, uid0, uid1, uid2, app_flash_crc, boot_flash_crc,
-    ) = unpack_payload("<B5I", payload, "PROTO_INFO_RESPONSE")
+        version, uid0, uid1, uid2, app_flash_crc, boot_flash_crc, build_date,
+    ) = unpack_payload("<B6I", payload[:25], "PROTO_INFO_RESPONSE")
+
+    offset = 25
+    strings = []
+    for label in ("固件版本", "设备型号"):
+        if offset >= len(payload):
+            raise ProtocolError(f"PROTO_INFO_RESPONSE 缺少{label}长度字段")
+        length = payload[offset]
+        offset += 1
+        if length == 0 or offset + length > len(payload):
+            raise ProtocolError(f"PROTO_INFO_RESPONSE {label}长度错误: {length}")
+        raw = payload[offset:offset + length]
+        offset += length
+        # Firmware uses sizeof(string literal), including the terminating NUL.
+        if raw[-1] != 0:
+            raise ProtocolError(f"PROTO_INFO_RESPONSE {label}缺少字符串结束符")
+        try:
+            strings.append(raw[:-1].decode("utf-8"))
+        except UnicodeDecodeError as exc:
+            raise ProtocolError(f"PROTO_INFO_RESPONSE {label}不是有效 UTF-8 字符串") from exc
+    if offset != len(payload):
+        raise ProtocolError(f"PROTO_INFO_RESPONSE 存在 {len(payload) - offset} 字节多余数据")
+    firmware_version, device_model = strings
     return [
         ("协议版本", f"0x{version:02X}"),
         ("MCU UID", f"{uid0:08X}-{uid1:08X}-{uid2:08X}"),
         ("APP Flash CRC32", f"0x{app_flash_crc:08X}"),
         ("Boot Flash CRC32", f"0x{boot_flash_crc:08X}"),
+        ("编译日期", f"{build_date:08d}"),
+        ("固件版本", firmware_version),
+        ("设备型号", device_model),
     ]
 
 
 def parse_system(payload: bytes) -> list[tuple[str, object]]:
     values = unpack_payload(
-        "<BdddIffffIIHHBBBIHIIIBB", payload, "PROTO_SYSTEM_RESPONSE"
+        "<BdddIffffIIHHBBBIHIIIIBBfH", payload, "PROTO_SYSTEM_RESPONSE"
     )
     (
         state, usb_in_v, voltage_v, current_ma, cycle_count,
         soc, static_soc, soh, remaining_capacity_mah,
         charge_mah_total, discharge_mah_total, fault_real, fault_hold,
         power, fan_mode, mist_mode, mist_freq, mist_duty,
-        on_time, off_time, mist_time, button, io_real,
+        on_time, off_time, mist_time, fan_time, button, io_real, ntc_temp, system_err,
     ) = values
     state_names = {0: "空闲", 1: "充电", 2: "放电", 3: "满电", 4: "故障"}
     return [
@@ -203,8 +233,11 @@ def parse_system(payload: bytes) -> list[tuple[str, object]]:
         ("开机时间", f"{on_time} ms"),
         ("关机时间", f"{off_time} ms"),
         ("雾化运行时间", f"{mist_time} ms"),
+        ("风扇运行时间", f"{fan_time} ms"),
         ("按键状态", f"0x{button:02X}"),
         ("IO 实际状态", f"0x{io_real:02X}"),
+        ("NTC 温度", f"{ntc_temp:.2f} ℃"),
+        ("系统故障", f"0x{system_err:04X}"),
     ]
 
 
@@ -227,10 +260,10 @@ def parse_battery_info(payload: bytes) -> list[tuple[str, object]]:
 
 
 def parse_chat(payload: bytes) -> list[tuple[str, object]]:
-    values = unpack_payload("<IIIdddff", payload, "PROTO_CHAT_RESPONSE")
+    values = unpack_payload("<IIIdddfffi", payload, "PROTO_CHAT_RESPONSE")
     (
         system_ms, mist_adc, motor_adc, usb_in_v, voltage_v, current_ma,
-        soc, static_soc,
+        soc, static_soc, ntc_temp, fan_curr_diff,
     ) = values
     return [
         ("系统时间", f"{system_ms} ms"),
@@ -241,13 +274,15 @@ def parse_chat(payload: bytes) -> list[tuple[str, object]]:
         ("电池电流", f"{current_ma:.3f} mA"),
         ("SOC", f"{soc:.2f} %"),
         ("静态 SOC", f"{static_soc:.2f} %"),
+        ("NTC 温度", f"{ntc_temp:.2f} ℃"),
+        ("风机电流窗口差分", f"{fan_curr_diff} ADC"),
     ]
 
 
 def parse_debug_mist(payload: bytes) -> list[tuple[str, object]]:
-    values = unpack_payload("<BIHIIHHHBBBB", payload, "PROTO_DEBUG_MIST_RESPONSE")
+    values = unpack_payload("<IIBIHIIHHHBBBB", payload, "PROTO_DEBUG_MIST_RESPONSE")
     (
-        state, mist_freq, mist_duty, peak_freq, lock_freq, peak_ad,
+        system_ms, mist_adc, state, mist_freq, mist_duty, peak_freq, lock_freq, peak_ad,
         target_ad, ref_ad, locked, rescan_count, fault, error_count,
     ) = values
     state_names = {
@@ -255,6 +290,8 @@ def parse_debug_mist(payload: bytes) -> list[tuple[str, object]]:
         4: "等待参考值", 5: "漂移监控", 6: "漂移试探", 7: "错误",
     }
     return [
+        ("系统时间", f"{system_ms} ms"),
+        ("雾化 ADC", mist_adc),
         ("追频状态", f"{state} ({state_names.get(state, '未知')})"),
         ("当前 PWM 频率", f"{mist_freq} Hz"),
         ("当前 PWM 占空比", mist_duty),

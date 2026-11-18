@@ -37,6 +37,7 @@
 #include "bsp_rcc.h"
 #include "button.h"
 #include "timer_base.h"
+#include "config.h"
 #endif
 
 #ifdef BOOT_PROJECT
@@ -272,6 +273,18 @@ static uint16_t fan_protocol_app_response(uint8_t *data)
                 /* 固件校验码。 */
                 _CURSOR_WRITE_VAR(System.app_flash_crc);
                 _CURSOR_WRITE_VAR(System.boot_flash_crc);
+                
+                /* 编译日期。 */
+                _CURSOR_WRITE_WORD(FIRMWARE_BUILD_TIME);
+                
+                /* 版本 */
+                _CURSOR_WRITE_BYTE(sizeof(FIRMWARE_VERSION));
+                _CURSOR_WRITE_VAR(FIRMWARE_VERSION);
+                
+                /* 设备型号 */
+                _CURSOR_WRITE_BYTE(sizeof(DEVICE_MODEL));
+                _CURSOR_WRITE_VAR(DEVICE_MODEL);
+                
                 break;
             }
 
@@ -311,12 +324,19 @@ static uint16_t fan_protocol_app_response(uint8_t *data)
                 _CURSOR_WRITE_VAR(System.logic.onTimes);
                 _CURSOR_WRITE_VAR(System.logic.offTimes);
                 _CURSOR_WRITE_VAR(System.logic.mistTimes);
+                _CURSOR_WRITE_VAR(System.logic.fanTimes);
 
                 /* 当前按键状态。 */
                 _CURSOR_WRITE_BYTE(botton_getValue());
 
                 /* 控制 IO 状态。 */
                 _CURSOR_WRITE_VAR(System.io_real.data);
+
+                /* ntc温度 */
+                _CURSOR_WRITE_VAR(System.ntc_temp);
+
+                /* 系统故障 */
+                _CURSOR_WRITE_VAR(System.err);
                 break;
             }
 
@@ -362,12 +382,17 @@ static uint16_t fan_protocol_app_response(uint8_t *data)
                 _CURSOR_WRITE_VAR(bms_battery.current_ma);
                 _CURSOR_WRITE_VAR(bms_battery.soc_info.soc);
                 _CURSOR_WRITE_VAR(bms_battery.soc_info.static_soc);
-
+                
+                _CURSOR_WRITE_VAR(System.ntc_temp);
+                
+                _CURSOR_WRITE_VAR(System.fan_curr_diff);
                 break;
             }
 
             case PROTO_DEBUG_MIST_RESPONSE:
             {
+                _CURSOR_WRITE_WORD(getSystemMs());
+                _CURSOR_WRITE_WORD(get_mist_val());
                 /* 追频状态及当前目标 PWM 参数。 */
                 _CURSOR_WRITE_BYTE((uint8_t)mist_ctrl.stat.state);
                 _CURSOR_WRITE_VAR(System.logic.mist_freq);

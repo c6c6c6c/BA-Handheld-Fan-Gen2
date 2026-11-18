@@ -106,106 +106,6 @@ static void Unique_ID_read(void)
 }
 
 
-/*******************************************************************************
-//  Function   : compile_prarm_read
-//  Description: 解析并保存固件编译日期及时间
-//  Param      : None
-//  Return     : None
-//  Others     : 使用编译器提供的 __DATE__ 和 __TIME__ 宏；
-//               __DATE__ 格式为 Mmm dd yyyy；
-//               __TIME__ 格式为 hh:mm:ss；
-//               解析年份、月份、日期、小时、分钟及秒数；
-//               结果保存至 System.compile_param
-//  Author     : Chen Liang 2026-10-30
-*******************************************************************************/
-//static void compile_prarm_read(void)
-//{
-//    const char compile_date[] = __DATE__;
-//    const char compile_time[] = __TIME__;
-//    uint8_t month = 0U;
-
-//    /* 根据 __DATE__ 中的英文月份缩写确定月份。 */
-//    switch (compile_date[0])
-//    {
-//        case 'J':
-//            if (compile_date[1] == 'a')
-//            {
-//                /* Jan：一月。 */
-//                month = 1U;
-//            }
-//            else
-//            {
-//                /* Jun：六月；Jul：七月。 */
-//                month = (compile_date[2] == 'n') ? 6U : 7U;
-//            }
-//            break;
-
-//        case 'F':
-//            month = 2U;
-//            break;
-
-//        case 'M':
-//            /* Mar：三月；May：五月。 */
-//            month = (compile_date[2] == 'r') ? 3U : 5U;
-//            break;
-
-//        case 'A':
-//            /* Apr：四月；Aug：八月。 */
-//            month = (compile_date[1] == 'p') ? 4U : 8U;
-//            break;
-
-//        case 'S':
-//            month = 9U;
-//            break;
-
-//        case 'O':
-//            month = 10U;
-//            break;
-
-//        case 'N':
-//            month = 11U;
-//            break;
-
-//        case 'D':
-//            month = 12U;
-//            break;
-
-//        default:
-//            /* 无法识别月份时保存为 0。 */
-//            month = 0U;
-//            break;
-//    }
-
-//    /* 解析编译年份 yyyy。 */
-//    System.compile_param.year = (uint16_t)(
-//          (uint16_t)(compile_date[7]  - '0') * 1000U
-//        + (uint16_t)(compile_date[8]  - '0') * 100U
-//        + (uint16_t)(compile_date[9]  - '0') * 10U
-//        + (uint16_t)(compile_date[10] - '0')
-//    );
-
-//    /* 保存编译月份。 */
-//    System.compile_param.month = month;
-
-//    /*
-//     * 解析编译日期。
-//     *
-//     * __DATE__ 对个位日期使用前导空格，
-//     * 例如 "Nov  4 2026"。
-//     */
-//    System.compile_param.day = (uint8_t)(((compile_date[4] == ' ') ? 0U : (uint8_t)(compile_date[4] - '0') * 10U) + (uint8_t)(compile_date[5] - '0'));
-
-//    /* 解析编译小时 hh。 */
-//    System.compile_param.hour   = (uint8_t)((uint8_t)(compile_time[0] - '0') * 10U + (uint8_t)(compile_time[1] - '0'));
-
-//    /* 解析编译分钟 mm。 */
-//    System.compile_param.minute = (uint8_t)((uint8_t)(compile_time[3] - '0') * 10U + (uint8_t)(compile_time[4] - '0'));
-
-//    /* 解析编译秒数 ss。 */
-//    System.compile_param.second = (uint8_t)((uint8_t)(compile_time[6] - '0') * 10U + (uint8_t)(compile_time[7] - '0'));
-//}
-
-
 /* Exported functions ------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
@@ -282,57 +182,6 @@ void system_data_init(void)
 }
 
 
-/*******************************************************************************
-//  Function   : system_test
-//  Description: 检测 USB 输入电压突降并处理风扇 PWM 渐变复位
-//  Param      : None
-//  Return     : None
-//  Others     : 比较相邻两次检测的 USB 输入电压；
-//               当电压下降超过 2V 时置位突降标志；
-//               使用软件计时器判断突降事件持续时间；
-//               当系统开机且风机档位不低于 3 档时，
-//               调用 fan_pwm_ramp_rst() 重置 PWM 渐变控制
-//  Author     : Chen Liang 2026-10-30
-*******************************************************************************/
-void system_usb_drop_check(void)
-{
-    static double last_usb_v = 0.0;
-    static bool boost_flg = false;
-    static timer_base_t _timer_boost = {0};
-
-    /* 检测相邻两次 USB 输入电压是否下降超过 2V。 */
-    boost_flg = (last_usb_v - bms_battery.usb_in_v) > 2.0;
-
-    /* 保存当前 USB 输入电压。 */
-    last_usb_v = bms_battery.usb_in_v;
-
-    if (boost_flg == false)
-    {
-        /* 未检测到突降时重置事件计时器。 */
-        timer_base_Rst(&_timer_boost);
-    }
-    else
-    {
-        /* 检查突降事件的计时状态。 */
-        if (timer_base_Count(&_timer_boost) > 200U)
-        {
-            /* 超过 200ms 后清除突降标志。 */
-            boost_flg = false;
-        }
-    }
-
-    /*
-     * 风机高档运行期间，如果检测到 USB 电压突降，
-     * 则重新初始化风机 PWM 渐变状态。
-     */
-    if (boost_flg 
-    &&  System.logic.power 
-	&& (System.logic.fan_mode >= FAN_MODE_3))
-    {
-        fan_pwm_ramp_rst();
-    }
-}
-
 
 /*******************************************************************************
 //  Function   : system_init
@@ -349,9 +198,6 @@ void system_init(void)
 
     /* 读取芯片 UID。 */
     Unique_ID_read();
-
-    /* 解析固件编译日期及时间。 */
-    //compile_prarm_read();
 
     /* 初始化板级硬件驱动。 */
     system_bsp_init();
@@ -386,8 +232,8 @@ void system_run(void)
     /* 处理 ADC 采样缓存及滤波结果。 */
     app_sampling_task();
 
-    /* 执行 USB 输入电压突降检测。 */
-    system_usb_drop_check();
+    /*  */
+    app_logic_fan();
 
     /* 按 1ms 周期调度系统任务。 */
     if (timer_base_Timing(&_timer_logic, 1U))

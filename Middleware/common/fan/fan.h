@@ -81,6 +81,7 @@ typedef struct
 {
 	uint32_t start_times;        /**< 当前实际 PWM 输出值 */
     uint16_t realPwm;            /**< 当前实际 PWM 输出值 */
+	uint16_t tagrtPwm;            /**< 当前实际 PWM 输出值 */
     uint32_t times;              /**< PWM 渐变计时值 */
 } fan_ramp_t;
 
@@ -105,7 +106,7 @@ typedef struct
     fan_ramp_t ramp;             /**< 风扇 PWM 平滑加减速状态 */
 } fan_t;
 
-
+extern fan_t fan;
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************

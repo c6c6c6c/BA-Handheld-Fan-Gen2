@@ -107,6 +107,13 @@ void boot_init(void)
     }
     else
     {
+		
+		/* 初始化 Bootloader 底层硬件。 */
+		system_bsp_init();
+
+		/* 初始化 Bootloader 应用层模块。 */
+		system_data_init();
+		
 		if(param_ota_state() == OTC_STATUS_START)
 		{
 			protocol.response = PROTO_ENTER_OTA_RESPONSE;
@@ -114,12 +121,6 @@ void boot_init(void)
         /* 初始化 OTA 固件烧录地址及控制参数。 */
         bootloader_Init();
     }
-
-    /* 初始化 Bootloader 底层硬件。 */
-    system_bsp_init();
-
-    /* 初始化 Bootloader 应用层模块。 */
-    system_data_init();
 }
 
 /*******************************************************************************

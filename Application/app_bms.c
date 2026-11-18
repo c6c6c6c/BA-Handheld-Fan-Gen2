@@ -37,7 +37,7 @@ bms_battery_t bms_battery = {0};
 const battery_config_t battery_config =
 {
     .design_capacity_mah  = 5000.0f,    /**< 电池设计容量，单位 mAh */
-    .full_voltage_v       = 4.15f,      /**< 电池满充电压，单位 V */
+    .full_voltage_v       = 4.27f,      /**< 电池满充电压，单位 V */
     .cutoff_voltage_v     = 3.00f,      /**< 电池放电截止电压，单位 V */
     .rest_current_ma      = 50.0f,      /**< 静置电流判断阈值，单位 mA */
     .rest_dvdt_v_per_s    = 0.02f,      /**< 静置电压变化率阈值，单位 V/s */
@@ -204,7 +204,7 @@ void app_bms_soc_update(void)
             Cnt++;
 
             /* 连续满足稳定条件后执行 SOC/SOH 初始化。 */
-            if (Cnt > 10)
+            if (Cnt > 20)
             {
                 /* 根据当前电池电压估算初始 SOC。 */
                 bms_battery.soc_info.soc = bms_soc_from_ocv(bms_battery.voltage_v);
@@ -259,13 +259,11 @@ void app_bms_1ms_task(void)
     /* ADC 累计采样完成后执行 BMS 数据处理。 */
     if (sample_accum_get(adcValue))
     {
-		
-		
         /* 根据 ADC 数据换算电池电压。 */
         bms_battery.voltage_v  = bms_battery_voltage(adcValue[BMS_ADC_VOLTAGE]);
 
         /* 根据 ADC 数据换算电池电流，参考电压参数为 3.3V。 */
-        bms_battery.current_ma = bms_battery_current(adcValue[BMS_ADC_CURRENT], 3.3);
+        bms_battery.current_ma = bms_battery_current(adcValue[BMS_ADC_CURRENT], bms_battery.voltage_v);
 
         /* 根据 ADC 数据换算 USB 输入电压。 */
         bms_battery.usb_in_v   = bms_usb_in_voltage(adcValue[BMS_ADC_USB_VOLTAGE]);

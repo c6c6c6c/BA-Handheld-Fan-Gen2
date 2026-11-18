@@ -42,6 +42,16 @@
 void bsp_wdg_Init(void);
 
 /*******************************************************************************
+//  Function   : bsp_wdg_Deinit
+//  Description: 保留看门狗反初始化接口，不执行硬件操作
+//  Param      : None
+//  Return     : None
+//  Others     : IWDG 启动后无法由软件停止；调用后仍需定期喂狗
+//  Author     : Chen Liang 2026-10-12
+*******************************************************************************/
+void bsp_wdg_Deinit(void);
+
+/*******************************************************************************
 //  Function   : bsp_wdg_Refresh
 //  Description: 重装 IWDG 计数器，刷新看门狗
 //  Param      : None

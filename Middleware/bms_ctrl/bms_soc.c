@@ -28,7 +28,7 @@ static const BmsSocOcvPoint s_ocv_table[] =
     {3.6100f,  400U}, {3.6600f,  450U}, {3.7000f,  500U}, {3.7600f,  550U},
     {3.8100f,  600U}, {3.8800f,  650U}, {3.9500f,  700U}, {3.9650f,  750U},
     {4.0350f,  800U}, {4.0700f,  850U}, {4.0850f,  900U}, {4.1000f,  950U},
-    {4.1750f, 1000U}
+    {4.1500f, 1000U}
 };
 
 #define BMS_SOC_OCV_POINT_COUNT    (sizeof(s_ocv_table) / sizeof(s_ocv_table[0]))
@@ -459,7 +459,8 @@ bool bms_soc_update(bms_battery_t *battery, uint32_t elapsed_ms)
      * FULL 必须由充电管理状态确认；
      * 仅端电压达到 full_voltage_v 不能单独判断已经充满。
      */
-    if ((battery->state == BAT_STATE_FULL) && (battery->voltage_v >= config->full_voltage_v))
+    if ((battery->state == BAT_STATE_FULL) 
+	 && (battery->voltage_v >= config->full_voltage_v))
     {
         soc_info->soc = BMS_SOC_PERCENT_FULL;
         s_soc.remaining_capacity_mah = capacity_mah;

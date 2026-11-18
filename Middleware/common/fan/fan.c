@@ -133,6 +133,7 @@ void fan_pwm_ramp_rst(void)
 {
     fan.ramp.realPwm     = 0U;
     fan.ramp.times       = 0U;
+	fan.ramp.tagrtPwm    = 0U;
 	fan.ramp.start_times = FAN_LAUNCH_TIME;
 }
 
@@ -151,7 +152,7 @@ void fan_pwm_ramp_rst(void)
 static void fan_pwm_ramp_ctrl(uint16_t tagrtPwm)
 {
     /* 首次启动时设置最低运行档位的 PWM。 */
-
+	fan.ramp.tagrtPwm = tagrtPwm;
     if(fan.ramp.start_times > 0)
     {
         fan.ramp.realPwm = FAN_LAUNCH_PWM;

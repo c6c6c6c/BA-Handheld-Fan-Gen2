@@ -15,7 +15,7 @@
 #include "app_io_ctrl.h"
 #include "app_system.h"
 #include "fan_protocol.h"
-
+#include "app_bms.h"
 /* Private functions -------------------------------------------------------------------------------------------------*/
 
 /*******************************************************************************
@@ -35,7 +35,8 @@ static void app_io_update(void)
     System.io_real.bit.vin_ctrl  = System.io_logic.bit.vin_ctrl;
 	
 	//协议支持禁止充电
-	if(protocol.IsConnect && protocol_data.ctrl.prohibit_charging)
+	if((protocol.IsConnect && protocol_data.ctrl.prohibit_charging)
+	|| bms_battery.soc_Init == false)
 	{
 		System.io_real.bit.vin_ctrl = true;
 	}
@@ -77,6 +78,8 @@ static void app_io_output(void)
     {
         LL_GPIO_ResetOutputPin(BMS_VIN_EN_PORT, BMS_VIN_EN_PIN);
     }
+	
+	System.io_real.bit.usb_in = System.logic.usb_present;
 }
 
 /* Exported functions ------------------------------------------------------------------------------------------------*/

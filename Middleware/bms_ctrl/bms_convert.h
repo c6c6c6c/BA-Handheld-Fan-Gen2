@@ -87,7 +87,7 @@
 /** USB ADC 码值到 VBUS 电压的换算系数，单位 V/ADC码值 */
 #define BMS_USB_ADC_TO_VBUS_V                    \
                                                  ((BMS_USB_ADC_REF_VOLTAGE * BMS_USB_ADC_DIV_RATIO) / \
-                                                 (double)BMS_BATTERY_ADC_FULL_SCALE)
+                                                 (double)BMS_BATTERY_ADC_FULL_SCALE) * 1.106936
 
 
 /* Typedef -----------------------------------------------------------------------------------------------------------*/
