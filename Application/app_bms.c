@@ -42,8 +42,8 @@ const battery_config_t battery_config =
     .rest_current_ma      = 50.0f,      /**< 静置电流判断阈值，单位 mA */
     .rest_dvdt_v_per_s    = 0.02f,      /**< 静置电压变化率阈值，单位 V/s */
     .rest_time_ms         = 10000U,     /**< OCV 修正要求的静置时间，单位 ms */
-    .charge_efficiency    = 3.35f,      /**< 充电库仑积分效率系数 */
-    .discharge_efficiency = 1.00f       /**< 放电库仑积分效率系数 */
+    .charge_efficiency    = 3.00f,      /**< 充电库仑积分效率系数 */
+    .discharge_efficiency = 4.50f       /**< 放电库仑积分效率系数 */
 };
 
 
@@ -216,6 +216,10 @@ void app_bms_soc_update(void)
                 bms_battery.soc_Init = true;
                 Cnt = 0;
             }
+			else
+			{
+				
+			}
         }
 
         /* 保存本次采样值，供下次判断变化量。 */
@@ -270,9 +274,6 @@ void app_bms_1ms_task(void)
 
         /* 更新电池充放电状态。 */
         app_bms_state_update();
-
-        // /* 执行电池电压、电流、USB 及温度保护检查。 */
-        // bms_protect_check(&bms_battery);
 
         /* 执行 SOC 初始化或库仑积分及 SOH 更新。 */
         app_bms_soc_update();

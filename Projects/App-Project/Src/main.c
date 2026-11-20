@@ -66,7 +66,7 @@ int main(void)
   * @param  None
   * @retval None
   */
-static void APP_SystemClockConfig(void)
+void APP_SystemClockConfig(void)
 {
   /* Enable and initialize HSI */
   LL_RCC_HSI_Enable();

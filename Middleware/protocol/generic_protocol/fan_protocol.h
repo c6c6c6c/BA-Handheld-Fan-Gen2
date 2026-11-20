@@ -179,5 +179,4 @@ void fan_protocol_Deinit(void);
 *******************************************************************************/
 void fan_protocol_1ms_task(void);
 
-
 #endif /* _FAN_PROTOCOL_H_ */

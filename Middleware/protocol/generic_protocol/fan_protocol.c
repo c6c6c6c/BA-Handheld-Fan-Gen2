@@ -369,49 +369,66 @@ static uint16_t fan_protocol_app_response(uint8_t *data)
 
             case PROTO_CHAT_RESPONSE:
             {
-                /* 写入系统毫秒计数，作为调试数据时间戳。 */
+                /* 系统运行时间戳，单位 ms，用作调试曲线的 X 轴。 */
                 _CURSOR_WRITE_WORD(getSystemMs());
 
-                /* 写入雾化及电机采样值，具体单位由采样接口定义。 */
+                /* 雾化片及电机实时 ADC 采样值。 */
                 _CURSOR_WRITE_WORD(get_mist_val());
                 _CURSOR_WRITE_WORD(get_motor_val());
 
-                /* 写入电压、电流及 SOC 调试数据。 */
+                /* USB 输入电压、电池电压及充放电电流。 */
                 _CURSOR_WRITE_VAR(bms_battery.usb_in_v);
                 _CURSOR_WRITE_VAR(bms_battery.voltage_v);
                 _CURSOR_WRITE_VAR(bms_battery.current_ma);
+
+                /* 电池动态 SOC 及静置电压估算 SOC，单位 %。 */
                 _CURSOR_WRITE_VAR(bms_battery.soc_info.soc);
                 _CURSOR_WRITE_VAR(bms_battery.soc_info.static_soc);
-                
+
+                /* 主控板 NTC 实时温度。 */
                 _CURSOR_WRITE_VAR(System.ntc_temp);
-                
+
+                /* 电机电流采样滑动窗口差分累计值。 */
                 _CURSOR_WRITE_VAR(System.fan_curr_diff);
                 break;
             }
 
             case PROTO_DEBUG_MIST_RESPONSE:
             {
+                /* 系统运行时间戳，单位 ms，用作追频曲线的 X 轴。 */
                 _CURSOR_WRITE_WORD(getSystemMs());
+
+                /* 雾化片实时 ADC 采样值，用于观察谐振响应。 */
                 _CURSOR_WRITE_WORD(get_mist_val());
-                /* 追频状态及当前目标 PWM 参数。 */
+
+                /* 自动追频算法当前运行状态。 */
                 _CURSOR_WRITE_BYTE((uint8_t)mist_ctrl.stat.state);
+
+                /* 当前雾化片 PWM 输出频率及占空比参数。 */
                 _CURSOR_WRITE_VAR(System.logic.mist_freq);
                 _CURSOR_WRITE_VAR(System.logic.mist_duty);
-                /* 扫描峰值频率、锁定频率及对应 ADC 参数。 */
+
+                /* 扫描过程中检测到的峰值频率及锁定频率，单位 Hz。 */
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.peakFreq);
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.lockFreq);
+
+                /* 峰值 ADC、锁定目标 ADC 及参考 ADC 采样值。 */
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.peakAd);
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.targetAd);
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.refAd);
-                /* 锁定标志、重新扫描次数及故障统计。 */
+
+                /* 当前频率锁定状态。 */
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.locked);
+
+                /* 自动追频重新扫描次数。 */
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.rescanCnt);
+
+                /* 自动追频故障状态及累计错误次数。 */
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.fault);
                 _CURSOR_WRITE_VAR(mist_ctrl.stat.errCnt);
 
                 break;
             }
-
 
             default:
             {

@@ -131,11 +131,10 @@ static const uint8_t aip650e_seglist2[] =
 
 /*******************************************************************************
 //  Function   : app_display_dev
-//  Description: 执行 AiP650E 底层显示刷新及控制状态同步
+//  Description: 同步显示缓存与 AiP650E 控制状态
 //  Param      : None
 //  Return     : None
-//  Others     : 正常情况下仅更新发生变化的显示数据和控制参数；
-//               每隔 1000ms 强制重写控制字及全部显示 RAM
+//  Others     : 优先写入显示段码与变化的控制参数；每 1000ms 强制重新写入控制寄存器及所有 COM 显示 RAM
 //  Author     : Chen Liang 2026-10-22
 *******************************************************************************/
 static void app_display_dev(void)
@@ -172,12 +171,10 @@ static void app_display_dev(void)
 
 /*******************************************************************************
 //  Function   : app_display_convert
-//  Description: 将应用层显示状态转换为 AiP650E 显示数据
+//  Description: 将数字索引及功能图标转换为 AiP650E 段码
 //  Param      : None
 //  Return     : None
-//  Others     : DIG1、DIG2 根据索引查表生成数字或字符段码；
-//               DIG3 生成雾化、百分比、风机及制冷图标数据；
-//               DIG4 控制数字 100 的百位显示
+//  Others     : DIG1/DIG2 查表，非法索引写 0；DIG4 表示独立百位；DIG3 包含雾化、风机、百分比及制冷图标位
 //  Author     : Chen Liang 2026-10-21
 *******************************************************************************/
 static void app_display_convert(void)
@@ -211,20 +208,17 @@ static void app_display_convert(void)
 
 /*******************************************************************************
 //  Function   : app_display_showNum
-//  Description: 设置应用层数字显示内容
-//  Param      : num       - 待显示数字，范围 0~100
-//               IsDisplay - true：显示；false：关闭
+//  Description: 更新数码管数字显示缓存
+//  Param      : num - 0～199 的显示数值；IsDisplay - 是否显示数字
 //  Return     : None
-//  Others     : 小于 10 时关闭十位；
-//               等于 100 时显示独立百位数字 1；
-//               数值无效或关闭显示时清除数字显示
+//  Others     : num 为 uint8_t；实际允许显示 0～199；达到 100 时开启独立百位 1；小于 10 时隐藏十位；IsDisplay 为 false 时清空数字显示
 //  Author     : Chen Liang 2026-10-23
 *******************************************************************************/
 static void app_display_showNum(uint8_t num, bool IsDisplay)
 {
     if (IsDisplay && (num <= 199U))
     {
-        /* 百位数字 1 显示控制。 */
+        /* 对 100～199 的数值开启独立百位数字 1。 */
         display.bit.showNum[0] = (num >= 100U);
 
         /* 十位小于 10 时关闭显示。 */
@@ -248,10 +242,9 @@ static void app_display_showNum(uint8_t num, bool IsDisplay)
 /*******************************************************************************
 //  Function   : app_display_fanmode
 //  Description: 设置风机档位显示内容
-//  Param      : fanmode - 当前风机档位
+//  Param      : fanmode - 风机显示档位
 //  Return     : None
-//  Others     : DIG1 显示 F，DIG2 显示档位数字；
-//               显示格式为 F0~F9
+//  Others     : DIG1 显示 F，DIG2 显示 fanmode 对 10 取模的结果；关闭独立百位
 //  Author     : Chen Liang 2026-10-27
 *******************************************************************************/
 static void app_display_fanmode(uint8_t fanmode)
@@ -266,15 +259,50 @@ static void app_display_fanmode(uint8_t fanmode)
     display.bit.showNum[2] = fanmode % 10U;
 }
 
+/*******************************************************************************
+//  Function   : power_off_charging_detection
+//  Description: 检测关机状态下是否需要显示充电电量
+//  Param      : None
+//  Return     : true - 设备关机、风机与雾化关闭、USB 已连接且电池处于充电或充满状态；false - 不满足条件
+//  Others     : 只负责判定显示条件，不直接修改电池状态或显示缓存
+//  Author     : Chen Liang 2026-10-27
+*******************************************************************************/
+static bool power_off_charging_detection()
+{
+    if(System.logic.power     == 0 
+    && System.logic.fan_mode  == FAN_MODE_0
+    && System.logic.mist_duty == 0
+    && System.logic.usb_present
+    && ((bms_battery.state == BAT_STATE_FULL) || (bms_battery.state == BAT_STATE_CHARGING)))
+    {
+        return true;
+    }
+    return false;
+}
+
+/*******************************************************************************
+//  Function   : power_off_low_battery_detection
+//  Description: 检测开机状态下的低电量显示条件
+//  Param      : None
+//  Return     : true - 设备处于开机状态且 SOC 小于 10%；false - 不满足条件
+//  Others     : 仅根据系统电源标志和 SOC 判断，不执行关机或电池保护
+//  Author     : Chen Liang 2026-10-27
+*******************************************************************************/
+static bool power_off_low_battery_detection()
+{
+    if(System.logic.power == 1 && bms_battery.soc_info.soc < 10.5)
+    {
+        return true;
+    }
+    return false;
+}
 
 /*******************************************************************************
 //  Function   : app_display_logic
-//  Description: 根据 Application 运行状态更新显示内容及亮度
+//  Description: 根据设备状态更新 APP 数码管内容及亮度
 //  Param      : None
 //  Return     : None
-//  Others     : 开机时显示风机档位及功能图标；
-//               风机或雾化按键长按时显示 SOC 百分比；
-//               有显示操作时恢复亮度，10s 无操作后降低亮度
+//  Others     : 开机默认显示风机档位，按键长按时显示 SOC；关机充电或开机低电量时按定时器交替显示 SOC 和空白；有显示标志时亮度恢复至 4 级，超过 10s 无操作调至 1 级；充电/低电量提示分支最终将亮度设为 1 级
 //  Author     : Chen Liang 2026-10-27
 *******************************************************************************/
 static void app_display_logic(void)
@@ -291,9 +319,9 @@ static void app_display_logic(void)
 
         /* 长按风机或雾化按键时显示当前 SOC。 */
         if ((botton_getEvent(BUTTON_ITEM_FAN) == BUTTON_EVENT_LONG_PRESS_HOLD) 
-		|| (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
+		||  (botton_getEvent(BUTTON_ITEM_MIST) == BUTTON_EVENT_LONG_PRESS_HOLD))
         {
-            /* 显示电池 SOC 百分比。 */
+            /* 使用 SOC 四舍五入结果更新数字显示缓存。 */
             app_display_showNum(bms_battery.soc_info.soc + 0.5,true);
 
             /* 进入 SOC 显示模式。 */
@@ -316,7 +344,7 @@ static void app_display_logic(void)
     }
     else
     {
-        /* 设备关闭时清除显示内容。 */
+        /* 设备关机时先清除显示内容；充电提示分支可在后面覆盖。 */
         display.bit.percentageIcon = false;
         display.bit.fanIcon        = false;
         display.bit.mist           = false;
@@ -329,8 +357,7 @@ static void app_display_logic(void)
     {
         timer_base_Rst(&_timer);
 
-        System.logic.display_flg = false;
-
+        System.logic.display_flg    = false;
         aip650e.ctrl.bit.brightness = BRIGHTNESS_4_LEVEL;
     }
     /* 无操作超过 10s 后降低显示亮度。 */
@@ -338,32 +365,39 @@ static void app_display_logic(void)
     {
         aip650e.ctrl.bit.brightness = BRIGHTNESS_1_LEVEL;
     }
+
+	if(bms_battery.soc_Init == false)return;
 	
-	if(System.logic.power     == 0 
-	&& System.logic.fan_mode  == FAN_MODE_0
-	&& System.logic.mist_duty == 0
-	&& System.logic.usb_present
-	&& ((bms_battery.state == BAT_STATE_FULL) || (bms_battery.state == BAT_STATE_CHARGING)))
-	{
-		app_display_showNum(bms_battery.soc_info.soc + 0.5,true);
-		display.bit.percentageIcon = true;
-		
-		if(bms_battery.soc_info.soc + 0.5  < 100.0)
+    /*
+     * 关机充电或开机低电量提示：
+     * 先设置 SOC 数字和百分比图标；SOC 小于 100 时，
+     * 计时器的前 500ms 关闭数字，后续阶段显示 SOC，形成闪烁。
+     * 此分支同时将亮度设为 1 级，并持续设置显示刷新标志。
+     */
+    if(power_off_charging_detection() || power_off_low_battery_detection())
+    {
+        app_display_showNum(bms_battery.soc_info.soc + 0.5,true);
+        display.bit.percentageIcon = true;
+        
+        if(bms_battery.soc_info.soc + 0.5  < 100.0)
+        {
+            if (timer_base_Count(&_timer_soc) < 500U)
+            {
+                app_display_showNum(0U, false);
+            }
+            else if (timer_base_Count(&_timer_soc) > 1000U)
+            {
+                timer_base_Rst(&_timer_soc);
+            }
+        }
+
+		if(!power_off_low_battery_detection())
 		{
-			if (timer_base_Count(&_timer_soc) < 500U)
-			{
-				app_display_showNum(0U, false);
-			}
-			else if (timer_base_Count(&_timer_soc) > 1000U)
-			{
-				timer_base_Rst(&_timer_soc);
-			}
+			aip650e.ctrl.bit.brightness = BRIGHTNESS_1_LEVEL;
 		}
-			
-		aip650e.ctrl.bit.brightness = BRIGHTNESS_1_LEVEL;
-		
-		System.logic.display_flg = true;
-	}
+        
+        System.logic.display_flg = true;
+    }
 	
 	
 }
@@ -375,13 +409,10 @@ static void app_display_logic(void)
 
 /*******************************************************************************
 //  Function   : boot_display_logic
-//  Description: 根据 OTA 升级状态更新 Bootloader 显示内容
+//  Description: 根据 OTA 状态更新 Bootloader 显示内容
 //  Param      : None
 //  Return     : None
-//  Others     : OTA 开始时持续显示 UP；
-//               OTA 编程中每隔 500ms 在 0% 和 UP 之间切换；
-//               关闭其他功能图标，仅保留升级状态相关显示；
-//               当前尚未定义 SUCCESS 等其他状态的显示内容
+//  Others     : START 状态显示 UP；PROGRAMMING 状态按 500ms 切换空白与 UP；其他状态保留已有数字内容；关闭 APP 图标并固定亮度为 3 级
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
 static void boot_display_logic(void)
@@ -399,7 +430,7 @@ static void boot_display_logic(void)
     {
         case OTC_STATUS_START:
         {
-            /* OTA 开始：持续显示 UP。 */
+            /* OTA START 状态：显示字符 UP。 */
             display.bit.showNum[0] = 0U;
             display.bit.showNum[1] = 11U;   /* U */
             display.bit.showNum[2] = 12U;   /* P */
@@ -408,16 +439,15 @@ static void boot_display_logic(void)
 
         case OTC_STATUS_PROGRAMMING:
         {
-            /* 前 500ms：显示 0%。 */
+            /* 前 500ms：关闭数字及百分比图标（当前代码显示空白）。 */
             if (timer_base_Count(&_timer) < APP_DISPLAY_BOOT_SWITCH_MS)
             {
                 app_display_showNum(0U, false);
 
                 display.bit.percentageIcon = false;
             }
-            /* 后 500ms：显示 UP。 */
-            else if (timer_base_Count(&_timer) <
-                     (APP_DISPLAY_BOOT_SWITCH_MS * 2U))
+            /* 后 500ms：显示 UP，百分比图标保持前一阶段的关闭状态。 */
+            else if (timer_base_Count(&_timer) < (APP_DISPLAY_BOOT_SWITCH_MS * 2U))
             {
                 display.bit.showNum[0] = 0U;
                 display.bit.showNum[1] = 11U;
@@ -526,8 +556,7 @@ static void test_display_logic(void)
 //  Description: 初始化 AiP650E 显示应用模块
 //  Param      : None
 //  Return     : None
-//  Others     : 初始化底层两线通信及显示 RAM；
-//               写入默认显示模式、亮度及显示使能配置
+//  Others     : 初始化显示驱动并写入默认控制参数
 //  Author     : Chen Liang 2026-10-21
 *******************************************************************************/
 void app_display_Init(void)
@@ -542,11 +571,10 @@ void app_display_Init(void)
 
 /*******************************************************************************
 //  Function   : app_display_task
-//  Description: 执行 AiP650E 显示应用周期任务
+//  Description: 执行显示应用层周期任务
 //  Param      : None
 //  Return     : None
-//  Others     : 根据当前工程模式执行相应显示逻辑；
-//               完成段码转换并同步至显示硬件
+//  Others     : 按编译工程选择 APP 或 BOOT 显示逻辑；随后转换段码并刷新硬件
 //  Author     : Chen Liang 2026-11-02
 *******************************************************************************/
 void app_display_task(void)

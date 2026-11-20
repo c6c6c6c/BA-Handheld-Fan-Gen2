@@ -4,8 +4,8 @@
     ],
     "files.exclude": {
         //"**Project/App-Project": true,
-        "**Project/Boot-Project": true,
-        "**Project/Test-Project": true,
+        "**Projects/Boot-Project": true,
+        "**Projects/Test-Project": true,
 
         "**Project/App-Project/MDK-ARM": true,
         "**Project/Boot-Project/MDK-ARM": true,
@@ -42,8 +42,8 @@
     },
     "search.exclude": {
         //"**Project/App-Project": true,
-        "**Project/Boot-Project": true,
-        "**Project/Test-Project": true,
+        "**Projects/Boot-Project": true,
+        "**Projects/Test-Project": true,
 
         "**Project/App-Project/MDK-ARM": true,
         "**Project/Boot-Project/MDK-ARM": true,

@@ -42,7 +42,8 @@ typedef struct
     uint32_t         mistTimes;       /**< 雾化功能运行累计时间，单位 ms */
     uint32_t         fanTimes;        /**< 风机功能运行累计时间，单位 ms */
 
-    bool     display_flg;   //显示
+    bool             display_flg;     //显示
+	bool             save_flg;        //保存标志
 } app_logic_t;
 
 
@@ -59,6 +60,16 @@ typedef struct
     uint8_t  index;                           /**< 当前写入位置 */
     uint8_t  count;                           /**< 已累计采样数 */
 } motor_diff_t;
+
+/**
+ * @brief 系统保存
+ */
+typedef struct
+{
+    fan_mode_enum_t   fan_mode;       /**< 当前风扇档位，0=关闭，1~5=运行档位 */
+    mist_mode_enum_t  mist_mode;      /**< 雾化功能状态，true=开启，false=关闭 */
+	bool              power;          /**< 当前设备电源状态，true=开机，false=关机*/
+} logic_save_t;
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/
 

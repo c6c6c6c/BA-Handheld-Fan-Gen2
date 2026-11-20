@@ -130,6 +130,36 @@ void param_soc_read(uint8_t *buffer, uint8_t length);
 *******************************************************************************/
 void param_soc_save(const uint8_t *buffer, uint8_t length);
 
+
+/*******************************************************************************
+//  Function   : param_system_read
+//  Description: 从 Flash 读取系统运行配置参数
+//  Param      : buffer - 系统参数接收缓冲区
+//               length - 请求读取的数据长度，单位 Byte
+//  Return     : None
+//  Others     : 调用通用参数读取接口 param_read()；
+//               固定使用 PARAM_ID_SYSTEM 参数分区；
+//               由通用接口完成参数有效性检查及数据读取
+//  Author     : Chen Liang 2026-10-27
+*******************************************************************************/
+void param_system_read(uint8_t *buffer, uint8_t length);
+
+
+/*******************************************************************************
+//  Function   : param_system_save
+//  Description: 将系统运行配置参数保存至 Flash
+//  Param      : buffer - 待保存的系统参数缓冲区
+//               length - 待保存的数据长度，单位 Byte
+//  Return     : None
+//  Others     : 调用通用参数保存接口 param_save()；
+//               固定使用 PARAM_ID_SYSTEM 参数分区；
+//               保存前由通用接口组织有效标识及参数数据；
+//               擦除并重新编程对应 Flash 参数页
+//  Author     : Chen Liang 2026-10-27
+*******************************************************************************/
+void param_system_save(const uint8_t *buffer, uint8_t length);
+
+
 /*******************************************************************************
 //  Function   : param_Restore
 //  Description: 执行 Flash 参数恢复操作
