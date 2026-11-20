@@ -36,6 +36,6 @@
                                 FIRMWARE_BUILD_MONTH * 100U + FIRMWARE_BUILD_DAY)
 
 /** 设备型号字符串。 */
-#define DEVICE_MODEL          "BA Fan Gen2 - MIST 30%"
+#define DEVICE_MODEL          "BA Fan Gen2 - MIST 30% - WDG"
 
 #endif /* CONFIG_H */

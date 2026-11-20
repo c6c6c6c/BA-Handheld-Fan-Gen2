@@ -16,9 +16,9 @@
 #include "main.h"
 
 /* Macro -------------------------------------------------------------------------------------------------------------*/
-/* LSI 标称 32768 Hz，实际超时时间受 LSI 频率偏差影响。 */
+/* 标称超时：(3071 + 1) * 32 / 32768 = 3 s，实际时间受 LSI 频率偏差影响。 */
 #define BSP_WDG_PRESCALER                 LL_IWDG_PRESCALER_32
-#define BSP_WDG_RELOAD                    255U
+#define BSP_WDG_RELOAD                    3071U
 /* 等待循环次数上限，不是毫秒值，实际等待时间与 CPU 时钟有关。 */
 #define BSP_WDG_READY_TIMEOUT            1000000U
 
@@ -35,8 +35,8 @@
 //  Description: 初始化并启动 IWDG 独立看门狗
 //  Param      : None
 //  Return     : None
-//  Others     : 使用 LSI，默认超时约 250 ms；等待超时调用 APP_ErrorHandler()，
-//               成功初始化后需定期喂狗；重复调用仅喂狗，不重新配置
+//  Others     : 使用 LSI，标称超时为 3 s；初始化完成后需在超时前定期喂狗；
+//               超时由硬件复位 MCU，IWDG 启动后无法由软件停止
 //  Author     : Chen Liang 2026-10-12
 *******************************************************************************/
 void bsp_wdg_Init(void);

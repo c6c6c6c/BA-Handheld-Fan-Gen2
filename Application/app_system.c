@@ -33,6 +33,8 @@
 #include "bsp_wdg.h"
 #include "bsp_tim3.h"
 #include "bsp_flash.h"
+#include "bsp_rcc.h"
+#include "bsp_lptim.h"
 
 #include "fan.h"
 #include "sleep.h"
@@ -179,6 +181,7 @@ void system_data_init(void)
 
     /* 初始化雾化片自动追频及 PWM 控制模块。 */
     app_mist_Init();
+
 }
 
 
@@ -210,6 +213,11 @@ void system_init(void)
 
     /* 计算 Bootloader Flash 区域软件校验码。 */
     System.boot_flash_crc = CRC32_IEEE_Calculate((const uint8_t *)MCU_BASE_ADDRESS,APP_FLASH_OFFSET);
+
+	#if SYSTEM_WDG_EN
+        bsp_wdg_Init();
+        bsp_lptim_Init();
+    #endif
 }
 
 
@@ -229,6 +237,9 @@ void system_run(void)
 {
     static timer_base_t _timer_logic = {0};
 
+	#if SYSTEM_WDG_EN
+		bsp_wdg_Refresh();
+	#endif
     /* 处理 ADC 采样缓存及滤波结果。 */
     app_sampling_task();
 
@@ -238,6 +249,7 @@ void system_run(void)
     /* 按 1ms 周期调度系统任务。 */
     if (timer_base_Timing(&_timer_logic, 1U))
     {
+
         /* 更新风机 PWM、档位及转速反馈。 */
         fan_1ms_task();
 

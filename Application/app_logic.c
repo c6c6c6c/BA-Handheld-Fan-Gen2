@@ -390,8 +390,19 @@ static void fan_step_fault_handle()
 	{
 		if(fan.ramp.realPwm == fan.ramp.tagrtPwm)
 		{
-			bool recovery_flg = System.fan_curr_diff < 10 && System.fan_curr_diff > -10;
-			bool fault_flg    = System.fan_curr_diff < -20;
+			bool recovery_flg = 0;
+			bool fault_flg    = 0;
+			
+			if(System.logic.mist_duty)
+			{
+				recovery_flg = System.fan_curr_diff < 18 && System.fan_curr_diff > -18;
+				fault_flg    = System.fan_curr_diff < -28;
+			}
+			else
+			{
+				recovery_flg = System.fan_curr_diff < 10 && System.fan_curr_diff > -10;
+				fault_flg    = System.fan_curr_diff < -20;
+			}
 			
 			if(fault_flg)
 			{

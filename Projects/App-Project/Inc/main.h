@@ -50,6 +50,7 @@ extern "C" {
 #include "py32f032_ll_flash.h"
 #include "py32f032_ll_iwdg.h"
 #include "py32f032_ll_opa.h"
+#include "py32f032_ll_lptim.h"
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -543,6 +543,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Bsp\Src\bsp_flash.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_lptim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Bsp\Src\bsp_lptim.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -727,6 +732,11 @@
               <FileName>py32f032_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\py32f032_it.c</FilePath>
+            </File>
+            <File>
+              <FileName>config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Config\config.h</FilePath>
             </File>
           </Files>
         </Group>

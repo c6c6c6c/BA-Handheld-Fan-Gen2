@@ -38,4 +38,5 @@ void bsp_rcc_SystemReset(void);
 *******************************************************************************/
 void bsp_rcc_SystemStop(void);
 
+
 #endif /* _BSP_RCC_H_ */

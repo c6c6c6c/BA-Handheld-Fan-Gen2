@@ -24,6 +24,7 @@
 typedef struct 
 {
     uint32_t      count;
+    volatile bool lock_sleep;   /**< 中断回调清除，休眠循环读取 */
 }sleep_t;
 
 /* Function declarations ---------------------------------------------------------------------------------------------*/

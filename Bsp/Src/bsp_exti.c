@@ -28,6 +28,18 @@
 __weak void bsp_exti_usb_Callback(void){}
 
 /*******************************************************************************
+//  Function   : bsp_exti_usb_Callback
+//  Description: USB_IN 外部中断事件回调
+//  Param      : None
+//  Return     : None
+//  Others     : 弱定义函数，可由应用层重新实现；
+//               用于处理 USB_IN 外部中断事件；
+//               建议仅设置事件标志，避免在中断上下文执行耗时操作
+//  Author     : Chen Liang 2026-08-18
+*******************************************************************************/
+__weak void bsp_exti_power_Callback(void){}
+
+/*******************************************************************************
 //  Function   : bsp_exti_sleep_Init
 //  Description: 初始化电源按键及 USB_IN 低功耗唤醒 EXTI
 //  Param      : None
@@ -38,6 +50,7 @@ __weak void bsp_exti_usb_Callback(void){}
 //               Event 模式不产生 CPU 中断请求
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
+#if 0
 static void bsp_exti_sleep_Init(void)
 {
     LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
@@ -82,7 +95,7 @@ static void bsp_exti_sleep_Init(void)
     LL_EXTI_SetEXTISource(POWER_SW_EXTI_CONFIG_PORT, POWER_SW_EXTI_CONFIG_LINE);
     LL_EXTI_SetEXTISource(USB_IN_EXTI_CONFIG_PORT, USB_IN_EXTI_CONFIG_LINE);
 }
-
+#endif
 
 /*******************************************************************************
 //  Function   : bsp_exti_usb_Init
@@ -95,46 +108,52 @@ static void bsp_exti_sleep_Init(void)
 //               当前函数通过条件编译禁用，暂不参与实际初始化
 //  Author     : Chen Liang 2026-08-18
 *******************************************************************************/
-#if 0
-static void bsp_exti_usb_Init(void)
+#if 1
+static void bsp_exti_sleep_it_Init(void)
 {
     LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
 
-    /*
-     * 配置 USB_IN 为 Interrupt + Event 模式：
-     *
-     * Event：
-     * 检测到指定边沿后产生外部事件，
-     * 可配合 WFE 实现低功耗唤醒。
-     *
-     * Interrupt：
-     * 检测到指定边沿后产生中断请求，
-     * 在 NVIC 允许的情况下进入 EXTI4_15_IRQHandler()。
-     */
+    /* 使能 EXTI Line，并选择 Event 模式。 */
     EXTI_InitStruct.LineCommand = ENABLE;
-    EXTI_InitStruct.Mode        = LL_EXTI_MODE_IT_EVENT;
+    EXTI_InitStruct.Mode        = LL_EXTI_MODE_IT;
+
+    /*
+     * POWER_SW 电源按键唤醒配置：
+     *
+     * 1. 配置对应 EXTI Line。
+     * 2. 设置电源按键触发边沿。
+     * 3. 检测到有效边沿后产生 EXTI Event。
+     * 4. 可用于唤醒处于相应低功耗模式的 MCU。
+     */
+    EXTI_InitStruct.Line        = POWER_SW_EXTI_LINE;
+    EXTI_InitStruct.Trigger     = POWER_SW_EXTI_TRIGGER;
+    LL_EXTI_Init(&EXTI_InitStruct);
+
+
+    /*
+     * USB_IN 外部事件唤醒配置：
+     *
+     * 1. 配置 USB_IN 对应 EXTI Line。
+     * 2. 设置 USB_IN 触发边沿。
+     * 3. 检测到有效边沿后产生 EXTI Event。
+     * 4. 当前仅用于事件唤醒，不触发 USB 中断回调。
+     */
     EXTI_InitStruct.Line        = USB_IN_EXTI_LINE;
     EXTI_InitStruct.Trigger     = USB_IN_EXTI_TRIGGER;
-
     LL_EXTI_Init(&EXTI_InitStruct);
 
     /*
-     * 配置 USB_IN GPIO 端口与 EXTI Line 的映射。
+     * 配置 GPIO 与 EXTI Line 的映射关系：
      *
-     * 应确保对应 GPIO 已配置为输入模式，
-     * 并且 SYSCFG 外设时钟已使能。
+     * POWER_SW -> POWER_SW_EXTI_CONFIG_PORT / LINE
+     * USB_IN   -> USB_IN_EXTI_CONFIG_PORT / LINE
+     *
+     * GPIO 端口映射需要依赖 SYSCFG 外设时钟。
      */
+    LL_EXTI_SetEXTISource(POWER_SW_EXTI_CONFIG_PORT, POWER_SW_EXTI_CONFIG_LINE);
     LL_EXTI_SetEXTISource(USB_IN_EXTI_CONFIG_PORT, USB_IN_EXTI_CONFIG_LINE);
 
-    /*
-     * 配置 USB_IN 外部中断的 NVIC：
-     *
-     * 1. USB_IN 使用 EXTI4~15 共用中断入口。
-     * 2. 设置中断抢占优先级为 2。
-     * 3. 使能 EXTI4_15_IRQn 中断。
-     *
-     * 中断优先级应与系统其他外设的中断配置协调。
-     */
+
     NVIC_SetPriority(EXTI4_15_IRQn, 2);
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 }
@@ -161,7 +180,7 @@ void bsp_exti_Init(void)
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
 
     /* 初始化 POWER_SW 和 USB_IN 低功耗唤醒事件。 */
-    bsp_exti_sleep_Init();
+    bsp_exti_sleep_it_Init();
 }
 
 
@@ -179,47 +198,15 @@ void bsp_exti_Init(void)
 *******************************************************************************/
 void EXTI4_15_IRQHandler(void)
 {
-    /*
-     * USB_IN 外部中断处理：
-     *
-     * 当 USB_IN 配置为中断模式、NVIC 已使能，
-     * 并且检测到有效触发边沿时，
-     * 可进入 EXTI4_15_IRQHandler()。
-     */
     if (LL_EXTI_IsActiveFlag(USB_IN_EXTI_LINE) != RESET)
     {
-        /*
-         * 通知应用层处理 USB_IN 事件。
-         *
-         * 回调函数可用于：
-         * 1. 设置 USB 插入或拔出事件标志。
-         * 2. 通知电源管理状态机。
-         * 3. 请求应用层执行后续处理。
-         *
-         * 应避免在回调中执行耗时操作。
-         */
         bsp_exti_usb_Callback();
-
-        /*
-         * 清除 USB_IN 外部中断 Pending 标志。
-         *
-         * 中断标志未清除可能导致 CPU 退出中断后
-         * 立即再次进入中断服务函数。
-         */
         LL_EXTI_ClearFlag(USB_IN_EXTI_LINE);
+    }
 
-        /*
-         * 后续 USB 事件处理建议由应用层完成。
-         *
-         * 不建议在中断中直接执行：
-         * 1. 长时间延时。
-         * 2. 复杂电源管理逻辑。
-         * 3. Flash 擦写等耗时操作。
-         */
-
-        /* 示例：
-         *
-         * g_usb_insert_flag = 1U;
-         */
+    if (LL_EXTI_IsActiveFlag(POWER_SW_EXTI_LINE) != RESET)
+    {
+        bsp_exti_power_Callback();
+        LL_EXTI_ClearFlag(POWER_SW_EXTI_LINE);
     }
 }
